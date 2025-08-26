@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Pipette Calibration System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            min-height: 600px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input, 
+        .form-group select, 
+        .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .pipette-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .pipette-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .pipette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .pipette-header h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .measurement-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .measurement-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .measurement-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .measurement-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .measurement-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        .measurement-input.pass {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .measurement-input.fail {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40,167,69,0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            transition: width 0.5s ease;
+        }
+
+        .environmental-data {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .measurement-table {
+                font-size: 12px;
+            }
+            
+            .measurement-input {
+                width: 60px;
+            }
+        }
+
+        .report-section {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            .nav-tabs, .btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Define ALL functions first to avoid reference errors
+        let pipettes = [];
+        let currentPipetteId = 0;
+
+        // ISO 8655 Specifications Database - Updated with correct ranges
+        const isoSpecs = {
+            'P-2': {
+                0.2: { accuracy: { from: 0.12, to: 0.28, percent: 40.0, ul: 0.08 }, precision: { percent: 20.0 } },
+                0.5: { accuracy: { from: 0.42, to: 0.58, percent: 16.0, ul: 0.08 }, precision: { percent: 8.0 } },
+                1: { accuracy: { from: 0.92, to: 1.08, percent: 8.0, ul: 0.08 }, precision: { percent: 4.0 } },
+                2: { accuracy: { from: 1.92, to: 2.08, percent: 4.0, ul: 0.08 }, precision: { percent: 2.0 } }
+            },
+            'P-10': {
+                1: { accuracy: { from: 0.88, to: 1.12, percent: 12.0, ul: 0.12 }, precision: { percent: 8.0 } },
+                2: { accuracy: { from: 1.88, to: 2.12, percent: 6.0, ul: 0.12 }, precision: { percent: 4.0 } },
+                5: { accuracy: { from: 4.88, to: 5.12, percent: 2.4, ul: 0.12 }, precision: { percent: 1.6 } },
+                10: { accuracy: { from: 9.88, to: 10.12, percent: 1.2, ul: 0.12 }, precision: { percent: 0.8 } }
+            },
+            'P-20': {
+                2: { accuracy: { from: 1.80, to: 2.20, percent: 10.0, ul: 0.2 }, precision: { percent: 5.0 } },
+                5: { accuracy: { from: 4.80, to: 5.20, percent: 4.0, ul: 0.2 }, precision: { percent: 2.0 } },
+                10: { accuracy: { from: 9.80, to: 10.20, percent: 2.0, ul: 0.2 }, precision: { percent: 1.0 } },
+                20: { accuracy: { from: 19.80, to: 20.20, percent: 1.0, ul: 0.2 }, precision: { percent: 0.5 } }
+            },
+            'P-100': {
+                10: { accuracy: { from: 9.2, to: 10.8, percent: 8.0, ul: 0.8 }, precision: { percent: 3.0 } },
+                20: { accuracy: { from: 19.2, to: 20.8, percent: 4.0, ul: 0.8 }, precision: { percent: 1.5 } },
+                50: { accuracy: { from: 49.2, to: 50.8, percent: 1.6, ul: 0.8 }, precision: { percent: 0.6 } },
+                100: { accuracy: { from: 99.2, to: 100.8, percent: 0.8, ul: 0.8 }, precision: { percent: 0.3 } }
+            },
+            'P-200': {
+                20: { accuracy: { from: 18.4, to: 21.6, percent: 8.0, ul: 1.6 }, precision: { percent: 3.0 } },
+                50: { accuracy: { from: 48.4, to: 51.6, percent: 3.2, ul: 1.6 }, precision: { percent: 1.2 } },
+                100: { accuracy: { from: 98.4, to: 101.6, percent: 1.6, ul: 1.6 }, precision: { percent: 0.6 } },
+                200: { accuracy: { from: 198.4, to: 201.6, percent: 0.8, ul: 1.6 }, precision: { percent: 0.3 } }
+            },
+            'P-1000': {
+                100: { accuracy: { from: 92.0, to: 108.0, percent: 8.0, ul: 8.0 }, precision: { percent: 3.0 } },
+                200: { accuracy: { from: 192.0, to: 208.0, percent: 4.0, ul: 8.0 }, precision: { percent: 1.5 } },
+                500: { accuracy: { from: 492.0, to: 508.0, percent: 1.6, ul: 8.0 }, precision: { percent: 0.6 } },
+                1000: { accuracy: { from: 992.0, to: 1008.0, percent: 0.8, ul: 8.0 }, precision: { percent: 0.3 } }
+            }
+        };
+
+        function showTab(tabName, clickedTab) {
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            if (clickedTab) {
+                clickedTab.classList.add('active');
+            }
+
+            if (tabName === 'analysis') {
+                updateAnalysis();
+            }
+        }
+
+        function addPipette() {
+            currentPipetteId++;
+            const pipette = {
+                id: currentPipetteId,
+                number: '',
+                brand: '',
+                serial: '',
+                volume: 100,
+                model: 'P-100',
+                measurements: {
+                    asFound: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] },
+                    asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
+                },
+                comments: '',
+                status: 'pending'
+            };
+
+            pipettes.push(pipette);
+            renderPipette(pipette);
+            updateProgress();
+        }
+
+        function renderPipette(pipette) {
+            const container = document.getElementById('pipettesContainer');
+            const pipetteDiv = document.createElement('div');
+            pipetteDiv.className = 'pipette-card';
+            pipetteDiv.id = `pipette-${pipette.id}`;
+
+            const volumeRanges = getVolumeRanges(pipette.model);
+            
+            pipetteDiv.innerHTML = `
+                <div class="pipette-header">
+                    <div>
+                        <h3>Pipette ${pipette.id}</h3>
+                        <span class="status-badge status-${pipette.status}" id="status-${pipette.id}">
+                            ${pipette.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <button class="btn btn-danger" onclick="removePipette(${pipette.id})">🗑️ Remove</button>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Pipette Number</label>
+                        <input type="text" value="${pipette.number}" onchange="updatePipetteInfo(${pipette.id}, 'number', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Brand</label>
+                        <input type="text" value="${pipette.brand}" onchange="updatePipetteInfo(${pipette.id}, 'brand', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Serial Number</label>
+                        <input type="text" value="${pipette.serial}" onchange="updatePipetteInfo(${pipette.id}, 'serial', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Model</label>
+                        <select onchange="updatePipetteModel(${pipette.id}, this.value)">
+                            <option value="P-2" ${pipette.model === 'P-2' ? 'selected' : ''}>P-2 (0.2-2 μL)</option>
+                            <option value="P-10" ${pipette.model === 'P-10' ? 'selected' : ''}>P-10 (1-10 μL)</option>
+                            <option value="P-20" ${pipette.model === 'P-20' ? 'selected' : ''}>P-20 (2-20 μL)</option>
+                            <option value="P-100" ${pipette.model === 'P-100' ? 'selected' : ''}>P-100 (10-100 μL)</option>
+                            <option value="P-200" ${pipette.model === 'P-200' ? 'selected' : ''}>P-200 (20-200 μL)</option>
+                            <option value="P-1000" ${pipette.model === 'P-1000' ? 'selected' : ''}>P-1000 (100-1000 μL)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Volume (μL)</label>
+                        <select onchange="updatePipetteInfo(${pipette.id}, 'volume', parseFloat(this.value))">
+                            ${volumeRanges.map(vol => `<option value="${vol}" ${vol === pipette.volume ? 'selected' : ''}>${vol} μL</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Comments</label>
+                        <textarea rows="2" onchange="updatePipetteInfo(${pipette.id}, 'comments', this.value)">${pipette.comments}</textarea>
+                    </div>
+                </div>
+
+                <table class="measurement-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Test Point</th>
+                            <th colspan="4">As Found</th>
+                            <th colspan="4">As Left</th>
+                            <th rowspan="2">Status</th>
+                        </tr>
+                        <tr>
+                            <th>Reading 1</th>
+                            <th>Reading 2</th>
+                            <th>Reading 3</th>
+                            <th>Reading 4</th>
+                            <th>Reading 1</th>
+                            <th>Reading 2</th>
+                            <th>Reading 3</th>
+                            <th>Reading 4</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Low (${(pipette.volume * 0.1).toFixed(1)} μL)</strong></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 0, this.value)" value="${pipette.measurements.asFound.low[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 1, this.value)" value="${pipette.measurements.asFound.low[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 2, this.value)" value="${pipette.measurements.asFound.low[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 3, this.value)" value="${pipette.measurements.asFound.low[3] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 0, this.value)" value="${pipette.measurements.asLeft.low[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 1, this.value)" value="${pipette.measurements.asLeft.low[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 2, this.value)" value="${pipette.measurements.asLeft.low[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 3, this.value)" value="${pipette.measurements.asLeft.low[3] || ''}"></td>
+                            <td><span id="status-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mid (${(pipette.volume * 0.5).toFixed(1)} μL)</strong></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 0, this.value)" value="${pipette.measurements.asFound.mid[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 1, this.value)" value="${pipette.measurements.asFound.mid[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 2, this.value)" value="${pipette.measurements.asFound.mid[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 3, this.value)" value="${pipette.measurements.asFound.mid[3] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 0, this.value)" value="${pipette.measurements.asLeft.mid[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 1, this.value)" value="${pipette.measurements.asLeft.mid[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 2, this.value)" value="${pipette.measurements.asLeft.mid[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 3, this.value)" value="${pipette.measurements.asLeft.mid[3] || ''}"></td>
+                            <td><span id="status-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>High (${pipette.volume} μL)</strong></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 0, this.value)" value="${pipette.measurements.asFound.high[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 1, this.value)" value="${pipette.measurements.asFound.high[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 2, this.value)" value="${pipette.measurements.asFound.high[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 3, this.value)" value="${pipette.measurements.asFound.high[3] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 0, this.value)" value="${pipette.measurements.asLeft.high[0] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 1, this.value)" value="${pipette.measurements.asLeft.high[1] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 2, this.value)" value="${pipette.measurements.asLeft.high[2] || ''}"></td>
+                            <td><input type="number" step="0.01" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 3, this.value)" value="${pipette.measurements.asLeft.high[3] || ''}"></td>
+                            <td><span id="status-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div id="calculations-${pipette.id}">
+                    <!-- Real-time calculations will appear here -->
+                </div>
+            `;
+
+            container.appendChild(pipetteDiv);
+        }
+
+        function getVolumeRanges(model) {
+            const ranges = {
+                'P-2': [0.2, 0.5, 1, 2],
+                'P-10': [1, 2, 5, 10],
+                'P-20': [2, 5, 10, 20],
+                'P-100': [10, 20, 50, 100],
+                'P-200': [20, 50, 100, 200],
+                'P-1000': [100, 200, 500, 1000]
+            };
+            return ranges[model] || [100];
+        }
+
+        function updatePipetteModel(pipetteId, newModel) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.model = newModel;
+                const ranges = getVolumeRanges(newModel);
+                pipette.volume = ranges[ranges.length - 1];
+                
+                document.getElementById(`pipette-${pipetteId}`).remove();
+                renderPipette(pipette);
+            }
+        }
+
+        function updatePipetteInfo(pipetteId, field, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette[field] = value;
+                if (field === 'volume') {
+                    document.getElementById(`pipette-${pipetteId}`).remove();
+                    renderPipette(pipette);
+                }
+            }
+        }
+
+        function updateMeasurement(pipetteId, condition, point, reading, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                if (!pipette.measurements[condition][point]) {
+                    pipette.measurements[condition][point] = ['', '', '', ''];
+                }
+                pipette.measurements[condition][point][reading] = parseFloat(value) || '';
+                
+                validateMeasurement(pipetteId, condition, point);
+                updateOverallStatus(pipetteId);
+                updateProgress();
+            }
+        }
+
+        function validateMeasurement(pipetteId, condition, point) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) return;
+
+            const measurements = pipette.measurements[condition][point];
+            if (measurements.filter(m => m !== '').length < 4) return;
+
+            const nominalVolume = getNominalVolume(pipette.volume, point);
+            const specs = getSpecifications(pipette.model, nominalVolume);
+            
+            if (!specs) return;
+
+            const mean = measurements.reduce((a, b) => a + b, 0) / 4;
+            const accuracy = ((mean - nominalVolume) / nominalVolume) * 100;
+            const cv = calculateCV(measurements);
+
+            const accuracyPass = Math.abs(accuracy) <= specs.accuracy.percent;
+            const precisionPass = cv <= specs.precision.percent;
+            const overallPass = accuracyPass && precisionPass;
+
+            const statusElement = document.getElementById(`status-${point}-${pipetteId}`);
+            statusElement.className = `status-badge status-${overallPass ? 'pass' : 'fail'}`;
+            statusElement.textContent = overallPass ? 'PASS' : 'FAIL';
+
+            measurements.forEach((_, index) => {
+                const input = document.querySelector(`#pipette-${pipetteId} input[onchange*="${condition}"][onchange*="${point}"][onchange*="${index}"]`);
+                if (input) {
+                    input.className = `measurement-input ${overallPass ? 'pass' : 'fail'}`;
+                }
+            });
+
+            updateCalculationsDisplay(pipetteId, point, {
+                nominal: nominalVolume,
+                mean: mean,
+                accuracy: accuracy,
+                cv: cv,
+                specs: specs,
+                accuracyPass: accuracyPass,
+                precisionPass: precisionPass
+            });
+        }
+
+        function getNominalVolume(volume, point) {
+            const multipliers = { low: 0.1, mid: 0.5, high: 1.0 };
+            return volume * multipliers[point];
+        }
+
+        function getSpecifications(model, volume) {
+            const modelSpecs = isoSpecs[model];
+            if (!modelSpecs) return null;
+
+            const volumes = Object.keys(modelSpecs).map(v => parseFloat(v));
+            const closest = volumes.reduce((prev, curr) => 
+                Math.abs(curr - volume) < Math.abs(prev - volume) ? curr : prev
+            );
+
+            return modelSpecs[closest];
+        }
+
+        function calculateCV(values) {
+            const mean = values.reduce((a, b) => a + b, 0) / values.length;
+            const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+            const stdDev = Math.sqrt(variance);
+            return (stdDev / mean) * 100;
+        }
+
+        function updateCalculationsDisplay(pipetteId, point, data) {
+            const container = document.getElementById(`calculations-${pipetteId}`);
+            let calculationsDiv = container.querySelector(`.calculations-${point}`);
+            
+            if (!calculationsDiv) {
+                calculationsDiv = document.createElement('div');
+                calculationsDiv.className = `calculations-${point}`;
+                calculationsDiv.style.cssText = 'background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 5px; font-size: 12px;';
+                container.appendChild(calculationsDiv);
+            }
+
+            calculationsDiv.innerHTML = `
+                <strong>${point.toUpperCase()} (${data.nominal.toFixed(1)} μL):</strong>
+                Mean: ${data.mean.toFixed(3)} μL | 
+                Accuracy: ${data.accuracy.toFixed(2)}% (Limit: ±${data.specs.accuracy.percent}%) 
+                <span style="color: ${data.accuracyPass ? 'green' : 'red'}">${data.accuracyPass ? '✓' : '✗'}</span> | 
+                CV: ${data.cv.toFixed(2)}% (Limit: ${data.specs.precision.percent}%) 
+                <span style="color: ${data.precisionPass ? 'green' : 'red'}">${data.precisionPass ? '✓' : '✗'}</span>
+            `;
+        }
+
+        function updateOverallStatus(pipetteId) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) return;
+
+            const statusElements = ['low', 'mid', 'high'].map(point => 
+                document.getElementById(`status-${point}-${pipetteId}`)
+            );
+
+            const allTested = statusElements.every(el => el && el.textContent !== 'PENDING');
+            const allPass = statusElements.every(el => el && el.textContent === 'PASS');
+
+            if (allTested) {
+                pipette.status = allPass ? 'pass' : 'fail';
+            } else {
+                pipette.status = 'pending';
+            }
+
+            const overallStatus = document.getElementById(`status-${pipetteId}`);
+            if (overallStatus) {
+                overallStatus.className = `status-badge status-${pipette.status}`;
+                overallStatus.textContent = pipette.status.toUpperCase();
+            }
+        }
+
+        function updateProgress() {
+            const total = pipettes.length;
+            const completed = pipettes.filter(p => p.status !== 'pending').length;
+            const progress = total > 0 ? (completed / total) * 100 : 0;
+            
+            const progressFill = document.getElementById('progressFill');
+            if (progressFill) {
+                progressFill.style.width = `${progress}%`;
+            }
+        }
+
+        function removePipette(pipetteId) {
+            pipettes = pipettes.filter(p => p.id !== pipetteId);
+            const element = document.getElementById(`pipette-${pipetteId}`);
+            if (element) element.remove();
+            updateProgress();
+            updateAnalysis();
+        }
+
+        function updateAnalysis() {
+            const total = pipettes.length;
+            const passed = pipettes.filter(p => p.status === 'pass').length;
+            const failed = pipettes.filter(p => p.status === 'fail').length;
+            const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+
+            const totalEl = document.getElementById('totalPipettes');
+            const passEl = document.getElementById('passCount');
+            const failEl = document.getElementById('failCount');
+            const rateEl = document.getElementById('passRate');
+
+            if (totalEl) totalEl.textContent = total;
+            if (passEl) passEl.textContent = passed;
+            if (failEl) failEl.textContent = failed;
+            if (rateEl) rateEl.textContent = `${passRate}%`;
+
+            const analysisDetails = document.getElementById('analysisDetails');
+            if (analysisDetails) {
+                analysisDetails.innerHTML = generateAnalysisDetails();
+            }
+        }
+
+        function generateAnalysisDetails() {
+            if (pipettes.length === 0) {
+                return '<div class="alert alert-info">No pipettes added yet. Go to the Calibration tab to add pipettes.</div>';
+            }
+
+            let html = '<h3>📋 Detailed Analysis</h3>';
+
+            pipettes.forEach(pipette => {
+                const statusClass = pipette.status === 'pass' ? 'alert-success' : 
+                                  pipette.status === 'fail' ? 'alert-danger' : 'alert-warning';
+                
+                html += `
+                    <div class="alert ${statusClass}">
+                        <h4>${pipette.brand} ${pipette.number} (${pipette.serial})</h4>
+                        <p><strong>Model:</strong> ${pipette.model} | <strong>Volume:</strong> ${pipette.volume} μL | <strong>Status:</strong> ${pipette.status.toUpperCase()}</p>
+                        ${pipette.comments ? `<p><strong>Comments:</strong> ${pipette.comments}</p>` : ''}
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        function autoFillSampleData() {
+            pipettes = [];
+            document.getElementById('pipettesContainer').innerHTML = '';
+            currentPipetteId = 0;
+
+            const sampleData = [
+                {
+                    number: 'EQ-CPL-PIPS-D-035',
+                    brand: 'Eppendorf Research',
+                    serial: '3151046',
+                    model: 'P-100',
+                    volume: 100,
+                    measurements: {
+                        asFound: {
+                            low: [9.96, 9.97, 9.98, 9.95],
+                            mid: [49.8, 49.7, 49.9, 49.85],
+                            high: [99.6, 99.7, 99.8, 99.65]
+                        },
+                        asLeft: {
+                            low: [9.99, 9.98, 9.96, 9.97],
+                            mid: [49.9, 50.1, 49.8, 49.95],
+                            high: [99.9, 99.8, 99.6, 99.75]
+                        }
+                    },
+                    comments: 'Fixed'
+                },
+                {
+                    number: 'EQ-CPL-PIPS-D-019',
+                    brand: 'Eppendorf',
+                    serial: '162061',
+                    model: 'P-100',
+                    volume: 100,
+                    measurements: {
+                        asFound: {
+                            low: [20.15, 20.2, 19.99, 20.05],
+                            mid: [49.9, 49.7, 49.6, 49.8],
+                            high: [99.9, 99.6, 99.7, 99.8]
+                        },
+                        asLeft: {
+                            low: [20.15, 20.32, 20.25, 20.18],
+                            mid: [50.1, 49.8, 50.0, 49.9],
+                            high: [99.6, 99.8, 99.7, 99.75]
+                        }
+                    }
+                },
+                {
+                    number: 'EQ-CPL-PIPS-D-007',
+                    brand: 'Gilson Pipetman',
+                    serial: 'Y56900K',
+                    model: 'P-100',
+                    volume: 100,
+                    measurements: {
+                        asFound: {
+                            low: [19.78, 19.74, 19.81, 19.77],
+                            mid: [49.2, 49.7, 49.9, 49.6],
+                            high: [99.5, 99.6, 99.5, 99.55]
+                        },
+                        asLeft: {
+                            low: [19.64, 19.74, 19.59, 19.69],
+                            mid: [49.9, 50.2, 49.9, 50.0],
+                            high: [99.9, 99.8, 99.9, 99.85]
+                        }
+                    }
+                }
+            ];
+
+            sampleData.forEach(data => {
+                currentPipetteId++;
+                const pipette = {
+                    id: currentPipetteId,
+                    ...data,
+                    status: 'pending'
+                };
+                pipettes.push(pipette);
+                renderPipette(pipette);
+                
+                ['asFound', 'asLeft'].forEach(condition => {
+                    ['low', 'mid', 'high'].forEach(point => {
+                        validateMeasurement(pipette.id, condition, point);
+                    });
+                });
+                updateOverallStatus(pipette.id);
+            });
+
+            updateProgress();
+            updateAnalysis();
+        }
+
+        function getSessionInfo() {
+            return {
+                serviceProvider: document.getElementById('serviceProvider')?.value || '',
+                location: document.getElementById('location')?.value || '',
+                address: document.getElementById('address')?.value || '',
+                client: document.getElementById('client')?.value || '',
+                technician: document.getElementById('technician')?.value || '',
+                calDate: document.getElementById('calDate')?.value || '',
+                dueDate: document.getElementById('dueDate')?.value || '',
+                frequency: document.getElementById('frequency')?.value || '',
+                temperature: document.getElementById('temperature')?.value || '',
+                humidity: document.getElementById('humidity')?.value || '',
+                pressure: document.getElementById('pressure')?.value || '',
+                balanceSerial: document.getElementById('balanceSerial')?.value || '',
+                balanceCalDate: document.getElementById('balanceCalDate')?.value || '',
+                balanceDueDate: document.getElementById('balanceDueDate')?.value || ''
+            };
+        }
+
+        function generateReport() {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent) return;
+            
+            const sessionInfo = getSessionInfo();
+            
+            reportContent.innerHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1>🧪 PIPETTE CALIBRATION CERTIFICATE</h1>
+                    <p style="color: #6c757d;">ISO 8655 Compliant Calibration Report</p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div>
+                        <h3>📋 Service Information</h3>
+                        <p><strong>Service Provider:</strong> ${sessionInfo.serviceProvider}</p>
+                        <p><strong>Location:</strong> ${sessionInfo.location}</p>
+                        <p><strong>Address:</strong> ${sessionInfo.address}</p>
+                        <p><strong>Client:</strong> ${sessionInfo.client}</p>
+                        <p><strong>Technician:</strong> ${sessionInfo.technician}</p>
+                    </div>
+                    <div>
+                        <h3>📅 Calibration Details</h3>
+                        <p><strong>Calibration Date:</strong> ${sessionInfo.calDate}</p>
+                        <p><strong>Due Date:</strong> ${sessionInfo.dueDate}</p>
+                        <p><strong>Frequency:</strong> ${sessionInfo.frequency}</p>
+                        <p><strong>Temperature:</strong> ${sessionInfo.temperature}°C</p>
+                        <p><strong>Balance S/N:</strong> ${sessionInfo.balanceSerial}</p>
+                    </div>
+                </div>
+
+                <h3>📊 Calibration Summary</h3>
+                <div class="statistics" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-value">${pipettes.length}</div>
+                        <div class="stat-label">Total Pipettes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pipettes.filter(p => p.status === 'pass').length}</div>
+                        <div class="stat-label">Passed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pipettes.filter(p => p.status === 'fail').length}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${pipettes.length > 0 ? ((pipettes.filter(p => p.status === 'pass').length / pipettes.length) * 100).toFixed(1) : 0}%</div>
+                        <div class="stat-label">Pass Rate</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px; text-align: center; color: #6c757d;">
+                    <p>This certificate is valid only for the equipment tested and under the conditions stated.</p>
+                    <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                </div>
+            `;
+        }
+
+        function saveSession() {
+            const sessionData = {
+                sessionInfo: getSessionInfo(),
+                pipettes: pipettes,
+                timestamp: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(sessionData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `pipette_calibration_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            alert('Session saved successfully!');
+        }
+
+        function loadHistory() {
+            // Simple placeholder for history functionality
+            const historyContainer = document.getElementById('historyContainer');
+            if (historyContainer) {
+                historyContainer.innerHTML = '<div class="alert alert-info">No calibration history found.</div>';
+            }
+        }
+
+        function downloadPDF() {
+            generateReport();
+            window.print();
+        }
+
+        function printReport() {
+            generateReport();
+            window.print();
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('calDate').value = today;
+            
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            document.getElementById('dueDate').value = nextYear.toISOString().split('T')[0];
+            
+            const firstOfMonth = new Date();
+            firstOfMonth.setDate(1);
+            document.getElementById('balanceCalDate').value = firstOfMonth.toISOString().split('T')[0];
+            document.getElementById('balanceDueDate').value = nextYear.toISOString().split('T')[0];
+
+            loadHistory();
+        });
+    </script>
+
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Advanced Pipette Calibration System</h1>
+            <p>ISO 8655 Compliant | Real-time Analysis | Comprehensive Reporting</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('session', this)">📋 Session Info</button>
+            <button class="nav-tab" onclick="showTab('calibration', this)">⚖️ Calibration</button>
+            <button class="nav-tab" onclick="showTab('analysis', this)">📊 Analysis</button>
+            <button class="nav-tab" onclick="showTab('report', this)">📄 Report</button>
+            <button class="nav-tab" onclick="showTab('history', this)">📚 History</button>
+        </div>
+
+        <!-- Session Info Tab -->
+        <div id="session" class="tab-content active">
+            <h2>📋 Calibration Session Setup</h2>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Service Provider</label>
+                    <input type="text" id="serviceProvider" value="Platinum SC Data Intake Worksheets">
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="location" value="Kansas State University Mosier F103">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" id="address" value="1800 Denison Ave, Manhattan, Ks 66506">
+                </div>
+                <div class="form-group">
+                    <label>Client</label>
+                    <input type="text" id="client" value="Janice Muller - Cin Path">
+                </div>
+                <div class="form-group">
+                    <label>Technician</label>
+                    <input type="text" id="technician" value="TSD">
+                </div>
+                <div class="form-group">
+                    <label>Calibration Date</label>
+                    <input type="date" id="calDate">
+                </div>
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" id="dueDate">
+                </div>
+                <div class="form-group">
+                    <label>Frequency</label>
+                    <select id="frequency">
+                        <option value="Annual">Annual</option>
+                        <option value="Semi-Annual">Semi-Annual</option>
+                        <option value="Quarterly">Quarterly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="environmental-data">
+                <h3>🌡️ Environmental Conditions</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Temperature (°C)</label>
+                        <input type="number" id="temperature" step="0.1" value="21.8">
+                    </div>
+                    <div class="form-group">
+                        <label>Humidity (%)</label>
+                        <input type="number" id="humidity" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Barometric Pressure (kPa)</label>
+                        <input type="number" id="pressure" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance Serial Number</label>
+                        <input type="text" id="balanceSerial" value="B621501811">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance Calibration Date</label>
+                        <input type="date" id="balanceCalDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance Due Date</label>
+                        <input type="date" id="balanceDueDate">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'))">Next: Start Calibration →</button>
+        </div>
+
+        <!-- Calibration Tab -->
+        <div id="calibration" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>⚖️ Pipette Calibration</h2>
+                <div>
+                    <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
+                    <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+
+            <div id="pipettesContainer">
+                <!-- Pipettes will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Analysis Tab -->
+        <div id="analysis" class="tab-content">
+            <h2>📊 Real-time Analysis</h2>
+            
+            <div class="statistics">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalPipettes">0</div>
+                    <div class="stat-label">Total Pipettes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="passCount">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="failCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="passRate">0%</div>
+                    <div class="stat-label">Pass Rate</div>
+                </div>
+            </div>
+
+            <div id="analysisDetails">
+                <!-- Analysis details will be populated here -->
+            </div>
+        </div>
+
+        <!-- Report Tab -->
+        <div id="report" class="tab-content">
+            <h2>📄 Calibration Report</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="generateReport()">🔄 Generate Report</button>
+                <button class="btn btn-success" onclick="downloadPDF()">📄 Download PDF</button>
+                <button class="btn btn-secondary" onclick="printReport()">🖨️ Print</button>
+                <button class="btn btn-primary" onclick="saveSession()">💾 Save Session</button>
+            </div>
+
+            <div id="reportContent" class="report-section">
+                <!-- Report content will be generated here -->
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <h2>📚 Calibration History</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="loadHistory()">🔄 Refresh History</button>
+            </div>
+
+            <div id="historyContainer">
+                <!-- History will be populated here -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
