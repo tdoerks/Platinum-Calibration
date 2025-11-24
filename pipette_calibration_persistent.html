@@ -1522,8 +1522,162 @@
             window.print();
         }
 
+        // ========== CSV Export Functions ==========
+
+        function exportFormattedCSV() {
+            const sessionInfo = getSessionInfo();
+            let csv = '';
+
+            // Header section
+            csv += `Platinum SC Data Intake Worksheets,,,,,,,,,Tech:,${sessionInfo.technician}\n`;
+            csv += `Platinum Service,Location:,${sessionInfo.location},,,,,Address:,${sessionInfo.address}\n`;
+            csv += `Cal Date:,${sessionInfo.calDate},Client:,${sessionInfo.client},,,,,Bal SN:,${sessionInfo.balanceSerial},Bal Cal Date:,${sessionInfo.balanceCalDate}\n`;
+            csv += `Cal Due:,${sessionInfo.dueDate},Frequency:,${sessionInfo.frequency},,,,,Temp:,${sessionInfo.temperature},Bal Due Date:,${sessionInfo.balanceDueDate}\n`;
+            csv += `\n`;
+
+            // Process pipettes in pairs (2 per row)
+            for (let i = 0; i < pipettes.length; i += 2) {
+                const pipette1 = pipettes[i];
+                const pipette2 = pipettes[i + 1] || null;
+
+                // Column headers
+                csv += `,As Found,Low,Mid,High,,As Left,Low,Mid,High,,,,As Found,Low,Mid,High,,As Left,Low,Mid,High\n`;
+
+                // Pipette info
+                csv += `Pipette #:,${pipette1.number},,,,,,,,,,Pipette #:,${pipette2 ? pipette2.number : ''},,,,\n`;
+                csv += `Brand:,${pipette1.brand},,,,,,,,,,Brand:,${pipette2 ? pipette2.brand : ''},,,,\n`;
+                csv += `Serial#:,${pipette1.serial},,,,,,,,,,Serial#:,${pipette2 ? pipette2.serial : ''},,,,\n`;
+                csv += `Vol:,${pipette1.testVolume},,,,,,,,,,Vol:,${pipette2 ? pipette2.testVolume : ''},,,,\n`;
+
+                // Measurements for pipette 1
+                const p1AsFoundLow = pipette1.measurements.asFound.low.join(',');
+                const p1AsFoundMid = pipette1.measurements.asFound.mid.join(',');
+                const p1AsFoundHigh = pipette1.measurements.asFound.high.join(',');
+                const p1AsLeftLow = pipette1.measurements.asLeft.low.join(',');
+                const p1AsLeftMid = pipette1.measurements.asLeft.mid.join(',');
+                const p1AsLeftHigh = pipette1.measurements.asLeft.high.join(',');
+
+                // Measurements for pipette 2 (if exists)
+                const p2AsFoundLow = pipette2 ? pipette2.measurements.asFound.low.join(',') : ',,,';
+                const p2AsFoundMid = pipette2 ? pipette2.measurements.asFound.mid.join(',') : ',,,';
+                const p2AsFoundHigh = pipette2 ? pipette2.measurements.asFound.high.join(',') : ',,,';
+                const p2AsLeftLow = pipette2 ? pipette2.measurements.asLeft.low.join(',') : ',,,';
+                const p2AsLeftMid = pipette2 ? pipette2.measurements.asLeft.mid.join(',') : ',,,';
+                const p2AsLeftHigh = pipette2 ? pipette2.measurements.asLeft.high.join(',') : ',,,';
+
+                csv += `Low:,${p1AsFoundLow},,${p1AsLeftLow},,,,Low:,${p2AsFoundLow},,${p2AsLeftLow}\n`;
+                csv += `Mid:,${p1AsFoundMid},,${p1AsLeftMid},,,,Mid:,${p2AsFoundMid},,${p2AsLeftMid}\n`;
+                csv += `High:,${p1AsFoundHigh},,${p1AsLeftHigh},,,,High:,${p2AsFoundHigh},,${p2AsLeftHigh}\n`;
+
+                csv += `Comments:,${pipette1.comments || ''},,,,,,,,,,Comments:,${pipette2 ? pipette2.comments || '' : ''},,,,\n`;
+                csv += `\n`;
+            }
+
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `calibration_worksheet_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportDataCSV() {
+            const sessionInfo = getSessionInfo();
+            let csv = '';
+
+            // CSV Headers
+            csv += 'Date,Technician,Location,Client,Pipette Number,Brand,Model,Serial,Volume,Test Point,Condition,Reading 1,Reading 2,Reading 3,Reading 4,Mean,CV%,SD,Status,Comments\n';
+
+            // Data rows
+            pipettes.forEach(pipette => {
+                ['low', 'mid', 'high'].forEach(point => {
+                    ['asFound', 'asLeft'].forEach(condition => {
+                        const measurements = pipette.measurements[condition][point];
+                        if (measurements.filter(m => m !== '').length === 4) {
+                            const mean = measurements.reduce((a, b) => a + b, 0) / 4;
+                            const cv = calculateCV(measurements);
+                            const sd = calculateSD(measurements);
+
+                            const nominalVolume = getNominalVolume(pipette.testVolume, point);
+                            const specs = getSpecifications(pipette.model, nominalVolume);
+
+                            let status = 'PENDING';
+                            if (specs) {
+                                const accuracyPass = measurements.every(reading =>
+                                    reading >= specs.accuracy.from && reading <= specs.accuracy.to
+                                );
+                                const cvPass = cv <= specs.precision.percent;
+                                const sdPass = sd <= specs.precision.ul;
+                                const precisionPass = cvPass || sdPass;
+                                status = (accuracyPass && precisionPass) ? 'PASS' : 'FAIL';
+                            }
+
+                            csv += `${sessionInfo.calDate},${sessionInfo.technician},${sessionInfo.location},${sessionInfo.client},`;
+                            csv += `${pipette.number},${pipette.brand},${pipette.model},${pipette.serial},${pipette.testVolume},`;
+                            csv += `${point.toUpperCase()},${condition === 'asFound' ? 'As Found' : 'As Left'},`;
+                            csv += `${measurements[0]},${measurements[1]},${measurements[2]},${measurements[3]},`;
+                            csv += `${mean.toFixed(2)},${cv.toFixed(2)},${sd.toFixed(3)},${status},"${pipette.comments || ''}"\n`;
+                        }
+                    });
+                });
+            });
+
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `calibration_data_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // ========== End CSV Export Functions ==========
+
+        // ========== Password Protection ==========
+        const CALIBRATION_PASSWORD = 'platinum2024'; // Change this to your desired password
+
+        function checkPassword() {
+            // Check if already authenticated in this session
+            if (sessionStorage.getItem('calibrationAuth') === 'authenticated') {
+                return true;
+            }
+
+            // Prompt for password
+            const password = prompt('Enter password to access Calibration System:');
+
+            if (password === CALIBRATION_PASSWORD) {
+                sessionStorage.setItem('calibrationAuth', 'authenticated');
+                return true;
+            } else if (password === null) {
+                // User clicked cancel
+                document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial; font-size: 24px; color: #666;">Access Denied - Password Required</div>';
+                return false;
+            } else {
+                alert('Incorrect password. Access denied.');
+                document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial; font-size: 24px; color: #666;">Access Denied - Incorrect Password</div>';
+                return false;
+            }
+        }
+
+        function logout() {
+            if (confirm('Logout and clear authentication?')) {
+                sessionStorage.removeItem('calibrationAuth');
+                location.reload();
+            }
+        }
+
+        // ========== End Password Protection ==========
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            // Check password first
+            if (!checkPassword()) {
+                return; // Stop initialization if password check fails
+            }
+
             // Try to load saved session first
             const sessionLoaded = loadCurrentSession();
 
@@ -1555,6 +1709,7 @@
         <div class="header">
             <h1>🧪 Advanced Pipette Calibration System</h1>
             <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
+            <button onclick="logout()" style="position: absolute; top: 20px; right: 20px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
         </div>
 
         <div class="nav-tabs">
@@ -1698,12 +1853,15 @@
         <!-- Report Tab -->
         <div id="report" class="tab-content">
             <h2>📄 Calibration Report</h2>
-            
+
             <div style="margin-bottom: 20px;">
                 <button class="btn btn-primary" onclick="generateReport()">📄 Generate Report</button>
                 <button class="btn btn-success" onclick="downloadPDF()">📄 Download PDF</button>
                 <button class="btn btn-secondary" onclick="printReport()">🖨️ Print</button>
-                <button class="btn btn-primary" onclick="saveSession()">💾 Save Session</button>
+                <br style="margin: 5px 0;">
+                <button class="btn btn-success" onclick="exportFormattedCSV()">📊 Export Formatted CSV</button>
+                <button class="btn btn-success" onclick="exportDataCSV()">📊 Export Data CSV</button>
+                <button class="btn btn-primary" onclick="saveSession()">💾 Save JSON</button>
             </div>
 
             <div id="reportContent" class="report-section">
