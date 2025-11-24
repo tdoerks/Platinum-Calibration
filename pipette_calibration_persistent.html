@@ -558,6 +558,106 @@
             }
         };
 
+        // ISO 8655 Multi-Channel Pipette Specifications
+        const isoSpecsMulti = {
+            'P-2': {
+                0.2: { accuracy: { from: 0.04, to: 0.36, percent: 80.0, ul: 0.16 }, precision: { percent: 40.0, ul: 0.08 } },
+                0.5: { accuracy: { from: 0.34, to: 0.66, percent: 32.0, ul: 0.16 }, precision: { percent: 16.0, ul: 0.08 } },
+                1: { accuracy: { from: 0.84, to: 1.16, percent: 16.0, ul: 0.16 }, precision: { percent: 8.0, ul: 0.08 } },
+                2: { accuracy: { from: 1.84, to: 2.16, percent: 8.0, ul: 0.16 }, precision: { percent: 4.0, ul: 0.08 } }
+            },
+            'P-10': {
+                1: { accuracy: { from: 0.76, to: 1.24, percent: 24.0, ul: 0.24 }, precision: { percent: 16.0, ul: 0.16 } },
+                2: { accuracy: { from: 1.76, to: 2.24, percent: 12.0, ul: 0.24 }, precision: { percent: 8.0, ul: 0.16 } },
+                5: { accuracy: { from: 4.76, to: 5.24, percent: 4.8, ul: 0.24 }, precision: { percent: 3.2, ul: 0.16 } },
+                10: { accuracy: { from: 9.76, to: 10.24, percent: 2.4, ul: 0.24 }, precision: { percent: 1.6, ul: 0.16 } }
+            },
+            'P-20': {
+                2: { accuracy: { from: 1.60, to: 2.40, percent: 20.0, ul: 0.4 }, precision: { percent: 10.0, ul: 0.2 } },
+                5: { accuracy: { from: 4.60, to: 5.40, percent: 8.0, ul: 0.4 }, precision: { percent: 4.0, ul: 0.2 } },
+                10: { accuracy: { from: 9.60, to: 10.40, percent: 4.0, ul: 0.4 }, precision: { percent: 2.0, ul: 0.2 } },
+                20: { accuracy: { from: 19.60, to: 20.40, percent: 2.0, ul: 0.4 }, precision: { percent: 1.0, ul: 0.2 } }
+            },
+            'P-25': {
+                5: { accuracy: { from: 4.00, to: 6.00, percent: 20.0, ul: 1.0 }, precision: { percent: 8.0, ul: 0.4 } },
+                12.5: { accuracy: { from: 11.50, to: 13.50, percent: 8.0, ul: 1.0 }, precision: { percent: 3.2, ul: 0.4 } },
+                25: { accuracy: { from: 24.00, to: 26.00, percent: 4.0, ul: 1.0 }, precision: { percent: 1.6, ul: 0.4 } }
+            },
+            'P-50': {
+                5: { accuracy: { from: 4.00, to: 6.00, percent: 20.0, ul: 1.0 }, precision: { percent: 8.0, ul: 0.4 } },
+                10: { accuracy: { from: 9.00, to: 11.00, percent: 10.0, ul: 1.0 }, precision: { percent: 4.0, ul: 0.4 } },
+                25: { accuracy: { from: 24.0, to: 26.0, percent: 4.0, ul: 1.0 }, precision: { percent: 1.6, ul: 0.4 } },
+                50: { accuracy: { from: 49.0, to: 51.0, percent: 2.0, ul: 1.0 }, precision: { percent: 0.8, ul: 0.4 } }
+            },
+            'P-100': {
+                10: { accuracy: { from: 8.4, to: 11.6, percent: 16.0, ul: 1.6 }, precision: { percent: 6.0, ul: 0.6 } },
+                20: { accuracy: { from: 18.4, to: 21.6, percent: 8.0, ul: 1.6 }, precision: { percent: 3.0, ul: 0.6 } },
+                50: { accuracy: { from: 48.4, to: 51.6, percent: 3.2, ul: 1.6 }, precision: { percent: 1.2, ul: 0.6 } },
+                100: { accuracy: { from: 98.4, to: 101.6, percent: 1.6, ul: 1.6 }, precision: { percent: 0.6, ul: 0.6 } }
+            },
+            'P-200': {
+                20: { accuracy: { from: 16.8, to: 23.2, percent: 16.0, ul: 3.2 }, precision: { percent: 6.0, ul: 1.2 } },
+                50: { accuracy: { from: 46.8, to: 53.2, percent: 6.4, ul: 3.2 }, precision: { percent: 2.4, ul: 1.2 } },
+                100: { accuracy: { from: 96.8, to: 103.2, percent: 3.2, ul: 3.2 }, precision: { percent: 1.2, ul: 1.2 } },
+                200: { accuracy: { from: 196.8, to: 203.2, percent: 1.6, ul: 3.2 }, precision: { percent: 0.6, ul: 1.2 } }
+            },
+            'P-250': {
+                25: { accuracy: { from: 17.0, to: 33.0, percent: 32.0, ul: 8.0 }, precision: { percent: 12.0, ul: 3.0 } },
+                50: { accuracy: { from: 42.0, to: 58.0, percent: 16.0, ul: 8.0 }, precision: { percent: 6.0, ul: 3.0 } },
+                150: { accuracy: { from: 142.0, to: 158.0, percent: 5.3, ul: 8.0 }, precision: { percent: 2.0, ul: 3.0 } },
+                250: { accuracy: { from: 242.0, to: 258.0, percent: 3.2, ul: 8.0 }, precision: { percent: 1.2, ul: 3.0 } }
+            },
+            'P-300': {
+                30: { accuracy: { from: 22.0, to: 38.0, percent: 26.7, ul: 8.0 }, precision: { percent: 10.0, ul: 3.0 } },
+                50: { accuracy: { from: 42.0, to: 58.0, percent: 16.0, ul: 8.0 }, precision: { percent: 6.0, ul: 3.0 } },
+                150: { accuracy: { from: 142.0, to: 158.0, percent: 5.3, ul: 8.0 }, precision: { percent: 2.0, ul: 3.0 } },
+                200: { accuracy: { from: 192.0, to: 208.0, percent: 4.0, ul: 8.0 }, precision: { percent: 1.5, ul: 3.0 } },
+                300: { accuracy: { from: 292.0, to: 308.0, percent: 2.7, ul: 8.0 }, precision: { percent: 1.0, ul: 3.0 } }
+            },
+            'P-500': {
+                50: { accuracy: { from: 42.0, to: 58.0, percent: 16.0, ul: 8.0 }, precision: { percent: 6.0, ul: 3.0 } },
+                100: { accuracy: { from: 92.0, to: 108.0, percent: 8.0, ul: 8.0 }, precision: { percent: 3.0, ul: 3.0 } },
+                250: { accuracy: { from: 242.0, to: 258.0, percent: 3.2, ul: 8.0 }, precision: { percent: 1.2, ul: 3.0 } },
+                500: { accuracy: { from: 492.0, to: 508.0, percent: 1.6, ul: 8.0 }, precision: { percent: 0.6, ul: 3.0 } }
+            },
+            'P-1000': {
+                100: { accuracy: { from: 84.0, to: 116.0, percent: 16.0, ul: 16.0 }, precision: { percent: 6.0, ul: 6.0 } },
+                200: { accuracy: { from: 184.0, to: 216.0, percent: 8.0, ul: 16.0 }, precision: { percent: 3.0, ul: 6.0 } },
+                500: { accuracy: { from: 484.0, to: 516.0, percent: 3.2, ul: 16.0 }, precision: { percent: 1.2, ul: 6.0 } },
+                1000: { accuracy: { from: 984.0, to: 1016.0, percent: 1.6, ul: 16.0 }, precision: { percent: 0.6, ul: 6.0 } }
+            },
+            'P-1200': {
+                120: { accuracy: { from: 88.0, to: 152.0, percent: 26.7, ul: 32.0 }, precision: { percent: 10.0, ul: 12.0 } },
+                250: { accuracy: { from: 218.0, to: 282.0, percent: 12.8, ul: 32.0 }, precision: { percent: 4.8, ul: 12.0 } },
+                600: { accuracy: { from: 568.0, to: 632.0, percent: 5.3, ul: 32.0 }, precision: { percent: 2.0, ul: 12.0 } },
+                1200: { accuracy: { from: 1168.0, to: 1232.0, percent: 2.7, ul: 32.0 }, precision: { percent: 1.0, ul: 12.0 } }
+            },
+            'P-1250': {
+                125: { accuracy: { from: 93.0, to: 157.0, percent: 25.6, ul: 32.0 }, precision: { percent: 9.6, ul: 12.0 } },
+                250: { accuracy: { from: 218.0, to: 282.0, percent: 12.8, ul: 32.0 }, precision: { percent: 4.8, ul: 12.0 } },
+                625: { accuracy: { from: 593.0, to: 657.0, percent: 5.1, ul: 32.0 }, precision: { percent: 1.9, ul: 12.0 } },
+                1250: { accuracy: { from: 1218.0, to: 1282.0, percent: 2.6, ul: 32.0 }, precision: { percent: 1.0, ul: 12.0 } }
+            },
+            'P-2000': {
+                200: { accuracy: { from: 168.0, to: 232.0, percent: 16.0, ul: 32.0 }, precision: { percent: 6.0, ul: 12.0 } },
+                400: { accuracy: { from: 368.0, to: 432.0, percent: 8.0, ul: 32.0 }, precision: { percent: 3.0, ul: 12.0 } },
+                1000: { accuracy: { from: 968.0, to: 1032.0, percent: 3.2, ul: 32.0 }, precision: { percent: 1.2, ul: 12.0 } },
+                2000: { accuracy: { from: 1968.0, to: 2032.0, percent: 1.6, ul: 32.0 }, precision: { percent: 0.6, ul: 12.0 } }
+            },
+            'P-5000': {
+                500: { accuracy: { from: 420.0, to: 580.0, percent: 16.0, ul: 80.0 }, precision: { percent: 6.0, ul: 30.0 } },
+                1000: { accuracy: { from: 920.0, to: 1080.0, percent: 8.0, ul: 80.0 }, precision: { percent: 3.0, ul: 30.0 } },
+                2500: { accuracy: { from: 2420.0, to: 2580.0, percent: 3.2, ul: 80.0 }, precision: { percent: 1.2, ul: 30.0 } },
+                5000: { accuracy: { from: 4920.0, to: 5080.0, percent: 1.6, ul: 80.0 }, precision: { percent: 0.6, ul: 30.0 } }
+            },
+            'P-10000': {
+                500: { accuracy: { from: 380.0, to: 620.0, percent: 24.0, ul: 120.0 }, precision: { percent: 12.0, ul: 60.0 } },
+                2000: { accuracy: { from: 1880.0, to: 2120.0, percent: 6.0, ul: 120.0 }, precision: { percent: 3.0, ul: 60.0 } },
+                5000: { accuracy: { from: 4880.0, to: 5120.0, percent: 2.4, ul: 120.0 }, precision: { percent: 1.2, ul: 60.0 } },
+                10000: { accuracy: { from: 9880.0, to: 10120.0, percent: 1.6, ul: 120.0 }, precision: { percent: 0.6, ul: 60.0 } }
+            }
+        };
+
         function getVolumePrecision(volume) {
             return volume <= 20 ? { step: 0.01, decimals: 2 } : { step: 0.1, decimals: 1 };
         }
@@ -643,8 +743,13 @@
                     }
                 });
 
-                // Render all pipettes
+                // Render all pipettes (add backward compatibility for old sessions)
                 pipettes.forEach(pipette => {
+                    // Add default channelType for old sessions
+                    if (!pipette.channelType) {
+                        pipette.channelType = 'single';
+                        pipette.channelCount = 1;
+                    }
                     renderPipette(pipette);
                     ['asFound', 'asLeft'].forEach(condition => {
                         ['low', 'mid', 'high'].forEach(point => {
@@ -858,6 +963,8 @@
                 volume: 100,
                 model: 'P-100',      // Keep this for ISO validation (volume range)
                 testVolume: 100,
+                channelType: 'single',  // 'single', 'multi-8ch', or 'multi-12ch'
+                channelCount: 1,        // 1, 8, or 12
                 measurements: {
                     asFound: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] },
                     asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
@@ -870,6 +977,119 @@
             renderPipette(pipette);
             updateProgress();
             debouncedAutoSave();
+        }
+
+        // Generate measurement table HTML based on channel type
+        function generateMeasurementTable(pipette, precision) {
+            if (pipette.channelType === 'single') {
+                return generateSingleChannelTable(pipette, precision);
+            } else {
+                return generateMultiChannelTable(pipette, precision);
+            }
+        }
+
+        // Single channel table (4 readings per test point)
+        function generateSingleChannelTable(pipette, precision) {
+            return `
+                <table class="measurement-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Test Point</th>
+                            <th colspan="4">As Found</th>
+                            <th colspan="4">As Left</th>
+                            <th rowspan="2">Status</th>
+                        </tr>
+                        <tr>
+                            <th>Reading 1</th>
+                            <th>Reading 2</th>
+                            <th>Reading 3</th>
+                            <th>Reading 4</th>
+                            <th>Reading 1</th>
+                            <th>Reading 2</th>
+                            <th>Reading 3</th>
+                            <th>Reading 4</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Low (${formatVolume(pipette.testVolume * 0.1, precision.decimals)} μL)</strong></td>
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5, precision.decimals)} μL)</strong></td>
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>High (${formatVolume(pipette.testVolume, precision.decimals)} μL)</strong></td>
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Multi-channel table (one reading per channel per test point)
+        function generateMultiChannelTable(pipette, precision) {
+            const channelCount = pipette.channelCount;
+            const testPoints = [
+                { name: 'Low', key: 'low', volume: pipette.testVolume * 0.1 },
+                { name: 'Mid', key: 'mid', volume: pipette.testVolume * 0.5 },
+                { name: 'High', key: 'high', volume: pipette.testVolume }
+            ];
+
+            let rows = '';
+            for (let ch = 0; ch < channelCount; ch++) {
+                rows += `
+                    <tr>
+                        <td><strong>Channel ${ch + 1}</strong></td>
+                        ${testPoints.map(point => `
+                            <td><input type="number" step="${precision.step}" class="measurement-input"
+                                onchange="updateMeasurement(${pipette.id}, 'asFound', '${point.key}', ${ch}, this.value)"
+                                value="${pipette.measurements.asFound[point.key][ch] || ''}"
+                                placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}">
+                            </td>
+                        `).join('')}
+                        ${testPoints.map(point => `
+                            <td><input type="number" step="${precision.step}" class="measurement-input"
+                                onchange="updateMeasurement(${pipette.id}, 'asLeft', '${point.key}', ${ch}, this.value)"
+                                value="${pipette.measurements.asLeft[point.key][ch] || ''}"
+                                placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}">
+                            </td>
+                        `).join('')}
+                        <td><span id="status-channel${ch + 1}-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                    </tr>
+                `;
+            }
+
+            return `
+                <table class="measurement-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Channel</th>
+                            <th colspan="3">As Found</th>
+                            <th colspan="3">As Left</th>
+                            <th rowspan="2">Status</th>
+                        </tr>
+                        <tr>
+                            <th>Low (${formatVolume(testPoints[0].volume, precision.decimals)} μL)</th>
+                            <th>Mid (${formatVolume(testPoints[1].volume, precision.decimals)} μL)</th>
+                            <th>High (${formatVolume(testPoints[2].volume, precision.decimals)} μL)</th>
+                            <th>Low (${formatVolume(testPoints[0].volume, precision.decimals)} μL)</th>
+                            <th>Mid (${formatVolume(testPoints[1].volume, precision.decimals)} μL)</th>
+                            <th>High (${formatVolume(testPoints[2].volume, precision.decimals)} μL)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
         }
 
         function renderPipette(pipette) {
@@ -900,6 +1120,14 @@
                     <div class="form-group">
                         <label>Brand</label>
                         <input type="text" value="${pipette.brand}" onchange="updatePipetteInfo(${pipette.id}, 'brand', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Channel Type</label>
+                        <select onchange="updateChannelType(${pipette.id}, this.value)">
+                            <option value="single" ${pipette.channelType === 'single' ? 'selected' : ''}>Single Channel</option>
+                            <option value="multi-8ch" ${pipette.channelType === 'multi-8ch' ? 'selected' : ''}>Multi-Channel (8ch)</option>
+                            <option value="multi-12ch" ${pipette.channelType === 'multi-12ch' ? 'selected' : ''}>Multi-Channel (12ch)</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Model</label>
@@ -943,64 +1171,7 @@
                     </div>
                 </div>
 
-                <table class="measurement-table">
-                    <thead>
-                        <tr>
-                            <th rowspan="2">Test Point</th>
-                            <th colspan="4">As Found</th>
-                            <th colspan="4">As Left</th>
-                            <th rowspan="2">Status</th>
-                        </tr>
-                        <tr>
-                            <th>Reading 1</th>
-                            <th>Reading 2</th>
-                            <th>Reading 3</th>
-                            <th>Reading 4</th>
-                            <th>Reading 1</th>
-                            <th>Reading 2</th>
-                            <th>Reading 3</th>
-                            <th>Reading 4</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Low (${formatVolume(pipette.testVolume * 0.1, precision.decimals)} μL)</strong></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 0, this.value)" value="${pipette.measurements.asFound.low[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 1, this.value)" value="${pipette.measurements.asFound.low[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 2, this.value)" value="${pipette.measurements.asFound.low[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', 3, this.value)" value="${pipette.measurements.asFound.low[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 0, this.value)" value="${pipette.measurements.asLeft.low[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 1, this.value)" value="${pipette.measurements.asLeft.low[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 2, this.value)" value="${pipette.measurements.asLeft.low[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', 3, this.value)" value="${pipette.measurements.asLeft.low[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><span id="status-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5, precision.decimals)} μL)</strong></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 0, this.value)" value="${pipette.measurements.asFound.mid[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 1, this.value)" value="${pipette.measurements.asFound.mid[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 2, this.value)" value="${pipette.measurements.asFound.mid[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', 3, this.value)" value="${pipette.measurements.asFound.mid[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 0, this.value)" value="${pipette.measurements.asLeft.mid[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 1, this.value)" value="${pipette.measurements.asLeft.mid[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 2, this.value)" value="${pipette.measurements.asLeft.mid[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', 3, this.value)" value="${pipette.measurements.asLeft.mid[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><span id="status-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>High (${formatVolume(pipette.testVolume, precision.decimals)} μL)</strong></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 0, this.value)" value="${pipette.measurements.asFound.high[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 1, this.value)" value="${pipette.measurements.asFound.high[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 2, this.value)" value="${pipette.measurements.asFound.high[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', 3, this.value)" value="${pipette.measurements.asFound.high[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 0, this.value)" value="${pipette.measurements.asLeft.high[0] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 1, this.value)" value="${pipette.measurements.asLeft.high[1] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 2, this.value)" value="${pipette.measurements.asLeft.high[2] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', 3, this.value)" value="${pipette.measurements.asLeft.high[3] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>
-                            <td><span id="status-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+                ${generateMeasurementTable(pipette, precision)}
 
                 <div id="calculations-${pipette.id}">
                     <!-- Real-time calculations will appear here -->
@@ -1040,9 +1211,45 @@
                 const ranges = getVolumeRanges(newModel);
                 pipette.volume = ranges[ranges.length - 1];
                 pipette.testVolume = pipette.volume;
-                
+
                 document.getElementById(`pipette-${pipetteId}`).remove();
                 renderPipette(pipette);
+            }
+        }
+
+        function updateChannelType(pipetteId, newChannelType) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.channelType = newChannelType;
+
+                // Update channel count based on type
+                if (newChannelType === 'single') {
+                    pipette.channelCount = 1;
+                    // Reset to 4-reading format for single channel
+                    pipette.measurements = {
+                        asFound: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] },
+                        asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
+                    };
+                } else if (newChannelType === 'multi-8ch') {
+                    pipette.channelCount = 8;
+                    // Create 8-channel format (one reading per channel per test point)
+                    pipette.measurements = {
+                        asFound: { low: ['', '', '', '', '', '', '', ''], mid: ['', '', '', '', '', '', '', ''], high: ['', '', '', '', '', '', '', ''] },
+                        asLeft: { low: ['', '', '', '', '', '', '', ''], mid: ['', '', '', '', '', '', '', ''], high: ['', '', '', '', '', '', '', ''] }
+                    };
+                } else if (newChannelType === 'multi-12ch') {
+                    pipette.channelCount = 12;
+                    // Create 12-channel format (one reading per channel per test point)
+                    pipette.measurements = {
+                        asFound: { low: ['', '', '', '', '', '', '', '', '', '', '', ''], mid: ['', '', '', '', '', '', '', '', '', '', '', ''], high: ['', '', '', '', '', '', '', '', '', '', '', ''] },
+                        asLeft: { low: ['', '', '', '', '', '', '', '', '', '', '', ''], mid: ['', '', '', '', '', '', '', '', '', '', '', ''], high: ['', '', '', '', '', '', '', '', '', '', '', ''] }
+                    };
+                }
+
+                // Re-render the pipette card with new layout
+                document.getElementById(`pipette-${pipetteId}`).remove();
+                renderPipette(pipette);
+                debouncedAutoSave();
             }
         }
 
@@ -1079,11 +1286,22 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (!pipette) return;
 
+            if (pipette.channelType === 'single') {
+                validateSingleChannel(pipetteId, condition, point);
+            } else {
+                validateMultiChannel(pipetteId, condition, point);
+            }
+        }
+
+        function validateSingleChannel(pipetteId, condition, point) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) return;
+
             const measurements = pipette.measurements[condition][point];
             if (measurements.filter(m => m !== '').length < 4) return;
 
             const nominalVolume = getNominalVolume(pipette.testVolume, point);
-            const specs = getSpecifications(pipette.model, nominalVolume);
+            const specs = getSpecifications(pipette.model, nominalVolume, false);
 
             if (!specs) return;
 
@@ -1127,17 +1345,66 @@
             });
         }
 
+        function validateMultiChannel(pipetteId, condition, point) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) return;
+
+            // For multi-channel, we validate each channel individually
+            // Each channel has ONE measurement per test point
+            const testPoints = ['low', 'mid', 'high'];
+
+            for (let ch = 0; ch < pipette.channelCount; ch++) {
+                // Check if all test points for this channel have data
+                const hasAllData = testPoints.every(tp => {
+                    const val = pipette.measurements[condition][tp][ch];
+                    return val !== '' && val !== null && val !== undefined;
+                });
+
+                if (!hasAllData) continue;
+
+                // Collect measurements for this channel across all test points
+                const channelMeasurements = testPoints.map(tp => pipette.measurements[condition][tp][ch]);
+
+                // Get specs for high volume (most restrictive)
+                const nominalVolume = getNominalVolume(pipette.testVolume, 'high');
+                const specs = getSpecifications(pipette.model, nominalVolume, true);
+
+                if (!specs) continue;
+
+                // For multi-channel, check each individual measurement against accuracy
+                const allPass = channelMeasurements.every((measurement, idx) => {
+                    const nomVol = getNominalVolume(pipette.testVolume, testPoints[idx]);
+                    return measurement >= specs.accuracy.from && measurement <= specs.accuracy.to;
+                });
+
+                const statusElement = document.getElementById(`status-channel${ch + 1}-${pipetteId}`);
+                if (statusElement) {
+                    statusElement.className = `status-badge status-${allPass ? 'pass' : 'fail'}`;
+                    statusElement.textContent = allPass ? 'PASS' : 'FAIL';
+                }
+
+                // Update input styling for this channel
+                testPoints.forEach(tp => {
+                    const input = document.querySelector(`#pipette-${pipetteId} input[onchange*="${condition}"][onchange*="${tp}"][onchange*="${ch}"]`);
+                    if (input) {
+                        input.className = `measurement-input ${allPass ? 'pass' : 'fail'}`;
+                    }
+                });
+            }
+        }
+
         function getNominalVolume(testVolume, point) {
             const multipliers = { low: 0.1, mid: 0.5, high: 1.0 };
             return testVolume * multipliers[point];
         }
 
-        function getSpecifications(model, volume) {
-            const modelSpecs = isoSpecs[model];
+        function getSpecifications(model, volume, isMultiChannel = false) {
+            const specsDatabase = isMultiChannel ? isoSpecsMulti : isoSpecs;
+            const modelSpecs = specsDatabase[model];
             if (!modelSpecs) return null;
 
             const volumes = Object.keys(modelSpecs).map(v => parseFloat(v));
-            const closest = volumes.reduce((prev, curr) => 
+            const closest = volumes.reduce((prev, curr) =>
                 Math.abs(curr - volume) < Math.abs(prev - volume) ? curr : prev
             );
 
@@ -1289,6 +1556,8 @@
                     model: 'P-100',
                     volume: 100,
                     testVolume: 100,
+                    channelType: 'single',
+                    channelCount: 1,
                     measurements: {
                         asFound: {
                             low: [9.96, 9.97, 9.98, 9.95],
@@ -1311,6 +1580,8 @@
                     model: 'P-100',
                     volume: 100,
                     testVolume: 100,
+                    channelType: 'single',
+                    channelCount: 1,
                     measurements: {
                         asFound: {
                             low: [20.15, 20.2, 19.99, 20.05],
@@ -1332,6 +1603,8 @@
                     model: 'P-100',
                     volume: 100,
                     testVolume: 100,
+                    channelType: 'single',
+                    channelCount: 1,
                     measurements: {
                         asFound: {
                             low: [19.78, 19.74, 19.81, 19.77],
@@ -1344,6 +1617,30 @@
                             high: [99.9, 99.8, 99.9, 99.85]
                         }
                     }
+                },
+                {
+                    number: 'EQ-CPL-PIPS-M-008',
+                    brand: 'Eppendorf',
+                    pipetteModel: 'Research Plus 8-channel',
+                    serial: 'M8151234',
+                    model: 'P-100',
+                    volume: 100,
+                    testVolume: 100,
+                    channelType: 'multi-8ch',
+                    channelCount: 8,
+                    measurements: {
+                        asFound: {
+                            low: [10.1, 9.9, 10.0, 9.95, 10.05, 9.92, 10.08, 9.98],
+                            mid: [50.2, 49.8, 50.1, 49.9, 50.0, 49.95, 50.05, 49.85],
+                            high: [100.5, 99.7, 100.2, 99.8, 100.0, 99.9, 100.1, 99.95]
+                        },
+                        asLeft: {
+                            low: [10.0, 9.98, 10.02, 9.97, 10.01, 9.99, 10.03, 9.96],
+                            mid: [50.1, 49.9, 50.05, 49.95, 50.0, 49.98, 50.02, 49.92],
+                            high: [100.2, 99.9, 100.1, 99.95, 100.0, 99.98, 100.05, 99.92]
+                        }
+                    },
+                    comments: 'Multi-channel calibrated'
                 }
             ];
 
@@ -1535,43 +1832,37 @@
             csv += `Cal Due:,${sessionInfo.dueDate},Frequency:,${sessionInfo.frequency},,,,,Temp:,${sessionInfo.temperature},Bal Due Date:,${sessionInfo.balanceDueDate}\n`;
             csv += `\n`;
 
-            // Process pipettes in pairs (2 per row)
-            for (let i = 0; i < pipettes.length; i += 2) {
-                const pipette1 = pipettes[i];
-                const pipette2 = pipettes[i + 1] || null;
-
-                // Column headers
-                csv += `,As Found,Low,Mid,High,,As Left,Low,Mid,High,,,,As Found,Low,Mid,High,,As Left,Low,Mid,High\n`;
-
-                // Pipette info
-                csv += `Pipette #:,${pipette1.number},,,,,,,,,,Pipette #:,${pipette2 ? pipette2.number : ''},,,,\n`;
-                csv += `Brand:,${pipette1.brand},,,,,,,,,,Brand:,${pipette2 ? pipette2.brand : ''},,,,\n`;
-                csv += `Serial#:,${pipette1.serial},,,,,,,,,,Serial#:,${pipette2 ? pipette2.serial : ''},,,,\n`;
-                csv += `Vol:,${pipette1.testVolume},,,,,,,,,,Vol:,${pipette2 ? pipette2.testVolume : ''},,,,\n`;
-
-                // Measurements for pipette 1
-                const p1AsFoundLow = pipette1.measurements.asFound.low.join(',');
-                const p1AsFoundMid = pipette1.measurements.asFound.mid.join(',');
-                const p1AsFoundHigh = pipette1.measurements.asFound.high.join(',');
-                const p1AsLeftLow = pipette1.measurements.asLeft.low.join(',');
-                const p1AsLeftMid = pipette1.measurements.asLeft.mid.join(',');
-                const p1AsLeftHigh = pipette1.measurements.asLeft.high.join(',');
-
-                // Measurements for pipette 2 (if exists)
-                const p2AsFoundLow = pipette2 ? pipette2.measurements.asFound.low.join(',') : ',,,';
-                const p2AsFoundMid = pipette2 ? pipette2.measurements.asFound.mid.join(',') : ',,,';
-                const p2AsFoundHigh = pipette2 ? pipette2.measurements.asFound.high.join(',') : ',,,';
-                const p2AsLeftLow = pipette2 ? pipette2.measurements.asLeft.low.join(',') : ',,,';
-                const p2AsLeftMid = pipette2 ? pipette2.measurements.asLeft.mid.join(',') : ',,,';
-                const p2AsLeftHigh = pipette2 ? pipette2.measurements.asLeft.high.join(',') : ',,,';
-
-                csv += `Low:,${p1AsFoundLow},,${p1AsLeftLow},,,,Low:,${p2AsFoundLow},,${p2AsLeftLow}\n`;
-                csv += `Mid:,${p1AsFoundMid},,${p1AsLeftMid},,,,Mid:,${p2AsFoundMid},,${p2AsLeftMid}\n`;
-                csv += `High:,${p1AsFoundHigh},,${p1AsLeftHigh},,,,High:,${p2AsFoundHigh},,${p2AsLeftHigh}\n`;
-
-                csv += `Comments:,${pipette1.comments || ''},,,,,,,,,,Comments:,${pipette2 ? pipette2.comments || '' : ''},,,,\n`;
+            // Export each pipette separately (single and multi-channel have different formats)
+            pipettes.forEach((pipette, idx) => {
+                csv += `\n--- Pipette ${idx + 1} ---\n`;
+                csv += `Pipette #:,${pipette.number}\n`;
+                csv += `Brand:,${pipette.brand}\n`;
+                csv += `Serial#:,${pipette.serial}\n`;
+                csv += `Vol:,${pipette.testVolume}\n`;
+                csv += `Type:,${pipette.channelType === 'single' ? 'Single Channel' : `Multi-Channel (${pipette.channelCount}ch)`}\n`;
                 csv += `\n`;
-            }
+
+                if (pipette.channelType === 'single') {
+                    // Single channel format
+                    csv += `,As Found,,,,,As Left,,,\n`;
+                    csv += `,Low,Mid,High,,Low,Mid,High\n`;
+                    for (let i = 0; i < 4; i++) {
+                        csv += `Reading ${i + 1},${pipette.measurements.asFound.low[i] || ''},${pipette.measurements.asFound.mid[i] || ''},${pipette.measurements.asFound.high[i] || ''},,`;
+                        csv += `${pipette.measurements.asLeft.low[i] || ''},${pipette.measurements.asLeft.mid[i] || ''},${pipette.measurements.asLeft.high[i] || ''}\n`;
+                    }
+                } else {
+                    // Multi-channel format
+                    csv += `Channel,As Found Low,As Found Mid,As Found High,As Left Low,As Left Mid,As Left High\n`;
+                    for (let ch = 0; ch < pipette.channelCount; ch++) {
+                        csv += `Channel ${ch + 1},`;
+                        csv += `${pipette.measurements.asFound.low[ch] || ''},${pipette.measurements.asFound.mid[ch] || ''},${pipette.measurements.asFound.high[ch] || ''},`;
+                        csv += `${pipette.measurements.asLeft.low[ch] || ''},${pipette.measurements.asLeft.mid[ch] || ''},${pipette.measurements.asLeft.high[ch] || ''}\n`;
+                    }
+                }
+
+                csv += `Comments:,"${pipette.comments || ''}"\n`;
+                csv += `\n`;
+            });
 
             // Download CSV
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1587,41 +1878,77 @@
             const sessionInfo = getSessionInfo();
             let csv = '';
 
-            // CSV Headers
-            csv += 'Date,Technician,Location,Client,Pipette Number,Brand,Model,Serial,Volume,Test Point,Condition,Reading 1,Reading 2,Reading 3,Reading 4,Mean,CV%,SD,Status,Comments\n';
+            // CSV Headers - flexible for both single and multi-channel
+            csv += 'Date,Technician,Location,Client,Pipette Number,Brand,Model,Serial,Volume,Channel Type,Channel,Test Point,Condition,Measurement,Status,Comments\n';
 
             // Data rows
             pipettes.forEach(pipette => {
-                ['low', 'mid', 'high'].forEach(point => {
-                    ['asFound', 'asLeft'].forEach(condition => {
-                        const measurements = pipette.measurements[condition][point];
-                        if (measurements.filter(m => m !== '').length === 4) {
-                            const mean = measurements.reduce((a, b) => a + b, 0) / 4;
-                            const cv = calculateCV(measurements);
-                            const sd = calculateSD(measurements);
+                if (pipette.channelType === 'single') {
+                    // Single channel: 4 readings per test point
+                    ['low', 'mid', 'high'].forEach(point => {
+                        ['asFound', 'asLeft'].forEach(condition => {
+                            const measurements = pipette.measurements[condition][point];
+                            if (measurements.filter(m => m !== '').length === 4) {
+                                const mean = measurements.reduce((a, b) => a + b, 0) / 4;
+                                const cv = calculateCV(measurements);
+                                const sd = calculateSD(measurements);
 
-                            const nominalVolume = getNominalVolume(pipette.testVolume, point);
-                            const specs = getSpecifications(pipette.model, nominalVolume);
+                                const nominalVolume = getNominalVolume(pipette.testVolume, point);
+                                const specs = getSpecifications(pipette.model, nominalVolume, false);
 
-                            let status = 'PENDING';
-                            if (specs) {
-                                const accuracyPass = measurements.every(reading =>
-                                    reading >= specs.accuracy.from && reading <= specs.accuracy.to
-                                );
-                                const cvPass = cv <= specs.precision.percent;
-                                const sdPass = sd <= specs.precision.ul;
-                                const precisionPass = cvPass || sdPass;
-                                status = (accuracyPass && precisionPass) ? 'PASS' : 'FAIL';
+                                let status = 'PENDING';
+                                if (specs) {
+                                    const accuracyPass = measurements.every(reading =>
+                                        reading >= specs.accuracy.from && reading <= specs.accuracy.to
+                                    );
+                                    const cvPass = cv <= specs.precision.percent;
+                                    const sdPass = sd <= specs.precision.ul;
+                                    const precisionPass = cvPass || sdPass;
+                                    status = (accuracyPass && precisionPass) ? 'PASS' : 'FAIL';
+                                }
+
+                                // One row per reading
+                                measurements.forEach((reading, idx) => {
+                                    csv += `${sessionInfo.calDate},${sessionInfo.technician},${sessionInfo.location},${sessionInfo.client},`;
+                                    csv += `${pipette.number},${pipette.brand},${pipette.model},${pipette.serial},${pipette.testVolume},`;
+                                    csv += `Single,Reading ${idx + 1},${point.toUpperCase()},${condition === 'asFound' ? 'As Found' : 'As Left'},`;
+                                    csv += `${reading},${status},"${pipette.comments || ''}"\n`;
+                                });
                             }
+                        });
+                    });
+                } else {
+                    // Multi-channel: one reading per channel per test point
+                    ['asFound', 'asLeft'].forEach(condition => {
+                        for (let ch = 0; ch < pipette.channelCount; ch++) {
+                            const lowVal = pipette.measurements[condition].low[ch];
+                            const midVal = pipette.measurements[condition].mid[ch];
+                            const highVal = pipette.measurements[condition].high[ch];
 
-                            csv += `${sessionInfo.calDate},${sessionInfo.technician},${sessionInfo.location},${sessionInfo.client},`;
-                            csv += `${pipette.number},${pipette.brand},${pipette.model},${pipette.serial},${pipette.testVolume},`;
-                            csv += `${point.toUpperCase()},${condition === 'asFound' ? 'As Found' : 'As Left'},`;
-                            csv += `${measurements[0]},${measurements[1]},${measurements[2]},${measurements[3]},`;
-                            csv += `${mean.toFixed(2)},${cv.toFixed(2)},${sd.toFixed(3)},${status},"${pipette.comments || ''}"\n`;
+                            if (lowVal !== '' && midVal !== '' && highVal !== '') {
+                                const nominalVolume = getNominalVolume(pipette.testVolume, 'high');
+                                const specs = getSpecifications(pipette.model, nominalVolume, true);
+
+                                let status = 'PENDING';
+                                if (specs) {
+                                    const allPass = [lowVal, midVal, highVal].every(val =>
+                                        val >= specs.accuracy.from && val <= specs.accuracy.to
+                                    );
+                                    status = allPass ? 'PASS' : 'FAIL';
+                                }
+
+                                // One row per test point per channel
+                                ['low', 'mid', 'high'].forEach(point => {
+                                    const val = pipette.measurements[condition][point][ch];
+                                    csv += `${sessionInfo.calDate},${sessionInfo.technician},${sessionInfo.location},${sessionInfo.client},`;
+                                    csv += `${pipette.number},${pipette.brand},${pipette.model},${pipette.serial},${pipette.testVolume},`;
+                                    csv += `Multi-${pipette.channelCount}ch,Channel ${ch + 1},${point.toUpperCase()},${condition === 'asFound' ? 'As Found' : 'As Left'},`;
+                                    csv += `${val},${status},"${pipette.comments || ''}"\n`;
+                                });
+                            }
                         }
                     });
-                });
+                }
             });
 
             // Download CSV
