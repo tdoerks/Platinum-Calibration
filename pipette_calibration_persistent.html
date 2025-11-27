@@ -663,6 +663,11 @@
         }
 
         function formatVolume(value, decimals) {
+            // Auto-determine decimal places based on volume if not specified
+            if (decimals === undefined) {
+                const precision = getVolumePrecision(parseFloat(value));
+                decimals = precision.decimals;
+            }
             return parseFloat(value).toFixed(decimals);
         }
 
@@ -1012,19 +1017,19 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>Low (${formatVolume(pipette.testVolume * 0.1, precision.decimals)} μL)</strong></td>
+                            <td><strong>Low (${formatVolume(pipette.testVolume * 0.2)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
-                            <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5, precision.decimals)} μL)</strong></td>
+                            <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
-                            <td><strong>High (${formatVolume(pipette.testVolume, precision.decimals)} μL)</strong></td>
+                            <td><strong>High (${formatVolume(pipette.testVolume)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
@@ -1077,12 +1082,12 @@
                             <th rowspan="2">Status</th>
                         </tr>
                         <tr>
-                            <th>Low (${formatVolume(testPoints[0].volume, precision.decimals)} μL)</th>
-                            <th>Mid (${formatVolume(testPoints[1].volume, precision.decimals)} μL)</th>
-                            <th>High (${formatVolume(testPoints[2].volume, precision.decimals)} μL)</th>
-                            <th>Low (${formatVolume(testPoints[0].volume, precision.decimals)} μL)</th>
-                            <th>Mid (${formatVolume(testPoints[1].volume, precision.decimals)} μL)</th>
-                            <th>High (${formatVolume(testPoints[2].volume, precision.decimals)} μL)</th>
+                            <th>Low (${formatVolume(testPoints[0].volume)} μL)</th>
+                            <th>Mid (${formatVolume(testPoints[1].volume)} μL)</th>
+                            <th>High (${formatVolume(testPoints[2].volume)} μL)</th>
+                            <th>Low (${formatVolume(testPoints[0].volume)} μL)</th>
+                            <th>Mid (${formatVolume(testPoints[1].volume)} μL)</th>
+                            <th>High (${formatVolume(testPoints[2].volume)} μL)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1437,17 +1442,17 @@
             }
 
             const precision = getVolumePrecision(data.nominal);
-            const readings = data.measurements.map(val => formatVolume(val, precision.decimals)).join(', ');
+            const readings = data.measurements.map(val => formatVolume(val)).join(', ');
 
             calculationsDiv.innerHTML = `
-                <strong>${point.toUpperCase()} (${formatVolume(data.nominal, precision.decimals)} μL):</strong><br>
-                Readings: ${readings} μL | Mean: ${formatVolume(data.mean, precision.decimals + 1)} μL<br>
-                <strong>Accuracy:</strong> Range ${formatVolume(data.specs.accuracy.from, precision.decimals)}-${formatVolume(data.specs.accuracy.to, precision.decimals)} μL
+                <strong>${point.toUpperCase()} (${formatVolume(data.nominal)} μL):</strong><br>
+                Readings: ${readings} μL | Mean: ${formatVolume(data.mean)} μL<br>
+                <strong>Accuracy:</strong> Range ${formatVolume(data.specs.accuracy.from)}-${formatVolume(data.specs.accuracy.to)} μL
                 <span style="color: ${data.accuracyPass ? 'green' : 'red'}; font-weight: bold;"> ${data.accuracyPass ? '✓ PASS' : '✗ FAIL'}</span><br>
                 <strong>Precision (ISO 8655 - pass if EITHER criterion met):</strong><br>
                 &nbsp;&nbsp;• CV: ${data.cv.toFixed(2)}% (Limit: ≤${data.specs.precision.percent}%)
                 <span style="color: ${data.cvPass ? 'green' : 'red'}; font-weight: bold;"> ${data.cvPass ? '✓' : '✗'}</span><br>
-                &nbsp;&nbsp;• SD: ${formatVolume(data.sd, precision.decimals + 1)} μL (Limit: ≤${data.specs.precision.ul} μL)
+                &nbsp;&nbsp;• SD: ${formatVolume(data.sd)} μL (Limit: ≤${data.specs.precision.ul} μL)
                 <span style="color: ${data.sdPass ? 'green' : 'red'}; font-weight: bold;"> ${data.sdPass ? '✓' : '✗'}</span><br>
                 &nbsp;&nbsp;<strong>Overall Precision: <span style="color: ${data.precisionPass ? 'green' : 'red'};">${data.precisionPass ? '✓ PASS' : '✗ FAIL'}</span></strong>
             `;
