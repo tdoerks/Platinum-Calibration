@@ -1003,8 +1003,9 @@
                         <tr>
                             <th rowspan="2">Test Point</th>
                             <th colspan="4">As Found</th>
+                            <th rowspan="2">As Found<br>Pass/Fail</th>
                             <th colspan="4">As Left</th>
-                            <th rowspan="2">Status</th>
+                            <th rowspan="2">As Left<br>Pass/Fail</th>
                         </tr>
                         <tr>
                             <th>Reading 1</th>
@@ -1021,20 +1022,23 @@
                         <tr>
                             <td><strong>Low (${formatVolume(pipette.testVolume * 0.2)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-asFound-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
-                            <td><span id="status-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                            <td><span id="status-asLeft-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
                             <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-asFound-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
-                            <td><span id="status-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                            <td><span id="status-asLeft-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
                             <td><strong>High (${formatVolume(pipette.testVolume)} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            <td><span id="status-asFound-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
-                            <td><span id="status-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                            <td><span id="status-asLeft-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                     </tbody>
                 </table>
@@ -1327,9 +1331,12 @@
 
             const overallPass = accuracyPass && precisionPass;
 
-            const statusElement = document.getElementById(`status-${point}-${pipetteId}`);
-            statusElement.className = `status-badge status-${overallPass ? 'pass' : 'fail'}`;
-            statusElement.textContent = overallPass ? 'PASS' : 'FAIL';
+            // Update the appropriate status badge based on condition (asFound or asLeft)
+            const statusElement = document.getElementById(`status-${condition}-${point}-${pipetteId}`);
+            if (statusElement) {
+                statusElement.className = `status-badge status-${overallPass ? 'pass' : 'fail'}`;
+                statusElement.textContent = overallPass ? 'PASS' : 'FAIL';
+            }
 
             measurements.forEach((_, index) => {
                 const input = document.querySelector(`#pipette-${pipetteId} input[onchange*="${condition}"][onchange*="${point}"][onchange*="${index}"]`);
@@ -1464,9 +1471,9 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (!pipette) return;
 
-            // Check As Found status
+            // Check As Found status - look at asFound status badges
             const asFoundElements = ['low', 'mid', 'high'].map(point =>
-                document.getElementById(`status-${point}-${pipetteId}`)
+                document.getElementById(`status-asFound-${point}-${pipetteId}`)
             );
             const asFoundTested = asFoundElements.every(el => el && el.textContent !== 'PENDING');
             const asFoundPass = asFoundElements.every(el => el && el.textContent === 'PASS');
@@ -1477,10 +1484,9 @@
                 pipette.statusAsFound = 'pending';
             }
 
-            // Check As Left status (assuming same status elements for now - will be updated based on actual measurements)
-            // For now, we'll calculate this based on as-left measurements
+            // Check As Left status - look at asLeft status badges
             const asLeftElements = ['low', 'mid', 'high'].map(point =>
-                document.getElementById(`status-${point}-${pipetteId}`)
+                document.getElementById(`status-asLeft-${point}-${pipetteId}`)
             );
             const asLeftTested = asLeftElements.every(el => el && el.textContent !== 'PENDING');
             const asLeftPass = asLeftElements.every(el => el && el.textContent === 'PASS');
