@@ -975,7 +975,9 @@
                     asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
                 },
                 comments: '',
-                status: 'pending'
+                status: 'pending',         // Overall status for compatibility
+                statusAsFound: 'pending',  // As Found pass/fail status
+                statusAsLeft: 'pending'    // As Left pass/fail status
             };
 
             pipettes.push(pipette);
@@ -1462,23 +1464,46 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (!pipette) return;
 
-            const statusElements = ['low', 'mid', 'high'].map(point => 
+            // Check As Found status
+            const asFoundElements = ['low', 'mid', 'high'].map(point =>
                 document.getElementById(`status-${point}-${pipetteId}`)
             );
+            const asFoundTested = asFoundElements.every(el => el && el.textContent !== 'PENDING');
+            const asFoundPass = asFoundElements.every(el => el && el.textContent === 'PASS');
 
-            const allTested = statusElements.every(el => el && el.textContent !== 'PENDING');
-            const allPass = statusElements.every(el => el && el.textContent === 'PASS');
-
-            if (allTested) {
-                pipette.status = allPass ? 'pass' : 'fail';
+            if (asFoundTested) {
+                pipette.statusAsFound = asFoundPass ? 'pass' : 'fail';
             } else {
-                pipette.status = 'pending';
+                pipette.statusAsFound = 'pending';
             }
+
+            // Check As Left status (assuming same status elements for now - will be updated based on actual measurements)
+            // For now, we'll calculate this based on as-left measurements
+            const asLeftElements = ['low', 'mid', 'high'].map(point =>
+                document.getElementById(`status-${point}-${pipetteId}`)
+            );
+            const asLeftTested = asLeftElements.every(el => el && el.textContent !== 'PENDING');
+            const asLeftPass = asLeftElements.every(el => el && el.textContent === 'PASS');
+
+            if (asLeftTested) {
+                pipette.statusAsLeft = asLeftPass ? 'pass' : 'fail';
+            } else {
+                pipette.statusAsLeft = 'pending';
+            }
+
+            // Overall status (as-left takes precedence - final status after calibration)
+            pipette.status = pipette.statusAsLeft;
 
             const overallStatus = document.getElementById(`status-${pipetteId}`);
             if (overallStatus) {
+                // Show both statuses
+                const asFoundBadge = pipette.statusAsFound === 'pass' ? '✅ As Found: PASS' :
+                                    pipette.statusAsFound === 'fail' ? '❌ As Found: FAIL' : '⏳ As Found: PENDING';
+                const asLeftBadge = pipette.statusAsLeft === 'pass' ? '✅ As Left: PASS' :
+                                   pipette.statusAsLeft === 'fail' ? '❌ As Left: FAIL' : '⏳ As Left: PENDING';
+
                 overallStatus.className = `status-badge status-${pipette.status}`;
-                overallStatus.textContent = pipette.status.toUpperCase();
+                overallStatus.innerHTML = `<div style="font-size: 0.9em;">${asFoundBadge}</div><div style="font-size: 0.9em; margin-top: 4px;">${asLeftBadge}</div>`;
             }
         }
 
