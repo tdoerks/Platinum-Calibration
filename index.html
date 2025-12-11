@@ -1020,21 +1020,21 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>Low (${formatVolume(pipette.testVolume * 0.2)} μL)</strong></td>
+                            <td><strong>Low (${formatVolume(getNominalVolume('low', pipette.model))} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asLeft-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
-                            <td><strong>Mid (${formatVolume(pipette.testVolume * 0.5)} μL)</strong></td>
+                            <td><strong>Mid (${formatVolume(getNominalVolume('mid', pipette.model))} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asLeft-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
-                            <td><strong>High (${formatVolume(pipette.testVolume)} μL)</strong></td>
+                            <td><strong>High (${formatVolume(getNominalVolume('high', pipette.model))} μL)</strong></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                             ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
@@ -1049,9 +1049,9 @@
         function generateMultiChannelTable(pipette, precision) {
             const channelCount = pipette.channelCount;
             const testPoints = [
-                { name: 'Low', key: 'low', volume: pipette.testVolume * 0.1 },
-                { name: 'Mid', key: 'mid', volume: pipette.testVolume * 0.5 },
-                { name: 'High', key: 'high', volume: pipette.testVolume }
+                { name: 'Low', key: 'low', volume: getNominalVolume('low', pipette.model) },
+                { name: 'Mid', key: 'mid', volume: getNominalVolume('mid', pipette.model) },
+                { name: 'High', key: 'high', volume: getNominalVolume('high', pipette.model) }
             ];
 
             let rows = '';
@@ -1168,12 +1168,6 @@
                             <option value="P-2000" ${pipette.model === 'P-2000' ? 'selected' : ''}>P-2000 (500-2000 μL)</option>
                             <option value="P-5000" ${pipette.model === 'P-5000' ? 'selected' : ''}>P-5000 (1000-5000 μL)</option>
                             <option value="P-10000" ${pipette.model === 'P-10000' ? 'selected' : ''}>P-10000 (2000-10000 μL)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Volume Tested</label>
-                        <select onchange="updatePipetteInfo(${pipette.id}, 'volume', parseFloat(this.value))">
-                            ${volumeRanges.map(vol => `<option value="${vol}" ${vol === pipette.volume ? 'selected' : ''}>${vol} μL</option>`).join('')}
                         </select>
                     </div>
                     <div class="form-group">
@@ -1322,7 +1316,7 @@
             const measurements = pipette.measurements[condition][point];
             if (measurements.filter(m => m !== '').length < 4) return;
 
-            const nominalVolume = getNominalVolume(pipette.testVolume, point, pipette.model);
+            const nominalVolume = getNominalVolume(point, pipette.model);
             const specs = getSpecifications(pipette.model, nominalVolume, false);
 
             if (!specs) return;
@@ -1391,14 +1385,14 @@
                 const channelMeasurements = testPoints.map(tp => pipette.measurements[condition][tp][ch]);
 
                 // Get specs for high volume (most restrictive)
-                const nominalVolume = getNominalVolume(pipette.testVolume, 'high', pipette.model);
+                const nominalVolume = getNominalVolume('high', pipette.model);
                 const specs = getSpecifications(pipette.model, nominalVolume, true);
 
                 if (!specs) continue;
 
                 // For multi-channel, check each individual measurement against accuracy
                 const allPass = channelMeasurements.every((measurement, idx) => {
-                    const nomVol = getNominalVolume(pipette.testVolume, testPoints[idx], pipette.model);
+                    const nomVol = getNominalVolume(testPoints[idx], pipette.model);
                     return measurement >= specs.accuracy.from && measurement <= specs.accuracy.to;
                 });
 
@@ -1418,7 +1412,7 @@
             }
         }
 
-        function getNominalVolume(testVolume, point, model) {
+        function getNominalVolume(point, model) {
             // Define actual test volumes for each pipette model
             const testVolumes = {
                 'P-2': { low: 0.5, mid: 1, high: 2 },
@@ -2225,7 +2219,7 @@
                                 const cv = calculateCV(measurements);
                                 const sd = calculateSD(measurements);
 
-                                const nominalVolume = getNominalVolume(pipette.testVolume, point, pipette.model);
+                                const nominalVolume = getNominalVolume(point, pipette.model);
                                 const specs = getSpecifications(pipette.model, nominalVolume, false);
 
                                 let status = 'PENDING';
@@ -2258,7 +2252,7 @@
                             const highVal = pipette.measurements[condition].high[ch];
 
                             if (lowVal !== '' && midVal !== '' && highVal !== '') {
-                                const nominalVolume = getNominalVolume(pipette.testVolume, 'high', pipette.model);
+                                const nominalVolume = getNominalVolume('high', pipette.model);
                                 const specs = getSpecifications(pipette.model, nominalVolume, true);
 
                                 let status = 'PENDING';
