@@ -157,18 +157,35 @@
         }
 
         .status-pass {
-            background: #d4edda;
-            color: #155724;
+            background: #28a745;
+            color: #ffffff;
+            border: 2px solid #1e7e34;
+        }
+
+        .status-pass::before {
+            content: '✓ ';
+            font-weight: bold;
         }
 
         .status-fail {
-            background: #f8d7da;
-            color: #721c24;
+            background: #dc3545;
+            color: #ffffff;
+            border: 2px solid #bd2130;
+        }
+
+        .status-fail::before {
+            content: '✗ ';
+            font-weight: bold;
         }
 
         .status-pending {
-            background: #fff3cd;
-            color: #856404;
+            background: #ffc107;
+            color: #000000;
+            border: 2px solid #e0a800;
+        }
+
+        .status-pending::before {
+            content: '⏳ ';
         }
 
         .measurement-table {
@@ -209,13 +226,16 @@
         }
 
         .measurement-input.pass {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
+            background-color: #e7f5e9;
+            border-color: #28a745;
+            border-width: 2px;
         }
 
         .measurement-input.fail {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
+            background-color: #ffe6e6;
+            border-color: #dc3545;
+            border-width: 3px;
+            font-weight: bold;
         }
 
         .btn {
