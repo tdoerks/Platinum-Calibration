@@ -659,7 +659,7 @@
         };
 
         function getVolumePrecision(volume) {
-            return volume <= 20 ? { step: 0.01, decimals: 2 } : { step: 0.1, decimals: 1 };
+            return volume <= 25 ? { step: 0.01, decimals: 2 } : { step: 0.1, decimals: 1 };
         }
 
         function formatVolume(value, decimals) {
@@ -1054,29 +1054,50 @@
                 { name: 'High', key: 'high', volume: getNominalVolume('high', pipette.model) }
             ];
 
+            // Generate rows for each channel
             let rows = '';
             for (let ch = 0; ch < channelCount; ch++) {
                 rows += `
                     <tr>
                         <td><strong>Channel ${ch + 1}</strong></td>
-                        ${testPoints.map(point => `
-                            <td><input type="number" step="${precision.step}" class="measurement-input"
+                        ${testPoints.map(point => {
+                            const pointPrecision = getVolumePrecision(point.volume);
+                            return `
+                            <td><input type="number" step="${pointPrecision.step}" class="measurement-input"
                                 onchange="updateMeasurement(${pipette.id}, 'asFound', '${point.key}', ${ch}, this.value)"
                                 value="${pipette.measurements.asFound[point.key][ch] || ''}"
-                                placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}">
+                                placeholder="${pointPrecision.decimals === 2 ? '0.00' : '0.0'}">
                             </td>
-                        `).join('')}
-                        ${testPoints.map(point => `
-                            <td><input type="number" step="${precision.step}" class="measurement-input"
+                        `}).join('')}
+                        ${testPoints.map(point => {
+                            const pointPrecision = getVolumePrecision(point.volume);
+                            return `
+                            <td><input type="number" step="${pointPrecision.step}" class="measurement-input"
                                 onchange="updateMeasurement(${pipette.id}, 'asLeft', '${point.key}', ${ch}, this.value)"
                                 value="${pipette.measurements.asLeft[point.key][ch] || ''}"
-                                placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}">
+                                placeholder="${pointPrecision.decimals === 2 ? '0.00' : '0.0'}">
                             </td>
-                        `).join('')}
-                        <td><span id="status-channel${ch + 1}-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
+                        `}).join('')}
                     </tr>
                 `;
             }
+
+            // Add status row at the bottom (one status per test point)
+            rows += `
+                <tr style="background: #f0f0f0; font-weight: bold;">
+                    <td>Status</td>
+                    <td colspan="3" style="text-align: center;">
+                        <span id="status-asFound-low-${pipette.id}" class="status-badge status-pending">LOW</span>
+                        <span id="status-asFound-mid-${pipette.id}" class="status-badge status-pending">MID</span>
+                        <span id="status-asFound-high-${pipette.id}" class="status-badge status-pending">HIGH</span>
+                    </td>
+                    <td colspan="3" style="text-align: center;">
+                        <span id="status-asLeft-low-${pipette.id}" class="status-badge status-pending">LOW</span>
+                        <span id="status-asLeft-mid-${pipette.id}" class="status-badge status-pending">MID</span>
+                        <span id="status-asLeft-high-${pipette.id}" class="status-badge status-pending">HIGH</span>
+                    </td>
+                </tr>
+            `;
 
             return `
                 <table class="measurement-table">
@@ -1085,7 +1106,6 @@
                             <th rowspan="2">Channel</th>
                             <th colspan="3">As Found</th>
                             <th colspan="3">As Left</th>
-                            <th rowspan="2">Status</th>
                         </tr>
                         <tr>
                             <th>Low (${formatVolume(testPoints[0].volume)} μL)</th>
@@ -1368,48 +1388,76 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (!pipette) return;
 
-            // For multi-channel, we validate each channel individually
-            // Each channel has ONE measurement per test point
+            // For multi-channel, we validate each test point across ALL channels
+            // Each test point has ONE measurement per channel (e.g., 8 readings for LOW)
             const testPoints = ['low', 'mid', 'high'];
 
-            for (let ch = 0; ch < pipette.channelCount; ch++) {
-                // Check if all test points for this channel have data
-                const hasAllData = testPoints.every(tp => {
-                    const val = pipette.measurements[condition][tp][ch];
-                    return val !== '' && val !== null && val !== undefined;
-                });
-
-                if (!hasAllData) continue;
-
-                // Collect measurements for this channel across all test points
-                const channelMeasurements = testPoints.map(tp => pipette.measurements[condition][tp][ch]);
-
-                // Get specs for high volume (most restrictive)
-                const nominalVolume = getNominalVolume('high', pipette.model);
-                const specs = getSpecifications(pipette.model, nominalVolume, true);
-
-                if (!specs) continue;
-
-                // For multi-channel, check each individual measurement against accuracy
-                const allPass = channelMeasurements.every((measurement, idx) => {
-                    const nomVol = getNominalVolume(testPoints[idx], pipette.model);
-                    return measurement >= specs.accuracy.from && measurement <= specs.accuracy.to;
-                });
-
-                const statusElement = document.getElementById(`status-channel${ch + 1}-${pipetteId}`);
-                if (statusElement) {
-                    statusElement.className = `status-badge status-${allPass ? 'pass' : 'fail'}`;
-                    statusElement.textContent = allPass ? 'PASS' : 'FAIL';
+            // Validate each test point independently
+            testPoints.forEach(testPoint => {
+                // Collect all channel measurements for this test point
+                const measurements = [];
+                for (let ch = 0; ch < pipette.channelCount; ch++) {
+                    const val = pipette.measurements[condition][testPoint][ch];
+                    if (val !== '' && val !== null && val !== undefined) {
+                        measurements.push(parseFloat(val));
+                    }
                 }
 
-                // Update input styling for this channel
-                testPoints.forEach(tp => {
-                    const input = document.querySelector(`#pipette-${pipetteId} input[onchange*="${condition}"][onchange*="${tp}"][onchange*="${ch}"]`);
+                // Need all channels to have data for this test point
+                if (measurements.length < pipette.channelCount) return;
+
+                // Get nominal volume and specs for this test point
+                const nominalVolume = getNominalVolume(testPoint, pipette.model);
+                const specs = getSpecifications(pipette.model, nominalVolume, true);
+
+                if (!specs) return;
+
+                // Calculate statistics across all channels
+                const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
+                const cv = calculateCV(measurements);
+                const sd = calculateSD(measurements);
+
+                // Check accuracy: all readings must be within range
+                const accuracyPass = measurements.every(reading =>
+                    reading >= specs.accuracy.from && reading <= specs.accuracy.to
+                );
+
+                // ISO 8655: Precision passes if EITHER CV% OR SD meets limit
+                const cvPass = cv <= specs.precision.percent;
+                const sdPass = sd <= specs.precision.ul;
+                const precisionPass = cvPass || sdPass;
+
+                const overallPass = accuracyPass && precisionPass;
+
+                // Update status badge for this test point
+                const statusElement = document.getElementById(`status-${condition}-${testPoint}-${pipetteId}`);
+                if (statusElement) {
+                    statusElement.className = `status-badge status-${overallPass ? 'pass' : 'fail'}`;
+                    statusElement.textContent = overallPass ? 'PASS' : 'FAIL';
+                }
+
+                // Update input styling for all channels in this test point
+                for (let ch = 0; ch < pipette.channelCount; ch++) {
+                    const input = document.querySelector(`#pipette-${pipetteId} input[onchange*="${condition}"][onchange*="${testPoint}"][onchange*="${ch}"]`);
                     if (input) {
-                        input.className = `measurement-input ${allPass ? 'pass' : 'fail'}`;
+                        input.className = `measurement-input ${overallPass ? 'pass' : 'fail'}`;
                     }
+                }
+
+                // Display calculation results
+                updateCalculationsDisplay(pipetteId, condition, testPoint, {
+                    nominal: nominalVolume,
+                    mean: mean,
+                    cv: cv,
+                    sd: sd,
+                    specs: specs,
+                    accuracyPass: accuracyPass,
+                    precisionPass: precisionPass,
+                    cvPass: cvPass,
+                    sdPass: sdPass,
+                    measurements: measurements
                 });
-            }
+            });
         }
 
         function getNominalVolume(point, model) {
