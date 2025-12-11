@@ -1322,7 +1322,7 @@
             const measurements = pipette.measurements[condition][point];
             if (measurements.filter(m => m !== '').length < 4) return;
 
-            const nominalVolume = getNominalVolume(pipette.testVolume, point);
+            const nominalVolume = getNominalVolume(pipette.testVolume, point, pipette.model);
             const specs = getSpecifications(pipette.model, nominalVolume, false);
 
             if (!specs) return;
@@ -1391,14 +1391,14 @@
                 const channelMeasurements = testPoints.map(tp => pipette.measurements[condition][tp][ch]);
 
                 // Get specs for high volume (most restrictive)
-                const nominalVolume = getNominalVolume(pipette.testVolume, 'high');
+                const nominalVolume = getNominalVolume(pipette.testVolume, 'high', pipette.model);
                 const specs = getSpecifications(pipette.model, nominalVolume, true);
 
                 if (!specs) continue;
 
                 // For multi-channel, check each individual measurement against accuracy
                 const allPass = channelMeasurements.every((measurement, idx) => {
-                    const nomVol = getNominalVolume(pipette.testVolume, testPoints[idx]);
+                    const nomVol = getNominalVolume(pipette.testVolume, testPoints[idx], pipette.model);
                     return measurement >= specs.accuracy.from && measurement <= specs.accuracy.to;
                 });
 
@@ -1418,9 +1418,29 @@
             }
         }
 
-        function getNominalVolume(testVolume, point) {
-            const multipliers = { low: 0.1, mid: 0.5, high: 1.0 };
-            return testVolume * multipliers[point];
+        function getNominalVolume(testVolume, point, model) {
+            // Define actual test volumes for each pipette model
+            const testVolumes = {
+                'P-2': { low: 0.5, mid: 1, high: 2 },
+                'P-2.5': { low: 0.5, mid: 1.25, high: 2.5 },
+                'P-10': { low: 2, mid: 5, high: 10 },
+                'P-20': { low: 5, mid: 10, high: 20 },
+                'P-25': { low: 5, mid: 12.5, high: 25 },
+                'P-50': { low: 10, mid: 25, high: 50 },
+                'P-100': { low: 20, mid: 50, high: 100 },
+                'P-200': { low: 50, mid: 100, high: 200 },
+                'P-250': { low: 50, mid: 125, high: 250 },
+                'P-300': { low: 50, mid: 200, high: 300 },
+                'P-500': { low: 100, mid: 250, high: 500 },
+                'P-1000': { low: 200, mid: 500, high: 1000 },
+                'P-1200': { low: 250, mid: 600, high: 1200 },
+                'P-1250': { low: 250, mid: 625, high: 1250 },
+                'P-2000': { low: 500, mid: 1000, high: 2000 },
+                'P-5000': { low: 1000, mid: 2500, high: 5000 },
+                'P-10000': { low: 2000, mid: 5000, high: 10000 }
+            };
+
+            return testVolumes[model][point];
         }
 
         function getSpecifications(model, volume, isMultiChannel = false) {
@@ -1942,7 +1962,7 @@
                                 const cv = calculateCV(measurements);
                                 const sd = calculateSD(measurements);
 
-                                const nominalVolume = getNominalVolume(pipette.testVolume, point);
+                                const nominalVolume = getNominalVolume(pipette.testVolume, point, pipette.model);
                                 const specs = getSpecifications(pipette.model, nominalVolume, false);
 
                                 let status = 'PENDING';
@@ -1975,7 +1995,7 @@
                             const highVal = pipette.measurements[condition].high[ch];
 
                             if (lowVal !== '' && midVal !== '' && highVal !== '') {
-                                const nominalVolume = getNominalVolume(pipette.testVolume, 'high');
+                                const nominalVolume = getNominalVolume(pipette.testVolume, 'high', pipette.model);
                                 const specs = getSpecifications(pipette.model, nominalVolume, true);
 
                                 let status = 'PENDING';
