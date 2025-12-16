@@ -239,6 +239,40 @@
             font-weight: bold;
         }
 
+        /* Input Validation Styles */
+        .measurement-input.error,
+        input.error {
+            border: 3px solid #dc3545 !important;
+            background-color: #ffe6e6;
+            animation: shake 0.3s;
+        }
+
+        .measurement-input.valid,
+        input.valid {
+            border: 2px solid #28a745;
+            background-color: #e7f5e9;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 11px;
+            margin-top: 3px;
+            font-weight: 600;
+            display: block;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .btn {
             padding: 12px 24px;
             border: none;
@@ -695,6 +729,86 @@
                 }
             });
         });
+
+        // ========================================
+        // INPUT VALIDATION FUNCTIONS
+        // ========================================
+
+        function validateInput(input, min = 0, max = 10000) {
+            const value = parseFloat(input.value);
+
+            // Remove previous error
+            clearValidationError(input);
+            input.classList.remove('error', 'valid');
+
+            // If empty, don't validate (allow optional fields)
+            if (input.value === '') {
+                return true;
+            }
+
+            // Check if not a number
+            if (isNaN(value)) {
+                showValidationError(input, 'Please enter a valid number');
+                return false;
+            }
+
+            // Check minimum
+            if (value < min) {
+                showValidationError(input, `Value must be at least ${min}`);
+                return false;
+            }
+
+            // Check maximum
+            if (value > max) {
+                showValidationError(input, `Value must be no more than ${max}`);
+                return false;
+            }
+
+            // Valid!
+            input.classList.add('valid');
+            return true;
+        }
+
+        function showValidationError(input, message) {
+            input.classList.add('error');
+
+            // Check if error message already exists
+            let errorMsg = input.parentElement.querySelector('.error-message');
+            if (!errorMsg) {
+                errorMsg = document.createElement('span');
+                errorMsg.className = 'error-message';
+                input.parentElement.appendChild(errorMsg);
+            }
+            errorMsg.textContent = '⚠️ ' + message;
+        }
+
+        function clearValidationError(input) {
+            input.classList.remove('error');
+            const errorMsg = input.parentElement.querySelector('.error-message');
+            if (errorMsg) {
+                errorMsg.remove();
+            }
+        }
+
+        function validateMeasurementInput(input) {
+            // Measurements should be 0-10000 μL
+            return validateInput(input, 0, 10000);
+        }
+
+        function validateTemperature(input) {
+            // Lab temperature: 15-30°C
+            return validateInput(input, 15, 30);
+        }
+
+        function validateHumidity(input) {
+            // Relative humidity: 20-80%
+            return validateInput(input, 20, 80);
+        }
+
+        function validatePressure(input) {
+            // Atmospheric pressure: 90-110 kPa
+            return validateInput(input, 90, 110);
+        }
 
         // ISO 8655 Specifications Database - Complete with all models
         const isoSpecs = {
@@ -1265,23 +1379,23 @@
                     <tbody>
                         <tr>
                             <td><strong>Low (${formatVolume(getNominalVolume('low', pipette.model))} μL)</strong></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asFound', 'low', ${i}, this.value)" value="${pipette.measurements.asFound.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'low', ${i}, this.value)" value="${pipette.measurements.asLeft.low[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asLeft-low-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
                             <td><strong>Mid (${formatVolume(getNominalVolume('mid', pipette.model))} μL)</strong></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asFound', 'mid', ${i}, this.value)" value="${pipette.measurements.asFound.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'mid', ${i}, this.value)" value="${pipette.measurements.asLeft.mid[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asLeft-mid-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                         <tr>
                             <td><strong>High (${formatVolume(getNominalVolume('high', pipette.model))} μL)</strong></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asFound', 'high', ${i}, this.value)" value="${pipette.measurements.asFound.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asFound-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
-                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" class="measurement-input" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
+                            ${[0,1,2,3].map(i => `<td><input type="number" step="${precision.step}" min="0" max="10000" class="measurement-input" oninput="validateMeasurementInput(this)" onchange="updateMeasurement(${pipette.id}, 'asLeft', 'high', ${i}, this.value)" value="${pipette.measurements.asLeft.high[i] || ''}" placeholder="${precision.decimals === 2 ? '0.00' : '0.0'}"></td>`).join('')}
                             <td><span id="status-asLeft-high-${pipette.id}" class="status-badge status-pending">PENDING</span></td>
                         </tr>
                     </tbody>
@@ -1307,7 +1421,8 @@
                         ${testPoints.map(point => {
                             const pointPrecision = getVolumePrecision(point.volume);
                             return `
-                            <td><input type="number" step="${pointPrecision.step}" class="measurement-input"
+                            <td><input type="number" step="${pointPrecision.step}" min="0" max="10000" class="measurement-input"
+                                oninput="validateMeasurementInput(this)"
                                 onchange="updateMeasurement(${pipette.id}, 'asFound', '${point.key}', ${ch}, this.value)"
                                 value="${pipette.measurements.asFound[point.key][ch] || ''}"
                                 placeholder="${pointPrecision.decimals === 2 ? '0.00' : '0.0'}">
@@ -1316,7 +1431,8 @@
                         ${testPoints.map(point => {
                             const pointPrecision = getVolumePrecision(point.volume);
                             return `
-                            <td><input type="number" step="${pointPrecision.step}" class="measurement-input"
+                            <td><input type="number" step="${pointPrecision.step}" min="0" max="10000" class="measurement-input"
+                                oninput="validateMeasurementInput(this)"
                                 onchange="updateMeasurement(${pipette.id}, 'asLeft', '${point.key}', ${ch}, this.value)"
                                 value="${pipette.measurements.asLeft[point.key][ch] || ''}"
                                 placeholder="${pointPrecision.decimals === 2 ? '0.00' : '0.0'}">
@@ -3039,15 +3155,15 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Temperature (°C)</label>
-                        <input type="number" id="temperature" step="0.1" value="21.8">
+                        <input type="number" id="temperature" step="0.1" min="15" max="30" value="21.8" oninput="validateTemperature(this)">
                     </div>
                     <div class="form-group">
                         <label>Humidity (%)</label>
-                        <input type="number" id="humidity" step="0.1">
+                        <input type="number" id="humidity" step="0.1" min="20" max="80" oninput="validateHumidity(this)">
                     </div>
                     <div class="form-group">
                         <label>Barometric Pressure (kPa)</label>
-                        <input type="number" id="pressure" step="0.1">
+                        <input type="number" id="pressure" step="0.1" min="90" max="110" oninput="validatePressure(this)">
                     </div>
                     <div class="form-group">
                         <label>Balance Serial Number</label>
