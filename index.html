@@ -1597,14 +1597,17 @@
 
             const overallStatus = document.getElementById(`status-${pipetteId}`);
             if (overallStatus) {
-                // Show both statuses
+                // Show both statuses side-by-side
                 const asFoundBadge = pipette.statusAsFound === 'pass' ? '✅ As Found: PASS' :
                                     pipette.statusAsFound === 'fail' ? '❌ As Found: FAIL' : '⏳ As Found: PENDING';
                 const asLeftBadge = pipette.statusAsLeft === 'pass' ? '✅ As Left: PASS' :
                                    pipette.statusAsLeft === 'fail' ? '❌ As Left: FAIL' : '⏳ As Left: PENDING';
 
-                overallStatus.className = `status-badge status-${pipette.status}`;
-                overallStatus.innerHTML = `<div style="font-size: 0.9em;">${asFoundBadge}</div><div style="font-size: 0.9em; margin-top: 4px;">${asLeftBadge}</div>`;
+                overallStatus.className = '';
+                overallStatus.innerHTML = `
+                    <span class="status-badge status-${pipette.statusAsFound}" style="font-size: 0.85em; margin-right: 8px;">${asFoundBadge}</span>
+                    <span class="status-badge status-${pipette.statusAsLeft}" style="font-size: 0.85em;">${asLeftBadge}</span>
+                `;
             }
         }
 
