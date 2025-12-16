@@ -1048,11 +1048,11 @@
             const session = sessions.find(s => s.id === sessionId);
 
             if (!session) {
-                alert('Session not found!');
+                showAlert('Session not found!', 'Error');
                 return;
             }
 
-            if (confirm('Load this session? Current work will be saved.')) {
+            showConfirm('Load this session? Current work will be saved.', 'Load Session', () => {
                 if (currentSessionId) {
                     autoSave();
                 }
@@ -1093,15 +1093,18 @@
                 localStorage.setItem('currentSession', JSON.stringify(session));
 
                 showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'));
-            }
+            });
         }
 
         function deleteSession(sessionId, event) {
             event.stopPropagation();
 
-            if (!confirm('Delete this session? This cannot be undone.')) {
-                return;
-            }
+            showConfirm('Delete this session? This cannot be undone.', 'Delete Session', () => {
+                executeDeleteSession(sessionId);
+            });
+        }
+
+        function executeDeleteSession(sessionId) {
 
             let sessions = JSON.parse(localStorage.getItem('calibrationSessions') || '[]');
             sessions = sessions.filter(s => s.id !== sessionId);
@@ -1128,7 +1131,7 @@
                     try {
                         const sessionData = JSON.parse(event.target.result);
 
-                        if (confirm('Load this session from file? Current work will be saved.')) {
+                        showConfirm("Load this session from file? Current work will be saved.", "Import Session", () => {
                             if (currentSessionId) {
                                 autoSave();
                             }
@@ -1167,10 +1170,11 @@
                             updateAnalysis();
                             autoSave();
 
-                            alert('Session imported successfully!');
+});
+                            showAlert('Session imported successfully!', 'Success');
                         }
                     } catch (error) {
-                        alert('Error importing file: ' + error.message);
+                        showAlert('Error importing file: ' + error.message, 'Error');
                     }
                 };
                 reader.readAsText(file);
@@ -2694,7 +2698,7 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            alert('Session saved successfully!');
+            showAlert('Session saved successfully!', 'Success');
         }
 
         function loadHistory() {
@@ -2916,14 +2920,14 @@
                 document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial; font-size: 24px; color: #666;">Access Denied - Password Required</div>';
                 return false;
             } else {
-                alert('Incorrect password. Access denied.');
+                showAlert('Incorrect password. Access denied.', 'Access Denied');
                 document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: Arial; font-size: 24px; color: #666;">Access Denied - Incorrect Password</div>';
                 return false;
             }
         }
 
         function logout() {
-            if (confirm('Logout and clear authentication?')) {
+            showConfirm("Logout and clear authentication?", "Logout", () => {
                 sessionStorage.removeItem('calibrationAuth');
                 location.reload();
             }
