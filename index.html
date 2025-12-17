@@ -716,19 +716,7 @@
             document.getElementById('customModal').style.display = 'none';
         }
 
-        // Close modal on outside click
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('customModal')?.addEventListener('click', (e) => {
-                if (e.target.id === 'customModal') closeModal();
-            });
-
-            // Close modal on Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && document.getElementById('customModal').style.display === 'flex') {
-                    closeModal();
-                }
-            });
-        });
+        // Modal event listeners will be set up in main DOMContentLoaded below
 
         // ========================================
         // INPUT VALIDATION FUNCTIONS
@@ -3200,6 +3188,18 @@
             if (!checkPassword()) {
                 return; // Stop initialization if password check fails
             }
+
+            // Set up modal event listeners
+            document.getElementById('customModal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'customModal') closeModal();
+            });
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && document.getElementById('customModal')?.style.display === 'flex') {
+                    closeModal();
+                }
+            });
 
             // Try to load saved session first
             const sessionLoaded = loadCurrentSession();
