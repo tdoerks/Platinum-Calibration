@@ -1271,10 +1271,8 @@
                             updateProgress();
                             updateAnalysis();
                             autoSave();
-
-});
                             showAlert('Session imported successfully!', 'Success');
-                        }
+                        });
                     } catch (error) {
                         showAlert('Error importing file: ' + error.message, 'Error');
                     }
