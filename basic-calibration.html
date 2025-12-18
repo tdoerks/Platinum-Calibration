@@ -761,6 +761,163 @@
         });
 
         // ========================================
+        // BACKUP REMINDER SYSTEM
+        // ========================================
+
+        function checkBackupReminder() {
+            const BACKUP_REMINDER_DAYS = 7;
+            const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            const dismissedUntil = localStorage.getItem('backupReminderDismissedUntil');
+
+            // Check if reminder is currently dismissed
+            if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
+                return; // Don't show reminder yet
+            }
+
+            // Check if backup is needed
+            const now = Date.now();
+            const daysSinceBackup = lastBackup ? (now - parseInt(lastBackup)) / (1000 * 60 * 60 * 24) : 999;
+
+            if (daysSinceBackup > BACKUP_REMINDER_DAYS) {
+                showBackupReminder();
+            }
+        }
+
+        function showBackupReminder() {
+            // Remove any existing reminder
+            const existing = document.getElementById('backupReminder');
+            if (existing) existing.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'backupReminder';
+            banner.style.cssText = `
+                position: fixed;
+                top: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+                color: #2d3436;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                max-width: 600px;
+                animation: slideDown 0.3s ease;
+                font-size: 14px;
+                font-weight: 500;
+            `;
+
+            banner.innerHTML = `
+                <span style="font-size: 24px;">⚠️</span>
+                <div style="flex: 1;">
+                    <strong>Backup Reminder:</strong> It's been over 7 days since your last backup.
+                    <br><small>Download your data to prevent loss.</small>
+                </div>
+                <button onclick="downloadBackupAndDismiss()" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">
+                    📥 Download Backup
+                </button>
+                <button onclick="dismissBackupReminder()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+                    Dismiss 24h
+                </button>
+                <button onclick="closeBackupReminder()" style="padding: 4px 8px; background: transparent; border: none; cursor: pointer; font-size: 18px;">
+                    ✕
+                </button>
+            `;
+
+            document.body.appendChild(banner);
+        }
+
+        function downloadBackupAndDismiss() {
+            saveSession(); // Trigger download
+            closeBackupReminder();
+        }
+
+        function dismissBackupReminder() {
+            const dismissUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
+            localStorage.setItem('backupReminderDismissedUntil', dismissUntil.toString());
+            closeBackupReminder();
+        }
+
+        function closeBackupReminder() {
+            const banner = document.getElementById('backupReminder');
+            if (banner) {
+                banner.remove();
+            }
+        }
+
+        // ========================================
+        // AUTOFILL SYSTEM FOR COMMON VALUES
+        // ========================================
+
+        function saveRecentValue(fieldName, value) {
+            if (!value || value.trim() === '') return;
+
+            const recentValues = JSON.parse(localStorage.getItem('recentBasicCalValues') || '{}');
+
+            if (!recentValues[fieldName]) {
+                recentValues[fieldName] = [];
+            }
+
+            // Remove duplicate if exists
+            recentValues[fieldName] = recentValues[fieldName].filter(v => v !== value);
+
+            // Add to front
+            recentValues[fieldName].unshift(value);
+
+            // Keep only last 5 unique values
+            recentValues[fieldName] = recentValues[fieldName].slice(0, 5);
+
+            localStorage.setItem('recentBasicCalValues', JSON.stringify(recentValues));
+        }
+
+        function getRecentValues(fieldName) {
+            const recentValues = JSON.parse(localStorage.getItem('recentBasicCalValues') || '{}');
+            return recentValues[fieldName] || [];
+        }
+
+        function setupAutofill() {
+            const autofillFields = ['technician', 'pi', 'contact', 'company'];
+
+            autofillFields.forEach(fieldName => {
+                const input = document.getElementById(fieldName);
+                if (!input) return;
+
+                // Create datalist if doesn't exist
+                let datalist = document.getElementById(`${fieldName}List`);
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = `${fieldName}List`;
+                    input.setAttribute('list', `${fieldName}List`);
+                    input.parentNode.appendChild(datalist);
+                }
+
+                // Populate datalist with recent values
+                const recentValues = getRecentValues(fieldName);
+                datalist.innerHTML = recentValues.map(value =>
+                    `<option value="${value}">`
+                ).join('');
+
+                // Save value when changed
+                input.addEventListener('change', () => {
+                    saveRecentValue(fieldName, input.value);
+                    // Update datalist
+                    const updated = getRecentValues(fieldName);
+                    datalist.innerHTML = updated.map(value =>
+                        `<option value="${value}">`
+                    ).join('');
+                });
+            });
+
+            // Also setup autofill for manufacturer and model on pipette cards (will apply to new cards)
+            // This is handled when pipettes are created
+        }
+
+        // ========================================
         // PIPETTE MANAGEMENT
         // ========================================
 
@@ -1474,6 +1631,15 @@
                 document.getElementById('balanceCalDue').value = nextMonth.toISOString().split('T')[0];
             }
 
+            // Setup autofill for common fields
+            setupAutofill();
+
+            // Check if backup reminder should be shown
+            checkBackupReminder();
+
+            // Load session history
+            loadHistory();
+
             // Add autosave listeners to form fields
             document.querySelectorAll('#session input, #session select').forEach(input => {
                 input.addEventListener('change', debouncedAutoSave);
@@ -1481,6 +1647,133 @@
 
             console.log('Basic Calibration System initialized');
         });
+
+        // ========================================
+        // SESSION HISTORY
+        // ========================================
+
+        function loadHistory() {
+            const sessions = JSON.parse(localStorage.getItem('basicCalSessions') || '[]');
+            const historyContainer = document.getElementById('historyContainer');
+
+            if (sessions.length === 0) {
+                historyContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📚</div>
+                        <h3 style="color: #6c757d;">No Previous Sessions</h3>
+                        <p style="color: #adb5bd;">Your saved calibration sessions will appear here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            historyContainer.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p style="color: #6c757d; font-size: 14px;">
+                        Found ${sessions.length} saved session${sessions.length > 1 ? 's' : ''}. Click any session to load it.
+                    </p>
+                </div>
+                <div style="display: grid; gap: 15px;">
+                    ${sessions.map((session, index) => {
+                        const date = new Date(session.lastModified || session.timestamp);
+                        const pipetteCount = session.pipettes?.length || 0;
+                        const passCount = session.pipettes?.filter(p => p.passFail === 'P').length || 0;
+                        const failCount = session.pipettes?.filter(p => p.passFail === 'F').length || 0;
+
+                        return `
+                            <div style="background: white; border: 2px solid #e9ecef; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.3s ease;"
+                                 onmouseover="this.style.borderColor='#69B135'; this.style.boxShadow='0 4px 12px rgba(105,177,53,0.2)'"
+                                 onmouseout="this.style.borderColor='#e9ecef'; this.style.boxShadow='none'"
+                                 onclick="loadSessionFromHistory('${session.id}')">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                    <div>
+                                        <h3 style="color: #223077; font-size: 16px; margin-bottom: 5px;">
+                                            ${session.sessionInfo?.company || session.sessionInfo?.pi || `Session ${index + 1}`}
+                                        </h3>
+                                        <p style="color: #6c757d; font-size: 13px; margin: 0;">
+                                            ${date.toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <button onclick="event.stopPropagation(); deleteSession('${session.id}')"
+                                            class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                                <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 13px;">
+                                    <div style="background: #f8f9fa; padding: 8px 12px; border-radius: 6px;">
+                                        <strong style="color: #223077;">${pipetteCount}</strong> Pipettes
+                                    </div>
+                                    ${passCount > 0 ? `
+                                        <div style="background: #d4edda; padding: 8px 12px; border-radius: 6px; color: #155724;">
+                                            <strong>${passCount}</strong> Passed
+                                        </div>
+                                    ` : ''}
+                                    ${failCount > 0 ? `
+                                        <div style="background: #f8d7da; padding: 8px 12px; border-radius: 6px; color: #721c24;">
+                                            <strong>${failCount}</strong> Failed
+                                        </div>
+                                    ` : ''}
+                                    ${session.sessionInfo?.technician ? `
+                                        <div style="background: #e7f3ff; padding: 8px 12px; border-radius: 6px; color: #004080;">
+                                            Tech: <strong>${session.sessionInfo.technician}</strong>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function loadSessionFromHistory(sessionId) {
+            const sessions = JSON.parse(localStorage.getItem('basicCalSessions') || '[]');
+            const session = sessions.find(s => s.id === sessionId);
+
+            if (!session) {
+                showAlert('Session not found.', 'Error');
+                return;
+            }
+
+            showConfirm("Load this session? Current work will be saved.", "Load Session", () => {
+                autoSave();
+
+                currentSessionId = session.id;
+                pipettes = session.pipettes || [];
+                currentPipetteId = session.currentPipetteId || 0;
+
+                const sessionInfo = session.sessionInfo || {};
+                Object.keys(sessionInfo).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = sessionInfo[key] || '';
+                    }
+                });
+
+                renderAllPipettes();
+                updateProgress();
+                autoSave();
+
+                // Switch to calibration tab
+                showTab('calibration', document.querySelectorAll('.nav-tab')[1]);
+
+                showAlert('Session loaded successfully!', 'Success');
+            });
+        }
+
+        function deleteSession(sessionId) {
+            showConfirm("Delete this session permanently?", "Confirm Delete", () => {
+                let sessions = JSON.parse(localStorage.getItem('basicCalSessions') || '[]');
+                sessions = sessions.filter(s => s.id !== sessionId);
+                localStorage.setItem('basicCalSessions', JSON.stringify(sessions));
+
+                // Reload history
+                loadHistory();
+
+                showAlert('Session deleted.', 'Deleted');
+            });
+        }
+    </script>
     </script>
 
     <div class="container">
