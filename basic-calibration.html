@@ -544,6 +544,11 @@
             if (tabName === 'summary') {
                 updateSummaryTable();
             }
+
+            // Update report if switching to report
+            if (tabName === 'report') {
+                generateReport();
+            }
         }
 
         // ========================================
@@ -1168,6 +1173,221 @@
             };
 
             input.click();
+        }
+
+        function generateReport() {
+            const reportContent = document.getElementById('reportContent');
+            const sessionInfo = getSessionInfo();
+
+            if (pipettes.length === 0) {
+                reportContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📄</div>
+                        <h3 style="color: #6c757d;">No Data to Display</h3>
+                        <p style="color: #adb5bd;">Add pipettes in the Calibration tab to generate a report.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate summary statistics
+            const totalPipettes = pipettes.length;
+            const passedPipettes = pipettes.filter(p => p.passFail === 'P').length;
+            const failedPipettes = pipettes.filter(p => p.passFail === 'F').length;
+            const inSpecCount = pipettes.filter(p => p.inSpec).length;
+            const outSpecCount = pipettes.filter(p => p.outSpec).length;
+            const adjustmentsCount = pipettes.filter(p =>
+                Object.values(p.adjustments).some(v => v === true || (typeof v === 'string' && v !== ''))
+            ).length;
+
+            const certNumber = `BC-${new Date(sessionInfo.serviceDate || Date.now()).getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+
+            reportContent.innerHTML = `
+                <div style="max-width: 900px; margin: 0 auto; background: white; padding: 40px; border: 1px solid #e9ecef; border-radius: 8px;">
+
+                    <!-- Professional Header -->
+                    <div style="border-bottom: 4px solid #223077; padding-bottom: 20px; margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 20px;">
+                            <div>
+                                <h1 style="color: #223077; font-size: 28px; margin-bottom: 5px;">CALIBRATION INTERNATIONAL INC.</h1>
+                                <p style="color: #69B135; font-size: 18px; font-weight: 600; margin: 0;">Basic Calibration Service Report</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #69B135;">
+                                    <div style="font-size: 12px; color: #6c757d; margin-bottom: 5px;">CERTIFICATE NO.</div>
+                                    <div style="font-size: 20px; font-weight: bold; color: #223077;">${certNumber}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Executive Summary -->
+                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 25px; border-radius: 12px; margin-bottom: 30px; border-left: 5px solid #69B135;">
+                        <h2 style="color: #223077; font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            📊 Executive Summary
+                        </h2>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+                            <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 32px; font-weight: bold; color: #223077; margin-bottom: 5px;">${totalPipettes}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">Total Pipettes</div>
+                            </div>
+                            <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 32px; font-weight: bold; color: #28a745; margin-bottom: 5px;">${passedPipettes}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">Passed</div>
+                            </div>
+                            <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 32px; font-weight: bold; color: #dc3545; margin-bottom: 5px;">${failedPipettes}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">Failed</div>
+                            </div>
+                            <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="font-size: 32px; font-weight: bold; color: #ffc107; margin-bottom: 5px;">${adjustmentsCount}</div>
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px;">Adjustments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Session Information -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #223077; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">
+                            📋 Service Information
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px;">
+                            <div><strong style="color: #223077;">PI:</strong> ${sessionInfo.pi || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Contact:</strong> ${sessionInfo.contact || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Phone:</strong> ${sessionInfo.phone || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Invoice #:</strong> ${sessionInfo.invoiceNo || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Company:</strong> ${sessionInfo.company || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Technician:</strong> ${sessionInfo.technician || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Service Date:</strong> ${sessionInfo.serviceDate ? new Date(sessionInfo.serviceDate).toLocaleDateString() : 'N/A'}</div>
+                            <div><strong style="color: #223077;">Next Service Due:</strong> ${sessionInfo.nextServiceDue ? new Date(sessionInfo.nextServiceDue).toLocaleDateString() : 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    <!-- Balance Information -->
+                    <div style="margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <h3 style="color: #223077; font-size: 18px; margin-bottom: 15px;">⚖️ Balance Information</h3>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; font-size: 14px;">
+                            <div><strong style="color: #223077;">Model:</strong> ${sessionInfo.balanceModel || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Serial #:</strong> ${sessionInfo.balanceSerial || 'N/A'}</div>
+                            <div><strong style="color: #223077;">Cal Due:</strong> ${sessionInfo.balanceCalDue ? new Date(sessionInfo.balanceCalDue).toLocaleDateString() : 'N/A'}</div>
+                        </div>
+                        <p style="font-size: 12px; color: #6c757d; margin-top: 10px; margin-bottom: 0;">
+                            ℹ️ An Internal Q.C. Calibration check was performed by CALINTL Technician on Balance noted, prior to calibration of pipettes on this date.
+                        </p>
+                    </div>
+
+                    <!-- Detailed Results Table -->
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #223077; font-size: 18px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e9ecef;">
+                            🔬 Detailed Calibration Results
+                        </h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                <thead>
+                                    <tr style="background: #223077; color: white;">
+                                        <th style="padding: 12px 8px; text-align: left; border: 1px solid #223077;">No.</th>
+                                        <th style="padding: 12px 8px; text-align: left; border: 1px solid #223077;">Manufacturer/Model</th>
+                                        <th style="padding: 12px 8px; text-align: center; border: 1px solid #223077;">Vol (µL)</th>
+                                        <th style="padding: 12px 8px; text-align: center; border: 1px solid #223077;">Spec</th>
+                                        <th style="padding: 12px 8px; text-align: left; border: 1px solid #223077;">Adjustments</th>
+                                        <th style="padding: 12px 8px; text-align: left; border: 1px solid #223077;">Final Volumes (µL)</th>
+                                        <th style="padding: 12px 8px; text-align: center; border: 1px solid #223077;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${pipettes.map((p, index) => {
+                                        const adjustments = Object.entries(p.adjustments)
+                                            .filter(([key, val]) => val === true || (key === 'OTHER' && val !== ''))
+                                            .map(([key, val]) => key === 'OTHER' ? val : key)
+                                            .join(', ') || '--';
+
+                                        const volumes = p.finalVolumes.filter(v => v !== '').join(', ') || '--';
+                                        const specStatus = p.inSpec ? '✓ In' : (p.outSpec ? '✗ Out' : '--');
+                                        const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+
+                                        return `
+                                            <tr style="background: ${bgColor};">
+                                                <td style="padding: 10px 8px; border: 1px solid #e9ecef;"><strong>${p.number}</strong></td>
+                                                <td style="padding: 10px 8px; border: 1px solid #e9ecef;">${p.manufacturer || '--'} ${p.model || ''}</td>
+                                                <td style="padding: 10px 8px; text-align: center; border: 1px solid #e9ecef;">${p.maxVolume || '--'}</td>
+                                                <td style="padding: 10px 8px; text-align: center; border: 1px solid #e9ecef; color: ${p.inSpec ? '#28a745' : (p.outSpec ? '#dc3545' : '#6c757d')};">
+                                                    ${specStatus}
+                                                </td>
+                                                <td style="padding: 10px 8px; border: 1px solid #e9ecef; font-size: 11px;">${adjustments}</td>
+                                                <td style="padding: 10px 8px; border: 1px solid #e9ecef; font-size: 11px;">${volumes}</td>
+                                                <td style="padding: 10px 8px; text-align: center; border: 1px solid #e9ecef;">
+                                                    ${p.passFail ? `
+                                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 11px;
+                                                                     background: ${p.passFail === 'P' ? '#d4edda' : '#f8d7da'};
+                                                                     color: ${p.passFail === 'P' ? '#155724' : '#721c24'};">
+                                                            ${p.passFail === 'P' ? '✓ PASS' : '✗ FAIL'}
+                                                        </span>
+                                                    ` : '--'}
+                                                </td>
+                                            </tr>
+                                            ${p.comments ? `
+                                                <tr style="background: ${bgColor};">
+                                                    <td colspan="7" style="padding: 8px; border: 1px solid #e9ecef; font-size: 12px; color: #6c757d;">
+                                                        <strong>Note:</strong> ${p.comments}
+                                                    </td>
+                                                </tr>
+                                            ` : ''}
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Adjustments Legend -->
+                    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                        <h4 style="color: #223077; font-size: 14px; margin-bottom: 10px;">Adjustments & Repairs Legend:</h4>
+                        <p style="font-size: 12px; color: #32373c; line-height: 1.6; margin: 0;">
+                            <strong>SE</strong> = Seal Replacement |
+                            <strong>COR</strong> = Corrosion |
+                            <strong>G</strong> = Grease |
+                            <strong>SH</strong> = Shaft |
+                            <strong>FR</strong> = Friction Ring |
+                            <strong>O</strong> = O-Ring
+                        </p>
+                    </div>
+
+                    <!-- Certification Footer -->
+                    <div style="border-top: 3px solid #69B135; padding-top: 20px; margin-top: 40px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                            <div>
+                                <p style="font-size: 12px; color: #6c757d; margin-bottom: 5px;">Verified By:</p>
+                                <div style="border-bottom: 2px solid #223077; padding-bottom: 5px; margin-bottom: 20px;">
+                                    <strong style="color: #223077;">${sessionInfo.technician || '__________________'}</strong>
+                                </div>
+                            </div>
+                            <div>
+                                <p style="font-size: 12px; color: #6c757d; margin-bottom: 5px;">Date:</p>
+                                <div style="border-bottom: 2px solid #223077; padding-bottom: 5px; margin-bottom: 20px;">
+                                    <strong style="color: #223077;">${sessionInfo.serviceDate ? new Date(sessionInfo.serviceDate).toLocaleDateString() : '__________'}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                            <p style="font-size: 11px; color: #004080; margin: 0; line-height: 1.5;">
+                                <strong>ISO 8655-2:2002 Compliance:</strong> CALINTL Technician calibrated pipettes to meet ISO 8655-2:2002 standards.
+                                Balance Calibration Certificate indicating NIST Traceable available upon request.
+                            </p>
+                        </div>
+
+                        <div style="text-align: center; padding-top: 10px; border-top: 1px solid #e9ecef;">
+                            <p style="font-size: 11px; color: #6c757d; margin: 0;">
+                                <strong>CALIBRATIONS INTERNATIONAL INC.</strong><br>
+                                2142 Chipset Street, Bozeman, Montana 59718<br>
+                                Phone: 406-589-6025 | Toll Free: 1-877-225-4685<br>
+                                theresa@calibrationsinternational.com
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            `;
         }
 
         function exportToCSV() {
