@@ -273,6 +273,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-5px); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -20px); }
+        }
+
         @keyframes successPulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); box-shadow: 0 0 20px rgba(40, 167, 69, 0.5); }
@@ -729,6 +744,328 @@
         // Modal event listeners will be set up in main DOMContentLoaded below
 
         // ========================================
+        // UNDO/REDO SYSTEM
+        // ========================================
+
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_HISTORY = 20;
+
+        function saveStateForUndo(actionDescription) {
+            const state = {
+                pipettes: JSON.parse(JSON.stringify(pipettes)), // Deep copy
+                currentPipetteId: currentPipetteId,
+                sessionInfo: getSessionInfo(),
+                action: actionDescription,
+                timestamp: Date.now()
+            };
+
+            undoStack.push(state);
+
+            // Limit history size
+            if (undoStack.length > MAX_HISTORY) {
+                undoStack.shift();
+            }
+
+            // Clear redo stack when new action is performed
+            redoStack = [];
+
+            updateUndoRedoButtons();
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return;
+
+            // Save current state to redo stack
+            const currentState = {
+                pipettes: JSON.parse(JSON.stringify(pipettes)),
+                currentPipetteId: currentPipetteId,
+                sessionInfo: getSessionInfo(),
+                timestamp: Date.now()
+            };
+            redoStack.push(currentState);
+
+            // Restore previous state
+            const previousState = undoStack.pop();
+            pipettes = previousState.pipettes;
+            currentPipetteId = previousState.currentPipetteId;
+
+            // Restore session info
+            Object.keys(previousState.sessionInfo).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = previousState.sessionInfo[key] || '';
+                }
+            });
+
+            // Re-render everything
+            renderAllPipettes();
+            updateAnalysis();
+            updateEmptyState();
+            autoSave();
+            updateUndoRedoButtons();
+
+            // Show notification
+            showUndoNotification(`Undid: ${previousState.action}`);
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+
+            // Save current state to undo stack
+            const currentState = {
+                pipettes: JSON.parse(JSON.stringify(pipettes)),
+                currentPipetteId: currentPipetteId,
+                sessionInfo: getSessionInfo(),
+                action: 'Redo',
+                timestamp: Date.now()
+            };
+            undoStack.push(currentState);
+
+            // Restore next state
+            const nextState = redoStack.pop();
+            pipettes = nextState.pipettes;
+            currentPipetteId = nextState.currentPipetteId;
+
+            // Restore session info
+            Object.keys(nextState.sessionInfo).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = nextState.sessionInfo[key] || '';
+                }
+            });
+
+            // Re-render everything
+            renderAllPipettes();
+            updateAnalysis();
+            updateEmptyState();
+            autoSave();
+            updateUndoRedoButtons();
+
+            // Show notification
+            showUndoNotification('Redid action');
+        }
+
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+
+            if (undoBtn) {
+                undoBtn.disabled = undoStack.length === 0;
+                if (undoStack.length > 0) {
+                    const lastAction = undoStack[undoStack.length - 1].action;
+                    undoBtn.title = `Undo: ${lastAction}`;
+                } else {
+                    undoBtn.title = 'Nothing to undo';
+                }
+            }
+
+            if (redoBtn) {
+                redoBtn.disabled = redoStack.length === 0;
+                redoBtn.title = redoStack.length > 0 ? 'Redo last action' : 'Nothing to redo';
+            }
+        }
+
+        function showUndoNotification(message) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                background: #667eea;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: fadeIn 0.3s ease;
+                font-size: 14px;
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Keyboard shortcuts for undo/redo
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Z or Cmd+Z for undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            }
+            // Ctrl+Shift+Z or Cmd+Shift+Z for redo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+                e.preventDefault();
+                redo();
+            }
+            // Ctrl+Y or Cmd+Y for redo (alternative)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        });
+
+        // ========================================
+        // BACKUP REMINDER SYSTEM
+        // ========================================
+
+        function checkBackupReminder() {
+            const BACKUP_REMINDER_DAYS = 7;
+            const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+            const lastBackup = localStorage.getItem('lastBackupDate');
+            const dismissedUntil = localStorage.getItem('backupReminderDismissedUntil');
+
+            // Check if reminder is currently dismissed
+            if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
+                return; // Don't show reminder yet
+            }
+
+            // Check if backup is needed
+            const now = Date.now();
+            const daysSinceBackup = lastBackup ? (now - parseInt(lastBackup)) / (1000 * 60 * 60 * 24) : 999;
+
+            if (daysSinceBackup > BACKUP_REMINDER_DAYS) {
+                showBackupReminder();
+            }
+        }
+
+        function showBackupReminder() {
+            // Remove any existing reminder
+            const existing = document.getElementById('backupReminder');
+            if (existing) existing.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'backupReminder';
+            banner.style.cssText = `
+                position: fixed;
+                top: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+                color: #2d3436;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                max-width: 600px;
+                animation: slideDown 0.3s ease;
+                font-size: 14px;
+                font-weight: 500;
+            `;
+
+            banner.innerHTML = `
+                <span style="font-size: 24px;">⚠️</span>
+                <div style="flex: 1;">
+                    <strong>Backup Reminder:</strong> It's been over 7 days since your last backup.
+                    <br><small>Download your data to prevent loss.</small>
+                </div>
+                <button onclick="downloadBackupAndDismiss()" style="padding: 8px 16px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    📥 Download Backup
+                </button>
+                <button onclick="dismissBackupReminder()" style="padding: 8px 16px; background: #636e72; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Dismiss 24h
+                </button>
+                <button onclick="closeBackupReminder()" style="padding: 4px 8px; background: transparent; border: none; cursor: pointer; font-size: 18px;">
+                    ✕
+                </button>
+            `;
+
+            document.body.appendChild(banner);
+        }
+
+        function downloadBackupAndDismiss() {
+            saveJSON(); // Trigger download
+            localStorage.setItem('lastBackupDate', Date.now().toString());
+            closeBackupReminder();
+        }
+
+        function dismissBackupReminder() {
+            const dismissUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
+            localStorage.setItem('backupReminderDismissedUntil', dismissUntil.toString());
+            closeBackupReminder();
+        }
+
+        function closeBackupReminder() {
+            const banner = document.getElementById('backupReminder');
+            if (banner) {
+                banner.style.animation = 'slideUp 0.3s ease';
+                setTimeout(() => banner.remove(), 300);
+            }
+        }
+
+        // ========================================
+        // AUTOFILL SYSTEM FOR COMMON VALUES
+        // ========================================
+
+        function saveRecentValue(fieldName, value) {
+            if (!value || value.trim() === '') return;
+
+            const recentValues = JSON.parse(localStorage.getItem('recentValues') || '{}');
+
+            if (!recentValues[fieldName]) {
+                recentValues[fieldName] = [];
+            }
+
+            // Remove duplicate if exists
+            recentValues[fieldName] = recentValues[fieldName].filter(v => v !== value);
+
+            // Add to front
+            recentValues[fieldName].unshift(value);
+
+            // Keep only last 5 unique values
+            recentValues[fieldName] = recentValues[fieldName].slice(0, 5);
+
+            localStorage.setItem('recentValues', JSON.stringify(recentValues));
+        }
+
+        function getRecentValues(fieldName) {
+            const recentValues = JSON.parse(localStorage.getItem('recentValues') || '{}');
+            return recentValues[fieldName] || [];
+        }
+
+        function setupAutofill() {
+            const autofillFields = ['technician', 'location', 'client'];
+
+            autofillFields.forEach(fieldName => {
+                const input = document.getElementById(fieldName);
+                if (!input) return;
+
+                // Create datalist if doesn't exist
+                let datalist = document.getElementById(`${fieldName}List`);
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = `${fieldName}List`;
+                    input.setAttribute('list', `${fieldName}List`);
+                    input.parentNode.appendChild(datalist);
+                }
+
+                // Populate datalist with recent values
+                const recentValues = getRecentValues(fieldName);
+                datalist.innerHTML = recentValues.map(value =>
+                    `<option value="${value}">`
+                ).join('');
+
+                // Save value when changed
+                input.addEventListener('change', () => {
+                    saveRecentValue(fieldName, input.value);
+                    // Update datalist
+                    const updated = getRecentValues(fieldName);
+                    datalist.innerHTML = updated.map(value =>
+                        `<option value="${value}">`
+                    ).join('');
+                });
+            });
+        }
+
+        // ========================================
         // INPUT VALIDATION FUNCTIONS
         // ========================================
 
@@ -1081,6 +1418,13 @@
             }, 500); // Save 500ms after last change
         }
 
+        // Save before window closes to prevent data loss
+        window.addEventListener('beforeunload', (e) => {
+            if (pipettes.length > 0) {
+                autoSave();
+            }
+        });
+
         function showSaveIndicator() {
             const indicator = document.getElementById('saveIndicator');
             indicator.classList.add('show');
@@ -1354,6 +1698,7 @@
         }
 
         function addPipette() {
+            saveStateForUndo('Add pipette');
             currentPipetteId++;
             const pipette = {
                 id: currentPipetteId,
@@ -2010,6 +2355,7 @@
         }
 
         function removePipette(pipetteId) {
+            saveStateForUndo('Remove pipette');
             pipettes = pipettes.filter(p => p.id !== pipetteId);
             const element = document.getElementById(`pipette-${pipetteId}`);
             if (element) element.remove();
@@ -2862,6 +3208,9 @@
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
+            // Record backup timestamp
+            localStorage.setItem('lastBackupDate', Date.now().toString());
+
             showAlert('Session saved successfully!', 'Success');
         }
 
@@ -3284,6 +3633,12 @@
 
             loadHistory();
 
+            // Setup autofill for common fields
+            setupAutofill();
+
+            // Check if backup reminder should be shown
+            checkBackupReminder();
+
             // Add listeners to session form fields for auto-save
             document.querySelectorAll('#session input, #session select').forEach(input => {
                 input.addEventListener('change', debouncedAutoSave);
@@ -3295,7 +3650,11 @@
         <div class="header">
             <h1>🧪 Advanced Pipette Calibration System</h1>
             <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
-            <button onclick="logout()" style="position: absolute; top: 20px; right: 20px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
+            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px;">
+                <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↶ Undo</button>
+                <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↷ Redo</button>
+                <button onclick="logout()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
+            </div>
         </div>
 
         <div class="nav-tabs">
