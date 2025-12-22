@@ -1494,18 +1494,32 @@
             return stdDev;
         }
 
-        function getNominalVolume(pipetteModel) {
-            // For basic calibration, we don't have low/mid/high points
-            // We'll use the nominal volume from the model name
-            // Extract the number from model (e.g., "P-1000" -> 1000)
-            const match = pipetteModel.match(/P-(\d+)/);
-            if (!match) return null;
-            return parseFloat(match[1]);
+        function getNominalVolume(pipette) {
+            // For basic calibration, we'll use the Max Volume field
+            // This is more flexible than parsing the model name
+            if (pipette.maxVolume && pipette.maxVolume !== '') {
+                return parseFloat(pipette.maxVolume);
+            }
+
+            // Fallback: try to extract from model name (e.g., "P-1000" -> 1000)
+            const match = pipette.model.match(/P-(\d+)/);
+            if (match) {
+                return parseFloat(match[1]);
+            }
+
+            return null;
         }
 
-        function getSpecifications(model, volume) {
-            const modelSpecs = isoSpecs[model];
-            if (!modelSpecs) return null;
+        function getSpecifications(volume) {
+            // Determine the ISO model name from the max volume
+            // e.g., 1000µL -> "P-1000"
+            const isoModelName = `P-${volume}`;
+
+            const modelSpecs = isoSpecs[isoModelName];
+            if (!modelSpecs) {
+                console.warn('No ISO specs found for volume:', volume, 'model:', isoModelName);
+                return null;
+            }
 
             // Find the closest matching volume in the specs
             const volumes = Object.keys(modelSpecs).map(v => parseFloat(v));
@@ -1530,17 +1544,19 @@
                 return;
             }
 
-            // Get nominal volume from pipette model
-            const nominalVolume = getNominalVolume(pipette.model);
+            // Get nominal volume from pipette (uses maxVolume field or model name)
+            const nominalVolume = getNominalVolume(pipette);
             if (!nominalVolume) {
-                console.error('Could not determine nominal volume for model:', pipette.model);
+                console.error('Could not determine nominal volume for pipette:', pipette);
+                updateValidationDisplay(pipetteId, null);
                 return;
             }
 
             // Get ISO 8655 specifications
-            const specs = getSpecifications(pipette.model, nominalVolume);
+            const specs = getSpecifications(nominalVolume);
             if (!specs) {
-                console.error('No ISO specs found for model:', pipette.model, 'volume:', nominalVolume);
+                console.error('No ISO specs found for volume:', nominalVolume);
+                updateValidationDisplay(pipetteId, null);
                 return;
             }
 
