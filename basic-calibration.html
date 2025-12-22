@@ -934,12 +934,12 @@
                 inSpec: false,
                 outSpec: false,
                 adjustments: {
-                    SE: false,  // Replace Seal
-                    COR: false, // Corrosion
-                    G: false,   // Grease
-                    SH: false,  // Shaft
-                    FR: false,  // Friction Ring
-                    O: false,   // O Ring
+                    SE: '',     // Seal type (dropdown)
+                    COR: '',    // Corrosion (dropdown)
+                    G: '',      // Grease (dropdown)
+                    SH: '',     // Shaft (dropdown)
+                    FR: '',     // Friction Ring (dropdown)
+                    O: '',      // O Ring (dropdown)
                     OTHER: ''   // Other text field
                 },
                 finalVolumes: ['', '', '', ''],
@@ -1016,12 +1016,86 @@
                                 Adjustments & Repairs
                             </label>
                             <div class="checkbox-group">
-                                <label><input type="checkbox" id="adj-SE-${pipette.id}" ${pipette.adjustments.SE ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'SE', this.checked)"> SE</label>
-                                <label><input type="checkbox" id="adj-COR-${pipette.id}" ${pipette.adjustments.COR ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'COR', this.checked)"> COR</label>
-                                <label><input type="checkbox" id="adj-G-${pipette.id}" ${pipette.adjustments.G ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'G', this.checked)"> G</label>
-                                <label><input type="checkbox" id="adj-SH-${pipette.id}" ${pipette.adjustments.SH ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'SH', this.checked)"> SH</label>
-                                <label><input type="checkbox" id="adj-FR-${pipette.id}" ${pipette.adjustments.FR ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'FR', this.checked)"> FR</label>
-                                <label><input type="checkbox" id="adj-O-${pipette.id}" ${pipette.adjustments.O ? 'checked' : ''} onchange="updateAdjustment(${pipette.id}, 'O', this.checked)"> O</label>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">SE:</label>
+                                    <select id="adj-SE-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'SE', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 120px;">
+                                        <option value="">*</option>
+                                        <option value="X" ${pipette.adjustments.SE === 'X' ? 'selected' : ''}>X</option>
+                                        <option value="Silicone" ${pipette.adjustments.SE === 'Silicone' ? 'selected' : ''}>Silicone</option>
+                                        <option value="No seal" ${pipette.adjustments.SE === 'No seal' ? 'selected' : ''}>No seal</option>
+                                        <option value="Other" ${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <input type="text" id="adj-SE-OTHER-${pipette.id}" value="${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? pipette.adjustments.SE : ''}"
+                                           onchange="updateSEOther(${pipette.id}, this.value)"
+                                           placeholder="Specify other..."
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 120px; display: ${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'inline-block' : 'none'};">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">COR:</label>
+                                    <select id="adj-COR-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'COR', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
+                                        <option value=""></option>
+                                        <option value="*" ${pipette.adjustments.COR === '*' ? 'selected' : ''}>*</option>
+                                        <option value="**" ${pipette.adjustments.COR === '**' ? 'selected' : ''}>**</option>
+                                        <option value="***" ${pipette.adjustments.COR === '***' ? 'selected' : ''}>***</option>
+                                        <option value="Other" ${(pipette.adjustments.COR && pipette.adjustments.COR !== '*' && pipette.adjustments.COR !== '**' && pipette.adjustments.COR !== '***' && pipette.adjustments.COR !== '') ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <input type="text" id="adj-COR-OTHER-${pipette.id}" value="${(pipette.adjustments.COR && pipette.adjustments.COR !== '*' && pipette.adjustments.COR !== '**' && pipette.adjustments.COR !== '***' && pipette.adjustments.COR !== '') ? pipette.adjustments.COR : ''}"
+                                           onchange="updateCOROther(${pipette.id}, this.value)"
+                                           placeholder="Specify..."
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.COR && pipette.adjustments.COR !== '*' && pipette.adjustments.COR !== '**' && pipette.adjustments.COR !== '***' && pipette.adjustments.COR !== '') ? 'inline-block' : 'none'};">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">G:</label>
+                                    <select id="adj-G-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'G', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
+                                        <option value=""></option>
+                                        <option value="D" ${pipette.adjustments.G === 'D' ? 'selected' : ''}>D</option>
+                                        <option value="K" ${pipette.adjustments.G === 'K' ? 'selected' : ''}>K</option>
+                                        <option value="Other" ${(pipette.adjustments.G && pipette.adjustments.G !== 'D' && pipette.adjustments.G !== 'K' && pipette.adjustments.G !== '') ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <input type="text" id="adj-G-OTHER-${pipette.id}" value="${(pipette.adjustments.G && pipette.adjustments.G !== 'D' && pipette.adjustments.G !== 'K' && pipette.adjustments.G !== '') ? pipette.adjustments.G : ''}"
+                                           onchange="updateGOther(${pipette.id}, this.value)"
+                                           placeholder="Specify..."
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.G && pipette.adjustments.G !== 'D' && pipette.adjustments.G !== 'K' && pipette.adjustments.G !== '') ? 'inline-block' : 'none'};">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">SH:</label>
+                                    <select id="adj-SH-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'SH', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
+                                        <option value=""></option>
+                                        <option value="X" ${pipette.adjustments.SH === 'X' ? 'selected' : ''}>X</option>
+                                        <option value="Other" ${(pipette.adjustments.SH && pipette.adjustments.SH !== 'X' && pipette.adjustments.SH !== '') ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <input type="text" id="adj-SH-OTHER-${pipette.id}" value="${(pipette.adjustments.SH && pipette.adjustments.SH !== 'X' && pipette.adjustments.SH !== '') ? pipette.adjustments.SH : ''}"
+                                           onchange="updateSHOther(${pipette.id}, this.value)"
+                                           placeholder="Specify..."
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.SH && pipette.adjustments.SH !== 'X' && pipette.adjustments.SH !== '') ? 'inline-block' : 'none'};">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">FR:</label>
+                                    <select id="adj-FR-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'FR', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
+                                        <option value=""></option>
+                                        <option value="Reg" ${pipette.adjustments.FR === 'Reg' ? 'selected' : ''}>Reg</option>
+                                        <option value="Skinny" ${pipette.adjustments.FR === 'Skinny' ? 'selected' : ''}>Skinny</option>
+                                        <option value="Fat" ${pipette.adjustments.FR === 'Fat' ? 'selected' : ''}>Fat</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <label style="font-weight: 600; margin: 0;">O:</label>
+                                    <select id="adj-O-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'O', this.value)"
+                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
+                                        <option value=""></option>
+                                        <option value="X" ${pipette.adjustments.O === 'X' ? 'selected' : ''}>X</option>
+                                        <option value="Other" ${(pipette.adjustments.O && pipette.adjustments.O !== 'X' && pipette.adjustments.O !== '') ? 'selected' : ''}>Other</option>
+                                    </select>
+                                    <input type="text" id="adj-O-OTHER-${pipette.id}" value="${(pipette.adjustments.O && pipette.adjustments.O !== 'X' && pipette.adjustments.O !== '') ? pipette.adjustments.O : ''}"
+                                           onchange="updateOOther(${pipette.id}, this.value)"
+                                           placeholder="Specify..."
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.O && pipette.adjustments.O !== 'X' && pipette.adjustments.O !== '') ? 'inline-block' : 'none'};">
+                                </div>
                                 <input type="text" id="adj-OTHER-${pipette.id}" value="${pipette.adjustments.OTHER}"
                                        onchange="updateAdjustment(${pipette.id}, 'OTHER', this.value)"
                                        placeholder="Other..." style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 120px;">
@@ -1119,7 +1193,155 @@
         function updateAdjustment(pipetteId, adjustmentType, value) {
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
-                pipette.adjustments[adjustmentType] = value;
+                // Special handling for SE dropdown
+                if (adjustmentType === 'SE') {
+                    const otherInput = document.getElementById(`adj-SE-OTHER-${pipetteId}`);
+                    if (value === 'Other') {
+                        if (otherInput) {
+                            otherInput.style.display = 'inline-block';
+                            otherInput.focus();
+                        }
+                        if (!pipette.adjustments.SE || pipette.adjustments.SE === 'X' ||
+                            pipette.adjustments.SE === 'Silicone' || pipette.adjustments.SE === 'No seal' ||
+                            pipette.adjustments.SE === '') {
+                            pipette.adjustments.SE = '';
+                        }
+                    } else {
+                        if (otherInput) {
+                            otherInput.style.display = 'none';
+                            otherInput.value = '';
+                        }
+                        pipette.adjustments.SE = value;
+                    }
+                }
+                // Special handling for COR dropdown
+                else if (adjustmentType === 'COR') {
+                    const otherInput = document.getElementById(`adj-COR-OTHER-${pipetteId}`);
+                    if (value === 'Other') {
+                        if (otherInput) {
+                            otherInput.style.display = 'inline-block';
+                            otherInput.focus();
+                        }
+                        if (!pipette.adjustments.COR || pipette.adjustments.COR === '*' ||
+                            pipette.adjustments.COR === '**' || pipette.adjustments.COR === '***' ||
+                            pipette.adjustments.COR === '') {
+                            pipette.adjustments.COR = '';
+                        }
+                    } else {
+                        if (otherInput) {
+                            otherInput.style.display = 'none';
+                            otherInput.value = '';
+                        }
+                        pipette.adjustments.COR = value;
+                    }
+                }
+                // Special handling for G dropdown
+                else if (adjustmentType === 'G') {
+                    const otherInput = document.getElementById(`adj-G-OTHER-${pipetteId}`);
+                    if (value === 'Other') {
+                        if (otherInput) {
+                            otherInput.style.display = 'inline-block';
+                            otherInput.focus();
+                        }
+                        if (!pipette.adjustments.G || pipette.adjustments.G === 'D' ||
+                            pipette.adjustments.G === 'K' || pipette.adjustments.G === '') {
+                            pipette.adjustments.G = '';
+                        }
+                    } else {
+                        if (otherInput) {
+                            otherInput.style.display = 'none';
+                            otherInput.value = '';
+                        }
+                        pipette.adjustments.G = value;
+                    }
+                }
+                // Special handling for SH dropdown
+                else if (adjustmentType === 'SH') {
+                    const otherInput = document.getElementById(`adj-SH-OTHER-${pipetteId}`);
+                    if (value === 'Other') {
+                        if (otherInput) {
+                            otherInput.style.display = 'inline-block';
+                            otherInput.focus();
+                        }
+                        if (!pipette.adjustments.SH || pipette.adjustments.SH === 'X' ||
+                            pipette.adjustments.SH === '') {
+                            pipette.adjustments.SH = '';
+                        }
+                    } else {
+                        if (otherInput) {
+                            otherInput.style.display = 'none';
+                            otherInput.value = '';
+                        }
+                        pipette.adjustments.SH = value;
+                    }
+                }
+                // FR dropdown (no "Other" option needed)
+                else if (adjustmentType === 'FR') {
+                    pipette.adjustments.FR = value;
+                }
+                // Special handling for O dropdown
+                else if (adjustmentType === 'O') {
+                    const otherInput = document.getElementById(`adj-O-OTHER-${pipetteId}`);
+                    if (value === 'Other') {
+                        if (otherInput) {
+                            otherInput.style.display = 'inline-block';
+                            otherInput.focus();
+                        }
+                        if (!pipette.adjustments.O || pipette.adjustments.O === 'X' ||
+                            pipette.adjustments.O === '') {
+                            pipette.adjustments.O = '';
+                        }
+                    } else {
+                        if (otherInput) {
+                            otherInput.style.display = 'none';
+                            otherInput.value = '';
+                        }
+                        pipette.adjustments.O = value;
+                    }
+                }
+                else {
+                    pipette.adjustments[adjustmentType] = value;
+                }
+                debouncedAutoSave();
+            }
+        }
+
+        function updateSEOther(pipetteId, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.adjustments.SE = value;
+                debouncedAutoSave();
+            }
+        }
+
+        function updateCOROther(pipetteId, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.adjustments.COR = value;
+                debouncedAutoSave();
+            }
+        }
+
+        function updateGOther(pipetteId, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.adjustments.G = value;
+                debouncedAutoSave();
+            }
+        }
+
+        function updateSHOther(pipetteId, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.adjustments.SH = value;
+                debouncedAutoSave();
+            }
+        }
+
+        function updateOOther(pipetteId, value) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (pipette) {
+                pipette.adjustments.O = value;
                 debouncedAutoSave();
             }
         }
