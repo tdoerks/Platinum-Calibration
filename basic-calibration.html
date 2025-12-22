@@ -330,6 +330,27 @@
             margin-bottom: 20px;
         }
 
+        /* Form Section Cards */
+        .form-section-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .form-section-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #223077;
+            margin: 0 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #69B135;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -2599,92 +2620,115 @@
             </div>
 
             <!-- Session Name -->
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 25px;">
                 <label style="font-weight: 600; color: #223077; display: block; margin-bottom: 8px;">Session Name</label>
                 <input type="text" id="sessionName" placeholder="e.g., Lab 204 Monthly Cal - Dec 2024"
-                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;"
+                       style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 15px;"
                        onchange="debouncedAutoSave()">
                 <p style="font-size: 12px; color: #6c757d; margin-top: 5px;">Give this session a memorable name for easy identification in history</p>
             </div>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Principal Investigator</label>
-                    <input type="text" id="pi" placeholder="PI Name" onchange="generateWorkOrderAndInvoice()">
-                </div>
-                <div class="form-group">
-                    <label>PI Email</label>
-                    <input type="email" id="piEmail" placeholder="PI Email">
-                </div>
-                <div class="form-group">
-                    <label>Contact Person</label>
-                    <input type="text" id="contact" placeholder="Contact Name">
-                </div>
-                <div class="form-group">
-                    <label>Contact Email</label>
-                    <input type="email" id="contactEmail" placeholder="Contact Email">
-                </div>
-                <div class="form-group">
-                    <label>Phone for Billing</label>
-                    <input type="tel" id="phone" placeholder="Phone Number">
-                </div>
-                <div class="form-group">
-                    <label>Company/University</label>
-                    <input type="text" id="company" placeholder="Company/University">
-                </div>
-                <div class="form-group">
-                    <label>Building</label>
-                    <input type="text" id="building" placeholder="Building Name/Number">
-                </div>
-                <div class="form-group">
-                    <label>Room #</label>
-                    <input type="text" id="room" placeholder="Room Number">
-                </div>
-                <div class="form-group">
-                    <label>Technician</label>
-                    <input type="text" id="technician" value="TSD" list="technicianList" onchange="generateWorkOrderAndInvoice()">
-                </div>
-                <div class="form-group">
-                    <label>Frequency</label>
-                    <select id="frequency" onchange="generateWorkOrderAndInvoice()">
-                        <option value="A" selected>Annual</option>
-                        <option value="B">Biannual</option>
-                        <option value="S">Semi-Annual</option>
-                        <option value="Q">Quarterly</option>
-                        <option value="M">Monthly</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Work Order Number</label>
-                    <input type="text" id="workOrderNo" placeholder="Auto-generated" readonly style="background: #f8f9fa;">
-                </div>
-                <div class="form-group">
-                    <label>Invoice Number</label>
-                    <input type="text" id="invoiceNo" placeholder="Auto-generated" readonly style="background: #f8f9fa;">
-                </div>
-                <div class="form-group">
-                    <label>Date of Service</label>
-                    <input type="date" id="serviceDate" onchange="generateWorkOrderAndInvoice()">
-                </div>
-                <div class="form-group">
-                    <label>Next Service Due</label>
-                    <input type="date" id="nextServiceDue">
+            <!-- Client Information Card -->
+            <div class="form-section-card">
+                <h3 class="form-section-header">
+                    <span>📋</span>
+                    <span>Client & Service Information</span>
+                </h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Principal Investigator</label>
+                        <input type="text" id="pi" placeholder="PI Name" onchange="generateWorkOrderAndInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>PI Email</label>
+                        <input type="email" id="piEmail" placeholder="PI Email">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Person</label>
+                        <input type="text" id="contact" placeholder="Contact Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Email</label>
+                        <input type="email" id="contactEmail" placeholder="Contact Email">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone for Billing</label>
+                        <input type="tel" id="phone" placeholder="Phone Number">
+                    </div>
+                    <div class="form-group">
+                        <label>Company/University</label>
+                        <input type="text" id="company" placeholder="Company/University">
+                    </div>
+                    <div class="form-group">
+                        <label>Building</label>
+                        <input type="text" id="building" placeholder="Building Name/Number">
+                    </div>
+                    <div class="form-group">
+                        <label>Room #</label>
+                        <input type="text" id="room" placeholder="Room Number">
+                    </div>
                 </div>
             </div>
 
-            <h3 style="color: #223077; margin: 30px 0 15px 0;">⚖️ Balance Information</h3>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Balance Model</label>
-                    <input type="text" id="balanceModel" value="XS105DU">
+            <!-- Service Details Card -->
+            <div class="form-section-card">
+                <h3 class="form-section-header">
+                    <span>🔧</span>
+                    <span>Service Details</span>
+                </h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Technician</label>
+                        <input type="text" id="technician" value="TSD" list="technicianList" onchange="generateWorkOrderAndInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Frequency</label>
+                        <select id="frequency" onchange="generateWorkOrderAndInvoice()">
+                            <option value="A" selected>Annual</option>
+                            <option value="B">Biannual</option>
+                            <option value="S">Semi-Annual</option>
+                            <option value="Q">Quarterly</option>
+                            <option value="M">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date of Service</label>
+                        <input type="date" id="serviceDate" onchange="generateWorkOrderAndInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Next Service Due</label>
+                        <input type="date" id="nextServiceDue">
+                    </div>
+                    <div class="form-group">
+                        <label>Work Order Number</label>
+                        <input type="text" id="workOrderNo" placeholder="Auto-generated" readonly style="background: #fff;">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice Number</label>
+                        <input type="text" id="invoiceNo" placeholder="Auto-generated" readonly style="background: #fff;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Balance Serial Number</label>
-                    <input type="text" id="balanceSerial" value="B621501811">
-                </div>
-                <div class="form-group">
-                    <label>Balance Cal Due Date</label>
-                    <input type="date" id="balanceCalDue">
+            </div>
+
+            <!-- Balance Information Card -->
+            <div class="form-section-card">
+                <h3 class="form-section-header">
+                    <span>⚖️</span>
+                    <span>Balance Calibration Information</span>
+                </h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Balance Model</label>
+                        <input type="text" id="balanceModel" value="XS105DU">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance Serial Number</label>
+                        <input type="text" id="balanceSerial" value="B621501811">
+                    </div>
+                    <div class="form-group">
+                        <label>Balance Cal Due Date</label>
+                        <input type="date" id="balanceCalDue">
+                    </div>
                 </div>
             </div>
 
