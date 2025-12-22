@@ -1160,6 +1160,141 @@
             }
         }
 
+        function generateMakeModelOptions(selectedValue) {
+            const isSelected = (val) => selectedValue === val ? 'selected' : '';
+
+            return `
+                <option value=""></option>
+                <optgroup label="── Eppendorf ──">
+                    <option value="Epp Handy Step" ${isSelected('Epp Handy Step')}>Epp Handy Step</option>
+                    <option value="Epp Repeater" ${isSelected('Epp Repeater')}>Epp Repeater</option>
+                    <option value="Epp Research" ${isSelected('Epp Research')}>Epp Research</option>
+                    <option value="Epp Research Plus" ${isSelected('Epp Research Plus')}>Epp Research Plus</option>
+                    <option value="Epp Xplorer plus" ${isSelected('Epp Xplorer plus')}>Epp Xplorer plus</option>
+                    <option value="Eppendorf 4700" ${isSelected('Eppendorf 4700')}>Eppendorf 4700</option>
+                    <option value="Eppendorf 4710" ${isSelected('Eppendorf 4710')}>Eppendorf 4710</option>
+                    <option value="Eppendorf Black" ${isSelected('Eppendorf Black')}>Eppendorf Black</option>
+                    <option value="Eppendorf brown" ${isSelected('Eppendorf brown')}>Eppendorf brown</option>
+                    <option value="Eppendorf Reference" ${isSelected('Eppendorf Reference')}>Eppendorf Reference</option>
+                    <option value="Eppendorf Reference 2" ${isSelected('Eppendorf Reference 2')}>Eppendorf Reference 2</option>
+                    <option value="Eppendorf Repeater E3" ${isSelected('Eppendorf Repeater E3')}>Eppendorf Repeater E3</option>
+                    <option value="Eppendorf Repeater M4" ${isSelected('Eppendorf Repeater M4')}>Eppendorf Repeater M4</option>
+                    <option value="Eppendorf Xplorer" ${isSelected('Eppendorf Xplorer')}>Eppendorf Xplorer</option>
+                </optgroup>
+                <optgroup label="── Rainin ──">
+                    <option value="Rainin AutoRep E" ${isSelected('Rainin AutoRep E')}>Rainin AutoRep E</option>
+                    <option value="Rainin Classic" ${isSelected('Rainin Classic')}>Rainin Classic</option>
+                    <option value="Rainin EDP3" ${isSelected('Rainin EDP3')}>Rainin EDP3</option>
+                    <option value="Rainin NanoRep" ${isSelected('Rainin NanoRep')}>Rainin NanoRep</option>
+                    <option value="Rainin Pipete Plus SL" ${isSelected('Rainin Pipete Plus SL')}>Rainin Pipete Plus SL</option>
+                    <option value="Rainin Pipete XLS SL" ${isSelected('Rainin Pipete XLS SL')}>Rainin Pipete XLS SL</option>
+                    <option value="Rainin Pipette Lite" ${isSelected('Rainin Pipette Lite')}>Rainin Pipette Lite</option>
+                    <option value="Rainin Pipette Lite E4" ${isSelected('Rainin Pipette Lite E4')}>Rainin Pipette Lite E4</option>
+                    <option value="Rainin Pipette Lite SL" ${isSelected('Rainin Pipette Lite SL')}>Rainin Pipette Lite SL</option>
+                    <option value="Rainin Pipette Lite XLS" ${isSelected('Rainin Pipette Lite XLS')}>Rainin Pipette Lite XLS</option>
+                    <option value="Rainin Pipette Lite XLS E4" ${isSelected('Rainin Pipette Lite XLS E4')}>Rainin Pipette Lite XLS E4</option>
+                    <option value="Rainin Pipette Plus" ${isSelected('Rainin Pipette Plus')}>Rainin Pipette Plus</option>
+                </optgroup>
+                <optgroup label="── Gilson ──">
+                    <option value="Gilson" ${isSelected('Gilson')}>Gilson</option>
+                    <option value="Gilson Microman" ${isSelected('Gilson Microman')}>Gilson Microman</option>
+                    <option value="Gilson Neo" ${isSelected('Gilson Neo')}>Gilson Neo</option>
+                    <option value="Gilson Pipetman" ${isSelected('Gilson Pipetman')}>Gilson Pipetman</option>
+                    <option value="Gilson Ultra" ${isSelected('Gilson Ultra')}>Gilson Ultra</option>
+                </optgroup>
+                <optgroup label="── Finn / Thermo ──">
+                    <option value="Finn" ${isSelected('Finn')}>Finn</option>
+                    <option value="Finn Clip tip" ${isSelected('Finn Clip tip')}>Finn Clip tip</option>
+                    <option value="Finn Colours" ${isSelected('Finn Colours')}>Finn Colours</option>
+                    <option value="Finn Digital" ${isSelected('Finn Digital')}>Finn Digital</option>
+                    <option value="Finn F1" ${isSelected('Finn F1')}>Finn F1</option>
+                    <option value="Finn Focus" ${isSelected('Finn Focus')}>Finn Focus</option>
+                    <option value="Finn II" ${isSelected('Finn II')}>Finn II</option>
+                    <option value="Finn Labsystem Repeater" ${isSelected('Finn Labsystem Repeater')}>Finn Labsystem Repeater</option>
+                    <option value="Finnpipette" ${isSelected('Finnpipette')}>Finnpipette</option>
+                    <option value="Finnpipette II" ${isSelected('Finnpipette II')}>Finnpipette II</option>
+                    <option value="Fisher elite Finn F1" ${isSelected('Fisher elite Finn F1')}>Fisher elite Finn F1</option>
+                    <option value="Fisher elite Finn F2" ${isSelected('Fisher elite Finn F2')}>Fisher elite Finn F2</option>
+                    <option value="Fisher Finn" ${isSelected('Fisher Finn')}>Fisher Finn</option>
+                    <option value="Fisherbrand" ${isSelected('Fisherbrand')}>Fisherbrand</option>
+                    <option value="Fisherbrand HandyStep S" ${isSelected('Fisherbrand HandyStep S')}>Fisherbrand HandyStep S</option>
+                    <option value="Fisherbrand Repeater" ${isSelected('Fisherbrand Repeater')}>Fisherbrand Repeater</option>
+                    <option value="Thermo Scientific Matrix" ${isSelected('Thermo Scientific Matrix')}>Thermo Scientific Matrix</option>
+                    <option value="Thermo Scientific S1" ${isSelected('Thermo Scientific S1')}>Thermo Scientific S1</option>
+                </optgroup>
+                <optgroup label="── VWR ──">
+                    <option value="VWR" ${isSelected('VWR')}>VWR</option>
+                    <option value="VWR Blue" ${isSelected('VWR Blue')}>VWR Blue</option>
+                    <option value="VWR Electronic" ${isSelected('VWR Electronic')}>VWR Electronic</option>
+                    <option value="VWR Ergonomic" ${isSelected('VWR Ergonomic')}>VWR Ergonomic</option>
+                    <option value="VWR Ergonomic HP" ${isSelected('VWR Ergonomic HP')}>VWR Ergonomic HP</option>
+                    <option value="VWR Labpette" ${isSelected('VWR Labpette')}>VWR Labpette</option>
+                    <option value="VWR LTS Comp" ${isSelected('VWR LTS Comp')}>VWR LTS Comp</option>
+                    <option value="VWR Sealpette" ${isSelected('VWR Sealpette')}>VWR Sealpette</option>
+                    <option value="VWR Ultra" ${isSelected('VWR Ultra')}>VWR Ultra</option>
+                </optgroup>
+                <optgroup label="── Biohit ──">
+                    <option value="Biohit eline" ${isSelected('Biohit eline')}>Biohit eline</option>
+                    <option value="Biohit mline" ${isSelected('Biohit mline')}>Biohit mline</option>
+                    <option value="Biohit Picus" ${isSelected('Biohit Picus')}>Biohit Picus</option>
+                    <option value="Biohit Proline Plus" ${isSelected('Biohit Proline Plus')}>Biohit Proline Plus</option>
+                </optgroup>
+                <optgroup label="── Other Brands ──">
+                    <option value="Accupet" ${isSelected('Accupet')}>Accupet</option>
+                    <option value="Accupette" ${isSelected('Accupette')}>Accupette</option>
+                    <option value="Accu-jet pro" ${isSelected('Accu-jet pro')}>Accu-jet pro</option>
+                    <option value="Accumax" ${isSelected('Accumax')}>Accumax</option>
+                    <option value="Alphapette" ${isSelected('Alphapette')}>Alphapette</option>
+                    <option value="Alphalite" ${isSelected('Alphalite')}>Alphalite</option>
+                    <option value="Benchmate" ${isSelected('Benchmate')}>Benchmate</option>
+                    <option value="Benchmate II" ${isSelected('Benchmate II')}>Benchmate II</option>
+                    <option value="Betapet" ${isSelected('Betapet')}>Betapet</option>
+                    <option value="Bio Rad" ${isSelected('Bio Rad')}>Bio Rad</option>
+                    <option value="Cole Palmer" ${isSelected('Cole Palmer')}>Cole Palmer</option>
+                    <option value="Costar" ${isSelected('Costar')}>Costar</option>
+                    <option value="Denville 3000" ${isSelected('Denville 3000')}>Denville 3000</option>
+                    <option value="Denville 3000i" ${isSelected('Denville 3000i')}>Denville 3000i</option>
+                    <option value="Denville Ultra" ${isSelected('Denville Ultra')}>Denville Ultra</option>
+                    <option value="Dispensette Organice Bottle Filler" ${isSelected('Dispensette Organice Bottle Filler')}>Dispensette Organice Bottle Filler</option>
+                    <option value="ErgoOne" ${isSelected('ErgoOne')}>ErgoOne</option>
+                    <option value="Genemate" ${isSelected('Genemate')}>Genemate</option>
+                    <option value="HandyStep Touch" ${isSelected('HandyStep Touch')}>HandyStep Touch</option>
+                    <option value="IKA Pette" ${isSelected('IKA Pette')}>IKA Pette</option>
+                    <option value="Integra" ${isSelected('Integra')}>Integra</option>
+                    <option value="Integra Electronic" ${isSelected('Integra Electronic')}>Integra Electronic</option>
+                    <option value="Integrapette" ${isSelected('Integrapette')}>Integrapette</option>
+                    <option value="Jencons" ${isSelected('Jencons')}>Jencons</option>
+                    <option value="Labnet" ${isSelected('Labnet')}>Labnet</option>
+                    <option value="Lambda" ${isSelected('Lambda')}>Lambda</option>
+                    <option value="Lambda eliteTouch" ${isSelected('Lambda eliteTouch')}>Lambda eliteTouch</option>
+                    <option value="Lambda Plus" ${isSelected('Lambda Plus')}>Lambda Plus</option>
+                    <option value="megaZen Seriological" ${isSelected('megaZen Seriological')}>megaZen Seriological</option>
+                    <option value="Mettler VoluMate" ${isSelected('Mettler VoluMate')}>Mettler VoluMate</option>
+                    <option value="MidSci" ${isSelected('MidSci')}>MidSci</option>
+                    <option value="Nichipet" ${isSelected('Nichipet')}>Nichipet</option>
+                    <option value="Nichipet EX" ${isSelected('Nichipet EX')}>Nichipet EX</option>
+                    <option value="Nichipet EX II" ${isSelected('Nichipet EX II')}>Nichipet EX II</option>
+                    <option value="Nichipet Premium" ${isSelected('Nichipet Premium')}>Nichipet Premium</option>
+                    <option value="NO ID" ${isSelected('NO ID')}>NO ID</option>
+                    <option value="OniLab" ${isSelected('OniLab')}>OniLab</option>
+                    <option value="Pipet-aid" ${isSelected('Pipet-aid')}>Pipet-aid</option>
+                    <option value="Proline" ${isSelected('Proline')}>Proline</option>
+                    <option value="SciLogex" ${isSelected('SciLogex')}>SciLogex</option>
+                    <option value="Sealpette" ${isSelected('Sealpette')}>Sealpette</option>
+                    <option value="Socorex" ${isSelected('Socorex')}>Socorex</option>
+                    <option value="Surepette" ${isSelected('Surepette')}>Surepette</option>
+                    <option value="Transferpet" ${isSelected('Transferpet')}>Transferpet</option>
+                    <option value="Transferpet S" ${isSelected('Transferpet S')}>Transferpet S</option>
+                    <option value="United" ${isSelected('United')}>United</option>
+                    <option value="Viaflo" ${isSelected('Viaflo')}>Viaflo</option>
+                    <option value="Watson Nexty" ${isSelected('Watson Nexty')}>Watson Nexty</option>
+                </optgroup>
+                <optgroup label="────────">
+                    <option value="Other">Other (specify)</option>
+                </optgroup>
+            `;
+        }
+
         function renderPipette(pipette) {
             const container = document.getElementById('pipettesContainer');
 
@@ -1187,118 +1322,7 @@
                             <label>Make/Model</label>
                             <select id="makeModel-${pipette.id}" onchange="updatePipetteField(${pipette.id}, 'makeModel', this.value)"
                                     style="width: 100%;">
-                                <option value=""></option>
-                                <option value="Accupet" ${pipette.makeModel === 'Accupet' ? 'selected' : ''}>Accupet</option>
-                                <option value="Accupette" ${pipette.makeModel === 'Accupette' ? 'selected' : ''}>Accupette</option>
-                                <option value="Accu-jet pro" ${pipette.makeModel === 'Accu-jet pro' ? 'selected' : ''}>Accu-jet pro</option>
-                                <option value="Accumax" ${pipette.makeModel === 'Accumax' ? 'selected' : ''}>Accumax</option>
-                                <option value="Alphapette" ${pipette.makeModel === 'Alphapette' ? 'selected' : ''}>Alphapette</option>
-                                <option value="Alphalite" ${pipette.makeModel === 'Alphalite' ? 'selected' : ''}>Alphalite</option>
-                                <option value="Benchmate" ${pipette.makeModel === 'Benchmate' ? 'selected' : ''}>Benchmate</option>
-                                <option value="Benchmate II" ${pipette.makeModel === 'Benchmate II' ? 'selected' : ''}>Benchmate II</option>
-                                <option value="Betapet" ${pipette.makeModel === 'Betapet' ? 'selected' : ''}>Betapet</option>
-                                <option value="Bio Rad" ${pipette.makeModel === 'Bio Rad' ? 'selected' : ''}>Bio Rad</option>
-                                <option value="Biohit eline" ${pipette.makeModel === 'Biohit eline' ? 'selected' : ''}>Biohit eline</option>
-                                <option value="Biohit mline" ${pipette.makeModel === 'Biohit mline' ? 'selected' : ''}>Biohit mline</option>
-                                <option value="Biohit Picus" ${pipette.makeModel === 'Biohit Picus' ? 'selected' : ''}>Biohit Picus</option>
-                                <option value="Biohit Proline Plus" ${pipette.makeModel === 'Biohit Proline Plus' ? 'selected' : ''}>Biohit Proline Plus</option>
-                                <option value="Cole Palmer" ${pipette.makeModel === 'Cole Palmer' ? 'selected' : ''}>Cole Palmer</option>
-                                <option value="Costar" ${pipette.makeModel === 'Costar' ? 'selected' : ''}>Costar</option>
-                                <option value="Denville 3000" ${pipette.makeModel === 'Denville 3000' ? 'selected' : ''}>Denville 3000</option>
-                                <option value="Denville 3000i" ${pipette.makeModel === 'Denville 3000i' ? 'selected' : ''}>Denville 3000i</option>
-                                <option value="Denville Ultra" ${pipette.makeModel === 'Denville Ultra' ? 'selected' : ''}>Denville Ultra</option>
-                                <option value="Dispensette Organice Bottle Filler" ${pipette.makeModel === 'Dispensette Organice Bottle Filler' ? 'selected' : ''}>Dispensette Organice Bottle Filler</option>
-                                <option value="Epp Handy Step" ${pipette.makeModel === 'Epp Handy Step' ? 'selected' : ''}>Epp Handy Step</option>
-                                <option value="Epp Repeater" ${pipette.makeModel === 'Epp Repeater' ? 'selected' : ''}>Epp Repeater</option>
-                                <option value="Epp Research" ${pipette.makeModel === 'Epp Research' ? 'selected' : ''}>Epp Research</option>
-                                <option value="Epp Research Plus" ${pipette.makeModel === 'Epp Research Plus' ? 'selected' : ''}>Epp Research Plus</option>
-                                <option value="Epp Xplorer plus" ${pipette.makeModel === 'Epp Xplorer plus' ? 'selected' : ''}>Epp Xplorer plus</option>
-                                <option value="Eppendorf 4700" ${pipette.makeModel === 'Eppendorf 4700' ? 'selected' : ''}>Eppendorf 4700</option>
-                                <option value="Eppendorf 4710" ${pipette.makeModel === 'Eppendorf 4710' ? 'selected' : ''}>Eppendorf 4710</option>
-                                <option value="Eppendorf Black" ${pipette.makeModel === 'Eppendorf Black' ? 'selected' : ''}>Eppendorf Black</option>
-                                <option value="Eppendorf brown" ${pipette.makeModel === 'Eppendorf brown' ? 'selected' : ''}>Eppendorf brown</option>
-                                <option value="Eppendorf Reference" ${pipette.makeModel === 'Eppendorf Reference' ? 'selected' : ''}>Eppendorf Reference</option>
-                                <option value="Eppendorf Reference 2" ${pipette.makeModel === 'Eppendorf Reference 2' ? 'selected' : ''}>Eppendorf Reference 2</option>
-                                <option value="Eppendorf Repeater E3" ${pipette.makeModel === 'Eppendorf Repeater E3' ? 'selected' : ''}>Eppendorf Repeater E3</option>
-                                <option value="Eppendorf Repeater M4" ${pipette.makeModel === 'Eppendorf Repeater M4' ? 'selected' : ''}>Eppendorf Repeater M4</option>
-                                <option value="Eppendorf Xplorer" ${pipette.makeModel === 'Eppendorf Xplorer' ? 'selected' : ''}>Eppendorf Xplorer</option>
-                                <option value="ErgoOne" ${pipette.makeModel === 'ErgoOne' ? 'selected' : ''}>ErgoOne</option>
-                                <option value="Finn" ${pipette.makeModel === 'Finn' ? 'selected' : ''}>Finn</option>
-                                <option value="Finn Clip tip" ${pipette.makeModel === 'Finn Clip tip' ? 'selected' : ''}>Finn Clip tip</option>
-                                <option value="Finn Colours" ${pipette.makeModel === 'Finn Colours' ? 'selected' : ''}>Finn Colours</option>
-                                <option value="Finn Digital" ${pipette.makeModel === 'Finn Digital' ? 'selected' : ''}>Finn Digital</option>
-                                <option value="Finn F1" ${pipette.makeModel === 'Finn F1' ? 'selected' : ''}>Finn F1</option>
-                                <option value="Finn Focus" ${pipette.makeModel === 'Finn Focus' ? 'selected' : ''}>Finn Focus</option>
-                                <option value="Finn II" ${pipette.makeModel === 'Finn II' ? 'selected' : ''}>Finn II</option>
-                                <option value="Finn Labsystem Repeater" ${pipette.makeModel === 'Finn Labsystem Repeater' ? 'selected' : ''}>Finn Labsystem Repeater</option>
-                                <option value="Finnpipette" ${pipette.makeModel === 'Finnpipette' ? 'selected' : ''}>Finnpipette</option>
-                                <option value="Finnpipette II" ${pipette.makeModel === 'Finnpipette II' ? 'selected' : ''}>Finnpipette II</option>
-                                <option value="Fisher elite Finn F1" ${pipette.makeModel === 'Fisher elite Finn F1' ? 'selected' : ''}>Fisher elite Finn F1</option>
-                                <option value="Fisher elite Finn F2" ${pipette.makeModel === 'Fisher elite Finn F2' ? 'selected' : ''}>Fisher elite Finn F2</option>
-                                <option value="Fisher Finn" ${pipette.makeModel === 'Fisher Finn' ? 'selected' : ''}>Fisher Finn</option>
-                                <option value="Fisherbrand" ${pipette.makeModel === 'Fisherbrand' ? 'selected' : ''}>Fisherbrand</option>
-                                <option value="Fisherbrand HandyStep S" ${pipette.makeModel === 'Fisherbrand HandyStep S' ? 'selected' : ''}>Fisherbrand HandyStep S</option>
-                                <option value="Fisherbrand Repeater" ${pipette.makeModel === 'Fisherbrand Repeater' ? 'selected' : ''}>Fisherbrand Repeater</option>
-                                <option value="Genemate" ${pipette.makeModel === 'Genemate' ? 'selected' : ''}>Genemate</option>
-                                <option value="Gilson" ${pipette.makeModel === 'Gilson' ? 'selected' : ''}>Gilson</option>
-                                <option value="Gilson Microman" ${pipette.makeModel === 'Gilson Microman' ? 'selected' : ''}>Gilson Microman</option>
-                                <option value="Gilson Neo" ${pipette.makeModel === 'Gilson Neo' ? 'selected' : ''}>Gilson Neo</option>
-                                <option value="Gilson Pipetman" ${pipette.makeModel === 'Gilson Pipetman' ? 'selected' : ''}>Gilson Pipetman</option>
-                                <option value="Gilson Ultra" ${pipette.makeModel === 'Gilson Ultra' ? 'selected' : ''}>Gilson Ultra</option>
-                                <option value="HandyStep Touch" ${pipette.makeModel === 'HandyStep Touch' ? 'selected' : ''}>HandyStep Touch</option>
-                                <option value="IKA Pette" ${pipette.makeModel === 'IKA Pette' ? 'selected' : ''}>IKA Pette</option>
-                                <option value="Integra" ${pipette.makeModel === 'Integra' ? 'selected' : ''}>Integra</option>
-                                <option value="Integra Electronic" ${pipette.makeModel === 'Integra Electronic' ? 'selected' : ''}>Integra Electronic</option>
-                                <option value="Integrapette" ${pipette.makeModel === 'Integrapette' ? 'selected' : ''}>Integrapette</option>
-                                <option value="Jencons" ${pipette.makeModel === 'Jencons' ? 'selected' : ''}>Jencons</option>
-                                <option value="Labnet" ${pipette.makeModel === 'Labnet' ? 'selected' : ''}>Labnet</option>
-                                <option value="Lambda" ${pipette.makeModel === 'Lambda' ? 'selected' : ''}>Lambda</option>
-                                <option value="Lambda eliteTouch" ${pipette.makeModel === 'Lambda eliteTouch' ? 'selected' : ''}>Lambda eliteTouch</option>
-                                <option value="Lambda Plus" ${pipette.makeModel === 'Lambda Plus' ? 'selected' : ''}>Lambda Plus</option>
-                                <option value="megaZen Seriological" ${pipette.makeModel === 'megaZen Seriological' ? 'selected' : ''}>megaZen Seriological</option>
-                                <option value="Mettler VoluMate" ${pipette.makeModel === 'Mettler VoluMate' ? 'selected' : ''}>Mettler VoluMate</option>
-                                <option value="MidSci" ${pipette.makeModel === 'MidSci' ? 'selected' : ''}>MidSci</option>
-                                <option value="Nichipet" ${pipette.makeModel === 'Nichipet' ? 'selected' : ''}>Nichipet</option>
-                                <option value="Nichipet EX" ${pipette.makeModel === 'Nichipet EX' ? 'selected' : ''}>Nichipet EX</option>
-                                <option value="Nichipet EX II" ${pipette.makeModel === 'Nichipet EX II' ? 'selected' : ''}>Nichipet EX II</option>
-                                <option value="Nichipet Premium" ${pipette.makeModel === 'Nichipet Premium' ? 'selected' : ''}>Nichipet Premium</option>
-                                <option value="NO ID" ${pipette.makeModel === 'NO ID' ? 'selected' : ''}>NO ID</option>
-                                <option value="OniLab" ${pipette.makeModel === 'OniLab' ? 'selected' : ''}>OniLab</option>
-                                <option value="Pipet-aid" ${pipette.makeModel === 'Pipet-aid' ? 'selected' : ''}>Pipet-aid</option>
-                                <option value="Proline" ${pipette.makeModel === 'Proline' ? 'selected' : ''}>Proline</option>
-                                <option value="Rainin AutoRep E" ${pipette.makeModel === 'Rainin AutoRep E' ? 'selected' : ''}>Rainin AutoRep E</option>
-                                <option value="Rainin Classic" ${pipette.makeModel === 'Rainin Classic' ? 'selected' : ''}>Rainin Classic</option>
-                                <option value="Rainin EDP3" ${pipette.makeModel === 'Rainin EDP3' ? 'selected' : ''}>Rainin EDP3</option>
-                                <option value="Rainin NanoRep" ${pipette.makeModel === 'Rainin NanoRep' ? 'selected' : ''}>Rainin NanoRep</option>
-                                <option value="Rainin Pipete Plus SL" ${pipette.makeModel === 'Rainin Pipete Plus SL' ? 'selected' : ''}>Rainin Pipete Plus SL</option>
-                                <option value="Rainin Pipete XLS SL" ${pipette.makeModel === 'Rainin Pipete XLS SL' ? 'selected' : ''}>Rainin Pipete XLS SL</option>
-                                <option value="Rainin Pipette Lite" ${pipette.makeModel === 'Rainin Pipette Lite' ? 'selected' : ''}>Rainin Pipette Lite</option>
-                                <option value="Rainin Pipette Lite E4" ${pipette.makeModel === 'Rainin Pipette Lite E4' ? 'selected' : ''}>Rainin Pipette Lite E4</option>
-                                <option value="Rainin Pipette Lite SL" ${pipette.makeModel === 'Rainin Pipette Lite SL' ? 'selected' : ''}>Rainin Pipette Lite SL</option>
-                                <option value="Rainin Pipette Lite XLS" ${pipette.makeModel === 'Rainin Pipette Lite XLS' ? 'selected' : ''}>Rainin Pipette Lite XLS</option>
-                                <option value="Rainin Pipette Lite XLS E4" ${pipette.makeModel === 'Rainin Pipette Lite XLS E4' ? 'selected' : ''}>Rainin Pipette Lite XLS E4</option>
-                                <option value="Rainin Pipette Plus" ${pipette.makeModel === 'Rainin Pipette Plus' ? 'selected' : ''}>Rainin Pipette Plus</option>
-                                <option value="SciLogex" ${pipette.makeModel === 'SciLogex' ? 'selected' : ''}>SciLogex</option>
-                                <option value="Sealpette" ${pipette.makeModel === 'Sealpette' ? 'selected' : ''}>Sealpette</option>
-                                <option value="Socorex" ${pipette.makeModel === 'Socorex' ? 'selected' : ''}>Socorex</option>
-                                <option value="Surepette" ${pipette.makeModel === 'Surepette' ? 'selected' : ''}>Surepette</option>
-                                <option value="Thermo Scientific Matrix" ${pipette.makeModel === 'Thermo Scientific Matrix' ? 'selected' : ''}>Thermo Scientific Matrix</option>
-                                <option value="Thermo Scientific S1" ${pipette.makeModel === 'Thermo Scientific S1' ? 'selected' : ''}>Thermo Scientific S1</option>
-                                <option value="Transferpet" ${pipette.makeModel === 'Transferpet' ? 'selected' : ''}>Transferpet</option>
-                                <option value="Transferpet S" ${pipette.makeModel === 'Transferpet S' ? 'selected' : ''}>Transferpet S</option>
-                                <option value="United" ${pipette.makeModel === 'United' ? 'selected' : ''}>United</option>
-                                <option value="Viaflo" ${pipette.makeModel === 'Viaflo' ? 'selected' : ''}>Viaflo</option>
-                                <option value="VWR" ${pipette.makeModel === 'VWR' ? 'selected' : ''}>VWR</option>
-                                <option value="VWR Blue" ${pipette.makeModel === 'VWR Blue' ? 'selected' : ''}>VWR Blue</option>
-                                <option value="VWR Electronic" ${pipette.makeModel === 'VWR Electronic' ? 'selected' : ''}>VWR Electronic</option>
-                                <option value="VWR Ergonomic" ${pipette.makeModel === 'VWR Ergonomic' ? 'selected' : ''}>VWR Ergonomic</option>
-                                <option value="VWR Ergonomic HP" ${pipette.makeModel === 'VWR Ergonomic HP' ? 'selected' : ''}>VWR Ergonomic HP</option>
-                                <option value="VWR Labpette" ${pipette.makeModel === 'VWR Labpette' ? 'selected' : ''}>VWR Labpette</option>
-                                <option value="VWR LTS Comp" ${pipette.makeModel === 'VWR LTS Comp' ? 'selected' : ''}>VWR LTS Comp</option>
-                                <option value="VWR Sealpette" ${pipette.makeModel === 'VWR Sealpette' ? 'selected' : ''}>VWR Sealpette</option>
-                                <option value="VWR Ultra" ${pipette.makeModel === 'VWR Ultra' ? 'selected' : ''}>VWR Ultra</option>
-                                <option value="Watson Nexty" ${pipette.makeModel === 'Watson Nexty' ? 'selected' : ''}>Watson Nexty</option>
-                                <option value="Other" ${pipette.makeModel && !['Accupet','Accupette','Accu-jet pro','Accumax','Alphapette','Alphalite','Benchmate','Benchmate II','Betapet','Bio Rad','Biohit eline','Biohit mline','Biohit Picus','Biohit Proline Plus','Cole Palmer','Costar','Denville 3000','Denville 3000i','Denville Ultra','Dispensette Organice Bottle Filler','Epp Handy Step','Epp Repeater','Epp Research','Epp Research Plus','Epp Xplorer plus','Eppendorf 4700','Eppendorf 4710','Eppendorf Black','Eppendorf brown','Eppendorf Reference','Eppendorf Reference 2','Eppendorf Repeater E3','Eppendorf Repeater M4','Eppendorf Xplorer','ErgoOne','Finn','Finn Clip tip','Finn Colours','Finn Digital','Finn F1','Finn Focus','Finn II','Finn Labsystem Repeater','Finnpipette','Finnpipette II','Fisher elite Finn F1','Fisher elite Finn F2','Fisher Finn','Fisherbrand','Fisherbrand HandyStep S','Fisherbrand Repeater','Genemate','Gilson','Gilson Microman','Gilson Neo','Gilson Pipetman','Gilson Ultra','HandyStep Touch','IKA Pette','Integra','Integra Electronic','Integrapette','Jencons','Labnet','Lambda','Lambda eliteTouch','Lambda Plus','megaZen Seriological','Mettler VoluMate','MidSci','Nichipet','Nichipet EX','Nichipet EX II','Nichipet Premium','NO ID','OniLab','Pipet-aid','Proline','Rainin AutoRep E','Rainin Classic','Rainin EDP3','Rainin NanoRep','Rainin Pipete Plus SL','Rainin Pipete XLS SL','Rainin Pipette Lite','Rainin Pipette Lite E4','Rainin Pipette Lite SL','Rainin Pipette Lite XLS','Rainin Pipette Lite XLS E4','Rainin Pipette Plus','SciLogex','Sealpette','Socorex','Surepette','Thermo Scientific Matrix','Thermo Scientific S1','Transferpet','Transferpet S','United','Viaflo','VWR','VWR Blue','VWR Electronic','VWR Ergonomic','VWR Ergonomic HP','VWR Labpette','VWR LTS Comp','VWR Sealpette','VWR Ultra','Watson Nexty'].includes(pipette.makeModel) && pipette.makeModel !== '' ? 'selected' : ''}>Other (specify)</option>
+                                ${generateMakeModelOptions(pipette.makeModel)}
                             </select>
                         </div>
                         <div class="form-group">
