@@ -1027,8 +1027,76 @@
                 });
             });
 
-            // Also setup autofill for manufacturer and model on pipette cards (will apply to new cards)
-            // This is handled when pipettes are created
+            // Setup autofill for manufacturer and model
+            setupManufacturerModelAutofill();
+        }
+
+        function setupManufacturerModelAutofill() {
+            // Common manufacturers
+            const commonManufacturers = [
+                'Eppendorf',
+                'Gilson',
+                'Thermo Fisher Scientific',
+                'Rainin',
+                'Sartorius',
+                'Mettler Toledo',
+                'Corning',
+                'BioHit',
+                'Integra',
+                'VWR'
+            ];
+
+            // Common models
+            const commonModels = [
+                'Research Plus',
+                'Pipetman',
+                'Finnpipette',
+                'Pipet-Lite',
+                'Pipette 4',
+                'Proline Plus',
+                'Transferpette',
+                'Eppendorf Reference',
+                'Gilson Classic',
+                'Matrix'
+            ];
+
+            // Get manufacturer datalist and populate
+            const manufacturerList = document.getElementById('manufacturerList');
+            if (manufacturerList) {
+                // Get recent manufacturers from localStorage
+                const recentManufacturers = getRecentValues('manufacturer');
+
+                // Combine recent + common (remove duplicates)
+                const allManufacturers = [...new Set([...recentManufacturers, ...commonManufacturers])];
+
+                manufacturerList.innerHTML = allManufacturers.map(value =>
+                    `<option value="${value}">`
+                ).join('');
+            }
+
+            // Get model datalist and populate
+            const modelList = document.getElementById('modelList');
+            if (modelList) {
+                // Get recent models from localStorage
+                const recentModels = getRecentValues('model');
+
+                // Combine recent + common (remove duplicates)
+                const allModels = [...new Set([...recentModels, ...commonModels])];
+
+                modelList.innerHTML = allModels.map(value =>
+                    `<option value="${value}">`
+                ).join('');
+            }
+        }
+
+        function updateManufacturerModelAutofill(field, value) {
+            if (!value || value.trim() === '') return;
+
+            // Save to recent values
+            saveRecentValue(field, value);
+
+            // Update the appropriate datalist
+            setupManufacturerModelAutofill();
         }
 
         // ========================================
@@ -1287,6 +1355,11 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
                 pipette[field] = value;
+
+                // Update autofill for manufacturer/model
+                if (field === 'manufacturer' || field === 'model') {
+                    updateManufacturerModelAutofill(field, value);
+                }
 
                 // Re-render status indicator if Pass/Fail changed
                 if (field === 'passFail') {
@@ -2490,5 +2563,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Datalists for autofill -->
+    <datalist id="manufacturerList"></datalist>
+    <datalist id="modelList"></datalist>
 </body>
 </html>
