@@ -1059,6 +1059,7 @@
             const pipette = {
                 id: currentPipetteId,
                 number: String(currentPipetteId).padStart(2, '0'),
+                serialNumber: '',
                 makeModel: '',  // Combined make/model dropdown
                 maxVolume: '',
                 inSpec: false,
@@ -1084,6 +1085,21 @@
             debouncedAutoSave();
         }
 
+        function getPipetteBanner(pipette) {
+            const serial = pipette.serialNumber || '';
+            const makeModel = pipette.makeModel || '';
+
+            if (serial && makeModel) {
+                return `${serial} - ${makeModel}`;
+            } else if (serial) {
+                return serial;
+            } else if (makeModel) {
+                return makeModel;
+            } else {
+                return 'New Pipette';
+            }
+        }
+
         function renderPipette(pipette) {
             const container = document.getElementById('pipettesContainer');
 
@@ -1093,15 +1109,21 @@
 
             card.innerHTML = `
                 <div class="pipette-header">
-                    <h3>Pipette #${pipette.number}</h3>
+                    <h3 id="pipette-banner-${pipette.id}">${getPipetteBanner(pipette)}</h3>
                     <button class="btn btn-danger" onclick="removePipette(${pipette.id})" style="padding: 6px 12px; font-size: 12px;">
                         ✕ Remove
                     </button>
                 </div>
                 <div class="pipette-body">
-                    <!-- Make/Model and Max Volume -->
+                    <!-- Serial Number, Make/Model and Max Volume -->
                     <div class="pipette-row">
-                        <div class="form-group" style="grid-column: span 2;">
+                        <div class="form-group">
+                            <label>Serial Number</label>
+                            <input type="text" id="serial-${pipette.id}" value="${pipette.serialNumber || ''}"
+                                   onchange="updatePipetteField(${pipette.id}, 'serialNumber', this.value)"
+                                   placeholder="e.g., SN123456">
+                        </div>
+                        <div class="form-group">
                             <label>Make/Model</label>
                             <select id="makeModel-${pipette.id}" onchange="updatePipetteField(${pipette.id}, 'makeModel', this.value)"
                                     style="width: 100%;">
@@ -1432,6 +1454,14 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
                 pipette[field] = value;
+
+                // Update banner if serial number or make/model changed
+                if (field === 'serialNumber' || field === 'makeModel') {
+                    const banner = document.getElementById(`pipette-banner-${pipetteId}`);
+                    if (banner) {
+                        banner.textContent = getPipetteBanner(pipette);
+                    }
+                }
 
                 // Re-render if makeModel changed to/from "Other" to show/hide text field
                 if (field === 'makeModel') {
