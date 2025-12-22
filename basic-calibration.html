@@ -1971,15 +1971,70 @@
             showAlert('Session saved successfully!', 'Success');
         }
 
+        function generateWorkOrderAndInvoice() {
+            const pi = document.getElementById('pi')?.value || '';
+            const technician = document.getElementById('technician')?.value || '';
+            const serviceDateInput = document.getElementById('serviceDate')?.value;
+            const frequency = document.getElementById('frequency')?.value || 'A';
+
+            // Use service date or today's date
+            const date = serviceDateInput ? new Date(serviceDateInput) : new Date();
+            const day = date.getDate(); // No leading zero - 1-9 or 10-31
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Always 2 digits
+            const year = String(date.getFullYear()).slice(-2); // Last 2 digits
+
+            // Get or create daily counter
+            const dateKey = `${day}${month}${year}`;
+            const counterKey = `invoiceCounter_${dateKey}`;
+            let counter = parseInt(localStorage.getItem(counterKey) || '0');
+
+            // Only increment counter for NEW sessions (not when editing existing)
+            if (!currentSessionId || !document.getElementById('workOrderNo')?.value) {
+                counter++;
+                localStorage.setItem(counterKey, counter.toString());
+            } else {
+                // Use existing counter if already set
+                const existingWorkOrder = document.getElementById('workOrderNo')?.value;
+                if (existingWorkOrder) {
+                    const match = existingWorkOrder.match(/(\d+)#/);
+                    if (match) {
+                        counter = parseInt(match[1]);
+                    }
+                }
+            }
+
+            // Generate Work Order Number: "Doerksen 12-24 1#A"
+            if (pi) {
+                const piLastName = pi.trim().split(' ').pop(); // Get last word as last name
+                const workOrderNo = `${piLastName} ${month}-${year} ${counter}#${frequency}`;
+                document.getElementById('workOrderNo').value = workOrderNo;
+            }
+
+            // Generate Invoice Number: "TSD2112241A"
+            if (technician) {
+                const techInitials = technician.trim().toUpperCase();
+                const invoiceNo = `${techInitials}${day}${month}${year}${counter}${frequency}`;
+                document.getElementById('invoiceNo').value = invoiceNo;
+            }
+
+            debouncedAutoSave();
+        }
+
         function getSessionInfo() {
             return {
                 sessionName: document.getElementById('sessionName')?.value || '',
                 pi: document.getElementById('pi')?.value || '',
+                piEmail: document.getElementById('piEmail')?.value || '',
                 contact: document.getElementById('contact')?.value || '',
+                contactEmail: document.getElementById('contactEmail')?.value || '',
                 phone: document.getElementById('phone')?.value || '',
-                invoiceNo: document.getElementById('invoiceNo')?.value || '',
-                technician: document.getElementById('technician')?.value || '',
                 company: document.getElementById('company')?.value || '',
+                building: document.getElementById('building')?.value || '',
+                room: document.getElementById('room')?.value || '',
+                technician: document.getElementById('technician')?.value || '',
+                frequency: document.getElementById('frequency')?.value || 'A',
+                workOrderNo: document.getElementById('workOrderNo')?.value || '',
+                invoiceNo: document.getElementById('invoiceNo')?.value || '',
                 serviceDate: document.getElementById('serviceDate')?.value || '',
                 nextServiceDue: document.getElementById('nextServiceDue')?.value || '',
                 balanceModel: document.getElementById('balanceModel')?.value || '',
@@ -2337,6 +2392,11 @@
             // Setup autofill for common fields
             setupAutofill();
 
+            // Generate work order and invoice if fields are filled
+            if (sessionLoaded) {
+                generateWorkOrderAndInvoice();
+            }
+
             // Check if backup reminder should be shown
             checkBackupReminder();
 
@@ -2520,31 +2580,61 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Principal Investigator</label>
-                    <input type="text" id="pi" placeholder="PI Name">
+                    <input type="text" id="pi" placeholder="PI Name" onchange="generateWorkOrderAndInvoice()">
+                </div>
+                <div class="form-group">
+                    <label>PI Email</label>
+                    <input type="email" id="piEmail" placeholder="PI Email">
                 </div>
                 <div class="form-group">
                     <label>Contact Person</label>
                     <input type="text" id="contact" placeholder="Contact Name">
                 </div>
                 <div class="form-group">
-                    <label>Phone</label>
+                    <label>Contact Email</label>
+                    <input type="email" id="contactEmail" placeholder="Contact Email">
+                </div>
+                <div class="form-group">
+                    <label>Phone for Billing</label>
                     <input type="tel" id="phone" placeholder="Phone Number">
                 </div>
                 <div class="form-group">
-                    <label>Invoice Number</label>
-                    <input type="text" id="invoiceNo" placeholder="Invoice #">
+                    <label>Company/University</label>
+                    <input type="text" id="company" placeholder="Company/University">
+                </div>
+                <div class="form-group">
+                    <label>Building</label>
+                    <input type="text" id="building" placeholder="Building Name/Number">
+                </div>
+                <div class="form-group">
+                    <label>Room #</label>
+                    <input type="text" id="room" placeholder="Room Number">
                 </div>
                 <div class="form-group">
                     <label>Technician</label>
-                    <input type="text" id="technician" value="TSD" list="technicianList">
+                    <input type="text" id="technician" value="TSD" list="technicianList" onchange="generateWorkOrderAndInvoice()">
                 </div>
                 <div class="form-group">
-                    <label>Company/University & Building</label>
-                    <input type="text" id="company" placeholder="Company/Location">
+                    <label>Frequency</label>
+                    <select id="frequency" onchange="generateWorkOrderAndInvoice()">
+                        <option value="A" selected>Annual</option>
+                        <option value="B">Biannual</option>
+                        <option value="S">Semi-Annual</option>
+                        <option value="Q">Quarterly</option>
+                        <option value="M">Monthly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Work Order Number</label>
+                    <input type="text" id="workOrderNo" placeholder="Auto-generated" readonly style="background: #f8f9fa;">
+                </div>
+                <div class="form-group">
+                    <label>Invoice Number</label>
+                    <input type="text" id="invoiceNo" placeholder="Auto-generated" readonly style="background: #f8f9fa;">
                 </div>
                 <div class="form-group">
                     <label>Date of Service</label>
-                    <input type="date" id="serviceDate">
+                    <input type="date" id="serviceDate" onchange="generateWorkOrderAndInvoice()">
                 </div>
                 <div class="form-group">
                     <label>Next Service Due</label>
