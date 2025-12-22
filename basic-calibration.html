@@ -458,6 +458,120 @@
         const MAX_HISTORY = 20;
 
         // ========================================
+        // ISO 8655 SPECIFICATIONS DATABASE
+        // ========================================
+
+        // ISO 8655 specifications for single-channel pipettes
+        const isoSpecs = {
+            'P-2': {
+                0.5: { accuracy: { from: 0.46, to: 0.54, percent: 8.0, ul: 0.04 }, precision: { percent: 4.0, ul: 0.02 } },
+                1: { accuracy: { from: 0.94, to: 1.06, percent: 6.0, ul: 0.06 }, precision: { percent: 3.0, ul: 0.03 } },
+                2: { accuracy: { from: 1.92, to: 2.08, percent: 4.0, ul: 0.08 }, precision: { percent: 2.0, ul: 0.04 } }
+            },
+            'P-2.5': {
+                0.5: { accuracy: { from: 0.46, to: 0.54, percent: 8.0, ul: 0.04 }, precision: { percent: 4.0, ul: 0.02 } },
+                1.25: { accuracy: { from: 1.18, to: 1.32, percent: 5.6, ul: 0.07 }, precision: { percent: 2.8, ul: 0.035 } },
+                2.5: { accuracy: { from: 2.40, to: 2.60, percent: 4.0, ul: 0.10 }, precision: { percent: 2.0, ul: 0.05 } }
+            },
+            'P-10': {
+                2: { accuracy: { from: 1.88, to: 2.12, percent: 6.0, ul: 0.12 }, precision: { percent: 3.0, ul: 0.06 } },
+                5: { accuracy: { from: 4.80, to: 5.20, percent: 4.0, ul: 0.20 }, precision: { percent: 2.0, ul: 0.10 } },
+                10: { accuracy: { from: 9.70, to: 10.30, percent: 3.0, ul: 0.30 }, precision: { percent: 1.5, ul: 0.15 } }
+            },
+            'P-20': {
+                5: { accuracy: { from: 4.80, to: 5.20, percent: 4.0, ul: 0.20 }, precision: { percent: 2.0, ul: 0.10 } },
+                10: { accuracy: { from: 9.70, to: 10.30, percent: 3.0, ul: 0.30 }, precision: { percent: 1.5, ul: 0.15 } },
+                20: { accuracy: { from: 19.60, to: 20.40, percent: 2.0, ul: 0.40 }, precision: { percent: 1.0, ul: 0.20 } }
+            },
+            'P-25': {
+                5: { accuracy: { from: 4.80, to: 5.20, percent: 4.0, ul: 0.20 }, precision: { percent: 2.0, ul: 0.10 } },
+                12.5: { accuracy: { from: 12.25, to: 12.75, percent: 2.0, ul: 0.25 }, precision: { percent: 1.0, ul: 0.125 } },
+                25: { accuracy: { from: 24.50, to: 25.50, percent: 2.0, ul: 0.50 }, precision: { percent: 1.0, ul: 0.25 } }
+            },
+            'P-50': {
+                10: { accuracy: { from: 9.70, to: 10.30, percent: 3.0, ul: 0.30 }, precision: { percent: 1.5, ul: 0.15 } },
+                25: { accuracy: { from: 24.50, to: 25.50, percent: 2.0, ul: 0.50 }, precision: { percent: 1.0, ul: 0.25 } },
+                50: { accuracy: { from: 49.00, to: 51.00, percent: 2.0, ul: 1.00 }, precision: { percent: 1.0, ul: 0.50 } }
+            },
+            'P-100': {
+                20: { accuracy: { from: 19.60, to: 20.40, percent: 2.0, ul: 0.40 }, precision: { percent: 1.0, ul: 0.20 } },
+                50: { accuracy: { from: 49.00, to: 51.00, percent: 2.0, ul: 1.00 }, precision: { percent: 1.0, ul: 0.50 } },
+                100: { accuracy: { from: 98.50, to: 101.50, percent: 1.5, ul: 1.50 }, precision: { percent: 0.8, ul: 0.80 } }
+            },
+            'P-200': {
+                50: { accuracy: { from: 49.00, to: 51.00, percent: 2.0, ul: 1.00 }, precision: { percent: 1.0, ul: 0.50 } },
+                100: { accuracy: { from: 98.50, to: 101.50, percent: 1.5, ul: 1.50 }, precision: { percent: 0.8, ul: 0.80 } },
+                200: { accuracy: { from: 197.0, to: 203.0, percent: 1.5, ul: 3.0 }, precision: { percent: 0.8, ul: 1.6 } }
+            },
+            'P-250': {
+                50: { accuracy: { from: 49.00, to: 51.00, percent: 2.0, ul: 1.00 }, precision: { percent: 1.0, ul: 0.50 } },
+                125: { accuracy: { from: 123.5, to: 126.5, percent: 1.2, ul: 1.50 }, precision: { percent: 0.7, ul: 0.875 } },
+                250: { accuracy: { from: 247.0, to: 253.0, percent: 1.2, ul: 3.0 }, precision: { percent: 0.7, ul: 1.75 } }
+            },
+            'P-300': {
+                50: { accuracy: { from: 49.00, to: 51.00, percent: 2.0, ul: 1.00 }, precision: { percent: 1.0, ul: 0.50 } },
+                200: { accuracy: { from: 197.0, to: 203.0, percent: 1.5, ul: 3.0 }, precision: { percent: 0.8, ul: 1.6 } },
+                300: { accuracy: { from: 297.0, to: 303.0, percent: 1.0, ul: 3.0 }, precision: { percent: 0.6, ul: 1.8 } }
+            },
+            'P-500': {
+                100: { accuracy: { from: 98.5, to: 101.5, percent: 1.5, ul: 1.5 }, precision: { percent: 0.8, ul: 0.8 } },
+                250: { accuracy: { from: 247.0, to: 253.0, percent: 1.2, ul: 3.0 }, precision: { percent: 0.7, ul: 1.75 } },
+                500: { accuracy: { from: 495.0, to: 505.0, percent: 1.0, ul: 5.0 }, precision: { percent: 0.6, ul: 3.0 } }
+            },
+            'P-1000': {
+                200: { accuracy: { from: 196.0, to: 204.0, percent: 2.0, ul: 4.0 }, precision: { percent: 1.0, ul: 2.0 } },
+                500: { accuracy: { from: 492.0, to: 508.0, percent: 1.6, ul: 8.0 }, precision: { percent: 0.6, ul: 3.0 } },
+                1000: { accuracy: { from: 992.0, to: 1008.0, percent: 0.8, ul: 8.0 }, precision: { percent: 0.3, ul: 3.0 } }
+            },
+            'P-1200': {
+                250: { accuracy: { from: 247.0, to: 253.0, percent: 1.2, ul: 3.0 }, precision: { percent: 0.7, ul: 1.75 } },
+                600: { accuracy: { from: 594.0, to: 606.0, percent: 1.0, ul: 6.0 }, precision: { percent: 0.5, ul: 3.0 } },
+                1200: { accuracy: { from: 1188.0, to: 1212.0, percent: 1.0, ul: 12.0 }, precision: { percent: 0.5, ul: 6.0 } }
+            },
+            'P-1250': {
+                250: { accuracy: { from: 247.0, to: 253.0, percent: 1.2, ul: 3.0 }, precision: { percent: 0.7, ul: 1.75 } },
+                625: { accuracy: { from: 618.75, to: 631.25, percent: 1.0, ul: 6.25 }, precision: { percent: 0.5, ul: 3.125 } },
+                1250: { accuracy: { from: 1237.5, to: 1262.5, percent: 1.0, ul: 12.5 }, precision: { percent: 0.5, ul: 6.25 } }
+            },
+            'P-2000': {
+                500: { accuracy: { from: 492.0, to: 508.0, percent: 1.6, ul: 8.0 }, precision: { percent: 0.6, ul: 3.0 } },
+                1000: { accuracy: { from: 992.0, to: 1008.0, percent: 0.8, ul: 8.0 }, precision: { percent: 0.3, ul: 3.0 } },
+                2000: { accuracy: { from: 1984.0, to: 2016.0, percent: 0.8, ul: 16.0 }, precision: { percent: 0.3, ul: 6.0 } }
+            },
+            'P-5000': {
+                1000: { accuracy: { from: 980.0, to: 1020.0, percent: 2.0, ul: 20.0 }, precision: { percent: 0.6, ul: 6.0 } },
+                2500: { accuracy: { from: 2475.0, to: 2525.0, percent: 1.0, ul: 25.0 }, precision: { percent: 0.3, ul: 7.5 } },
+                5000: { accuracy: { from: 4950.0, to: 5050.0, percent: 1.0, ul: 50.0 }, precision: { percent: 0.3, ul: 15.0 } }
+            },
+            'P-10000': {
+                2000: { accuracy: { from: 1960.0, to: 2040.0, percent: 2.0, ul: 40.0 }, precision: { percent: 0.6, ul: 12.0 } },
+                5000: { accuracy: { from: 4950.0, to: 5050.0, percent: 1.0, ul: 50.0 }, precision: { percent: 0.3, ul: 15.0 } },
+                10000: { accuracy: { from: 9900.0, to: 10100.0, percent: 1.0, ul: 100.0 }, precision: { percent: 0.3, ul: 30.0 } }
+            }
+        };
+
+        // Test volumes for each pipette model
+        const testVolumes = {
+            'P-2': { low: 0.5, mid: 1, high: 2 },
+            'P-2.5': { low: 0.5, mid: 1.25, high: 2.5 },
+            'P-10': { low: 2, mid: 5, high: 10 },
+            'P-20': { low: 5, mid: 10, high: 20 },
+            'P-25': { low: 5, mid: 12.5, high: 25 },
+            'P-50': { low: 10, mid: 25, high: 50 },
+            'P-100': { low: 20, mid: 50, high: 100 },
+            'P-200': { low: 50, mid: 100, high: 200 },
+            'P-250': { low: 50, mid: 125, high: 250 },
+            'P-300': { low: 50, mid: 200, high: 300 },
+            'P-500': { low: 100, mid: 250, high: 500 },
+            'P-1000': { low: 200, mid: 500, high: 1000 },
+            'P-1200': { low: 250, mid: 600, high: 1200 },
+            'P-1250': { low: 250, mid: 625, high: 1250 },
+            'P-2000': { low: 500, mid: 1000, high: 2000 },
+            'P-5000': { low: 1000, mid: 2500, high: 5000 },
+            'P-10000': { low: 2000, mid: 5000, high: 10000 }
+        };
+
+        // ========================================
         // MODAL FUNCTIONS
         // ========================================
 
@@ -1351,8 +1465,199 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
                 pipette.finalVolumes[index] = value;
+                validatePipette(pipetteId);
                 debouncedAutoSave();
             }
+        }
+
+        // ========================================
+        // ISO 8655 VALIDATION FUNCTIONS
+        // ========================================
+
+        function calculateCV(values) {
+            const numericValues = values.filter(v => v !== '' && v !== null && !isNaN(v)).map(v => parseFloat(v));
+            if (numericValues.length < 4) return null;
+
+            const mean = numericValues.reduce((a, b) => a + b, 0) / numericValues.length;
+            const variance = numericValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / numericValues.length;
+            const stdDev = Math.sqrt(variance);
+            return (stdDev / mean) * 100;
+        }
+
+        function calculateSD(values) {
+            const numericValues = values.filter(v => v !== '' && v !== null && !isNaN(v)).map(v => parseFloat(v));
+            if (numericValues.length < 4) return null;
+
+            const mean = numericValues.reduce((a, b) => a + b, 0) / numericValues.length;
+            const variance = numericValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / numericValues.length;
+            const stdDev = Math.sqrt(variance);
+            return stdDev;
+        }
+
+        function getNominalVolume(pipetteModel) {
+            // For basic calibration, we don't have low/mid/high points
+            // We'll use the nominal volume from the model name
+            // Extract the number from model (e.g., "P-1000" -> 1000)
+            const match = pipetteModel.match(/P-(\d+)/);
+            if (!match) return null;
+            return parseFloat(match[1]);
+        }
+
+        function getSpecifications(model, volume) {
+            const modelSpecs = isoSpecs[model];
+            if (!modelSpecs) return null;
+
+            // Find the closest matching volume in the specs
+            const volumes = Object.keys(modelSpecs).map(v => parseFloat(v));
+            const closest = volumes.reduce((prev, curr) =>
+                Math.abs(curr - volume) < Math.abs(prev - volume) ? curr : prev
+            );
+
+            return modelSpecs[closest];
+        }
+
+        function validatePipette(pipetteId) {
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) return;
+
+            // Get all 4 final volume measurements
+            const measurements = pipette.finalVolumes.filter(v => v !== '' && v !== null && !isNaN(v)).map(v => parseFloat(v));
+
+            // Need all 4 measurements to validate
+            if (measurements.length < 4) {
+                // Clear any validation display
+                updateValidationDisplay(pipetteId, null);
+                return;
+            }
+
+            // Get nominal volume from pipette model
+            const nominalVolume = getNominalVolume(pipette.model);
+            if (!nominalVolume) {
+                console.error('Could not determine nominal volume for model:', pipette.model);
+                return;
+            }
+
+            // Get ISO 8655 specifications
+            const specs = getSpecifications(pipette.model, nominalVolume);
+            if (!specs) {
+                console.error('No ISO specs found for model:', pipette.model, 'volume:', nominalVolume);
+                return;
+            }
+
+            // Calculate statistics
+            const mean = measurements.reduce((a, b) => a + b, 0) / 4;
+            const cv = calculateCV(measurements);
+            const sd = calculateSD(measurements);
+
+            // Check accuracy: ALL readings must be within range
+            const accuracyPass = measurements.every(reading =>
+                reading >= specs.accuracy.from && reading <= specs.accuracy.to
+            );
+
+            // ISO 8655: Precision passes if EITHER CV% OR SD meets limit
+            const cvPass = cv <= specs.precision.percent;
+            const sdPass = sd <= specs.precision.ul;
+            const precisionPass = cvPass || sdPass;
+
+            // Overall pass requires both accuracy and precision to pass
+            const overallPass = accuracyPass && precisionPass;
+
+            // Auto-update Pass/Fail dropdown
+            const pfSelect = document.getElementById(`pf-${pipetteId}`);
+            if (pfSelect) {
+                pipette.passFail = overallPass ? 'P' : 'F';
+                pfSelect.value = pipette.passFail;
+            }
+
+            // Update validation display with detailed info
+            updateValidationDisplay(pipetteId, {
+                nominal: nominalVolume,
+                mean: mean,
+                cv: cv,
+                sd: sd,
+                specs: specs,
+                accuracyPass: accuracyPass,
+                precisionPass: precisionPass,
+                cvPass: cvPass,
+                sdPass: sdPass,
+                overallPass: overallPass,
+                measurements: measurements
+            });
+
+            // Re-render to show updated Pass/Fail status
+            renderAllPipettes();
+        }
+
+        function updateValidationDisplay(pipetteId, data) {
+            // Find or create validation display div
+            const pipetteCard = document.getElementById(`pipette-${pipetteId}`);
+            if (!pipetteCard) return;
+
+            let validationDiv = pipetteCard.querySelector('.validation-results');
+
+            if (!data) {
+                // Clear validation display
+                if (validationDiv) validationDiv.remove();
+                return;
+            }
+
+            if (!validationDiv) {
+                validationDiv = document.createElement('div');
+                validationDiv.className = 'validation-results';
+                validationDiv.style.cssText = 'background: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 8px; border-left: 4px solid ' + (data.overallPass ? '#28a745' : '#dc3545');
+
+                // Insert before the final Pass/Fail section
+                const passFailSection = pipetteCard.querySelector('.pipette-row:last-child');
+                if (passFailSection) {
+                    passFailSection.parentNode.insertBefore(validationDiv, passFailSection);
+                }
+            } else {
+                validationDiv.style.borderLeftColor = data.overallPass ? '#28a745' : '#dc3545';
+            }
+
+            validationDiv.innerHTML = `
+                <div style="margin-bottom: 10px;">
+                    <strong style="color: #223077; font-size: 14px;">ISO 8655 Validation Results</strong>
+                    <span class="status-indicator status-${data.overallPass ? 'pass' : 'fail'}" style="float: right;">
+                        ${data.overallPass ? '✓ PASS' : '✗ FAIL'}
+                    </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                    <div>
+                        <strong>Nominal Volume:</strong> ${data.nominal.toFixed(2)} µL
+                    </div>
+                    <div>
+                        <strong>Mean:</strong> ${data.mean.toFixed(3)} µL
+                    </div>
+                    <div>
+                        <strong>Accuracy Range:</strong> ${data.specs.accuracy.from.toFixed(2)} - ${data.specs.accuracy.to.toFixed(2)} µL
+                        <span style="color: ${data.accuracyPass ? '#28a745' : '#dc3545'}; font-weight: bold; margin-left: 5px;">
+                            ${data.accuracyPass ? '✓' : '✗'}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>CV%:</strong> ${data.cv.toFixed(2)}% (limit: ≤${data.specs.precision.percent}%)
+                        <span style="color: ${data.cvPass ? '#28a745' : '#dc3545'}; font-weight: bold; margin-left: 5px;">
+                            ${data.cvPass ? '✓' : '✗'}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>SD:</strong> ${data.sd.toFixed(3)} µL (limit: ≤${data.specs.precision.ul} µL)
+                        <span style="color: ${data.sdPass ? '#28a745' : '#dc3545'}; font-weight: bold; margin-left: 5px;">
+                            ${data.sdPass ? '✓' : '✗'}
+                        </span>
+                    </div>
+                    <div>
+                        <strong>Precision:</strong>
+                        <span style="color: ${data.precisionPass ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                            ${data.precisionPass ? 'PASS' : 'FAIL'}
+                        </span>
+                        <em style="font-size: 10px; color: #6c757d; display: block;">
+                            (CV% or SD must pass)
+                        </em>
+                    </div>
+                </div>
+            `;
         }
 
         function updateEmptyState() {
