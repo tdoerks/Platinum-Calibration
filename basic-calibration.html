@@ -1525,10 +1525,18 @@
                 return;
             }
 
+            const lowerTranscript = transcript.toLowerCase().trim();
+
+            // Check for voice commands first (commands take priority over numbers)
+            if (executeVoiceCommand(lowerTranscript, currentVoicePipetteId)) {
+                return; // Command was executed
+            }
+
+            // Try to parse as number
             const number = parseSpokenNumber(transcript);
 
             if (number === null) {
-                updateVoiceStatus(`❓ Didn't understand "${transcript}". Try again.`, true);
+                updateVoiceStatus(`❓ Didn't understand "${transcript}". Try again or say "help"`, true);
                 return;
             }
 
@@ -1568,6 +1576,112 @@
             }
         }
 
+        // Execute voice command
+        function executeVoiceCommand(transcript, pipetteId) {
+            // Help command
+            if (transcript.includes('help') || transcript.includes('commands')) {
+                updateVoiceStatus(`📋 Commands: "next", "previous", "mark pass", "mark fail", "repeat", "add pipette"`, false);
+                return true;
+            }
+
+            // Stop/cancel
+            if (transcript.includes('stop') || transcript.includes('cancel') || transcript.includes('quit')) {
+                updateVoiceStatus('⏹️ Stopped listening', false);
+                stopVoiceInput();
+                return true;
+            }
+
+            // Repeat last reading
+            if (transcript.includes('repeat') || transcript.includes('redo') || transcript.includes('again')) {
+                if (currentReadingIndex > 0) {
+                    currentReadingIndex--;
+                    const field = document.getElementById(`vol${currentReadingIndex + 1}-${pipetteId}`);
+                    if (field) {
+                        field.value = '';
+                        field.classList.add('voice-active');
+                        // Clear previous field highlight
+                        for (let i = 1; i <= 4; i++) {
+                            if (i !== currentReadingIndex + 1) {
+                                document.getElementById(`vol${i}-${pipetteId}`)?.classList.remove('voice-active');
+                            }
+                        }
+                    }
+                    updateVoiceStatus(`🔄 Ready to re-enter Reading ${currentReadingIndex + 1}`, false);
+                } else {
+                    updateVoiceStatus('⚠️ No reading to repeat yet', true);
+                }
+                return true;
+            }
+
+            // Mark as PASS
+            if (transcript.includes('mark pass') || transcript.includes('passed') || transcript.includes('mark as pass')) {
+                updatePipetteField(pipetteId, 'passFail', 'P');
+                const selectField = document.getElementById(`pf-${pipetteId}`);
+                if (selectField) selectField.value = 'P';
+                updateVoiceStatus('✅ Marked as PASS', false);
+                renderAllPipettes();
+                return true;
+            }
+
+            // Mark as FAIL
+            if (transcript.includes('mark fail') || transcript.includes('failed') || transcript.includes('mark as fail')) {
+                updatePipetteField(pipetteId, 'passFail', 'F');
+                const selectField = document.getElementById(`pf-${pipetteId}`);
+                if (selectField) selectField.value = 'F';
+                updateVoiceStatus('❌ Marked as FAIL', false);
+                renderAllPipettes();
+                return true;
+            }
+
+            // Navigate to next pipette
+            if (transcript.includes('next') && (transcript.includes('pipette') || transcript.length < 8)) {
+                const currentIdx = pipettes.findIndex(p => p.id === pipetteId);
+                if (currentIdx < pipettes.length - 1) {
+                    const nextPipette = pipettes[currentIdx + 1];
+                    stopVoiceInput();
+                    setTimeout(() => {
+                        const nextCard = document.getElementById(`pipette-${nextPipette.id}`);
+                        if (nextCard) {
+                            nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        updateVoiceStatus('➡️ Moved to next pipette', false);
+                    }, 300);
+                } else {
+                    updateVoiceStatus('⚠️ This is the last pipette', true);
+                }
+                return true;
+            }
+
+            // Navigate to previous pipette
+            if ((transcript.includes('previous') || transcript.includes('back')) && (transcript.includes('pipette') || transcript.length < 10)) {
+                const currentIdx = pipettes.findIndex(p => p.id === pipetteId);
+                if (currentIdx > 0) {
+                    const prevPipette = pipettes[currentIdx - 1];
+                    stopVoiceInput();
+                    setTimeout(() => {
+                        const prevCard = document.getElementById(`pipette-${prevPipette.id}`);
+                        if (prevCard) {
+                            prevCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        updateVoiceStatus('⬅️ Moved to previous pipette', false);
+                    }, 300);
+                } else {
+                    updateVoiceStatus('⚠️ This is the first pipette', true);
+                }
+                return true;
+            }
+
+            // Add new pipette
+            if (transcript.includes('add pipette') || transcript.includes('new pipette')) {
+                stopVoiceInput();
+                addPipette();
+                updateVoiceStatus('➕ New pipette added', false);
+                return true;
+            }
+
+            return false; // No command matched
+        }
+
         // Start voice input
         function startVoiceInput(pipetteId) {
             if (!checkVoiceSupport()) {
@@ -1599,7 +1713,7 @@
                     firstField.classList.add('voice-active');
                 }
 
-                updateVoiceStatus('🎤 Listening for Reading 1...', false);
+                updateVoiceStatus('🎤 Listening for Reading 1... (Say "help" for commands)', false);
             } catch (error) {
                 console.error('Failed to start voice recognition:', error);
                 showAlert('Failed to start voice input. Please check microphone permissions.', 'Error');
@@ -2019,6 +2133,19 @@
                                                onchange="updateFinalVolume(${pipette.id}, 3, this.value)" placeholder="0.000">
                                     </div>
                                 </div>
+                                <!-- Real-time Statistics Display -->
+                                <div id="stats-${pipette.id}" style="margin-top: 15px; padding: 12px; background: #f8f9fa; border: 2px solid #dee2e6; border-radius: 6px; display: none;">
+                                    <div style="font-weight: 600; color: #2c5282; margin-bottom: 8px; font-size: 13px;">📊 Statistics</div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+                                        <div><strong>Mean:</strong> <span id="stat-mean-${pipette.id}">—</span> µL</div>
+                                        <div><strong>CV%:</strong> <span id="stat-cv-${pipette.id}">—</span> <span id="stat-cv-status-${pipette.id}"></span></div>
+                                        <div><strong>SD:</strong> <span id="stat-sd-${pipette.id}">—</span> µL</div>
+                                        <div><strong>Range:</strong> <span id="stat-range-${pipette.id}">—</span></div>
+                                    </div>
+                                    <div id="outlier-warning-${pipette.id}" style="margin-top: 10px; padding: 8px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; display: none; font-size: 12px;">
+                                        <strong>⚠️ Outlier Detected:</strong> <span id="outlier-message-${pipette.id}"></span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2117,6 +2244,11 @@
             if (pipette) {
                 pipette[field] = value;
 
+                // Check for duplicate serial numbers
+                if (field === 'serialNumber' && value.trim() !== '') {
+                    checkDuplicateSerial(pipetteId, value);
+                }
+
                 // Update banner if serial number or make/model changed
                 if (field === 'serialNumber' || field === 'makeModel') {
                     const banner = document.getElementById(`pipette-banner-${pipetteId}`);
@@ -2136,6 +2268,40 @@
                 }
 
                 debouncedAutoSave();
+            }
+        }
+
+        // Check for duplicate serial numbers
+        function checkDuplicateSerial(pipetteId, serial) {
+            const duplicates = pipettes.filter(p =>
+                p.id !== pipetteId &&
+                p.serialNumber.toLowerCase().trim() === serial.toLowerCase().trim()
+            );
+
+            const serialField = document.getElementById(`serial-${pipetteId}`);
+            if (!serialField) return;
+
+            if (duplicates.length > 0) {
+                // Highlight field
+                serialField.style.backgroundColor = '#fff3cd';
+                serialField.style.borderColor = '#ffc107';
+                serialField.style.borderWidth = '2px';
+
+                // Show warning (non-blocking)
+                const duplicateIds = duplicates.map(p => `#${p.number}`).join(', ');
+                showConfirm(
+                    `Serial "${serial}" is already used in pipette(s) ${duplicateIds}.\n\nThis could be:\n• Same pipette entered twice (mistake)\n• Different pipette with same serial (rare)\n• Copy/paste error\n\nContinue anyway?`,
+                    '⚠️ Duplicate Serial Number',
+                    () => {
+                        // User confirmed - keep it
+                        console.log('User accepted duplicate serial');
+                    }
+                );
+            } else {
+                // Clear highlighting
+                serialField.style.backgroundColor = '';
+                serialField.style.borderColor = '';
+                serialField.style.borderWidth = '';
             }
         }
 
@@ -2379,6 +2545,9 @@
             // Get all 4 final volume measurements
             const measurements = pipette.finalVolumes.filter(v => v !== '' && v !== null && !isNaN(v)).map(v => parseFloat(v));
 
+            // Show/update stats display even with partial data
+            updateStatsDisplay(pipetteId, measurements);
+
             // Need all 4 measurements to validate
             if (measurements.length < 4) {
                 // Clear any validation display
@@ -2406,6 +2575,9 @@
             const mean = measurements.reduce((a, b) => a + b, 0) / 4;
             const cv = calculateCV(measurements);
             const sd = calculateSD(measurements);
+
+            // Detect outliers
+            detectOutliers(pipetteId, measurements, mean, sd);
 
             // Check accuracy: ALL readings must be within range
             const accuracyPass = measurements.every(reading =>
@@ -2447,6 +2619,105 @@
             if (existingIndicator && pipette.passFail !== 'R' && pipette.passFail !== 'OOS') {
                 existingIndicator.className = `status-indicator status-${overallPass ? 'pass' : 'fail'}`;
                 existingIndicator.textContent = overallPass ? '✓ PASS' : '✗ FAIL';
+            }
+        }
+
+        // Update real-time statistics display
+        function updateStatsDisplay(pipetteId, measurements) {
+            const statsDiv = document.getElementById(`stats-${pipetteId}`);
+            if (!statsDiv) return;
+
+            if (measurements.length === 0) {
+                statsDiv.style.display = 'none';
+                return;
+            }
+
+            statsDiv.style.display = 'block';
+
+            if (measurements.length < 4) {
+                // Partial data - show what we have
+                document.getElementById(`stat-mean-${pipetteId}`).textContent = '—';
+                document.getElementById(`stat-cv-${pipetteId}`).textContent = '—';
+                document.getElementById(`stat-sd-${pipetteId}`).textContent = '—';
+                document.getElementById(`stat-range-${pipetteId}`).textContent = `${measurements.length}/4 readings`;
+                document.getElementById(`stat-cv-status-${pipetteId}`).textContent = '';
+                return;
+            }
+
+            // Calculate stats
+            const mean = measurements.reduce((a, b) => a + b) / measurements.length;
+            const variance = measurements.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (measurements.length - 1);
+            const sd = Math.sqrt(variance);
+            const cv = (sd / mean) * 100;
+            const min = Math.min(...measurements);
+            const max = Math.max(...measurements);
+
+            // Update display
+            document.getElementById(`stat-mean-${pipetteId}`).textContent = mean.toFixed(3);
+            document.getElementById(`stat-cv-${pipetteId}`).textContent = cv.toFixed(2) + '%';
+            document.getElementById(`stat-sd-${pipetteId}`).textContent = sd.toFixed(3);
+            document.getElementById(`stat-range-${pipetteId}`).textContent = `${min.toFixed(1)}-${max.toFixed(1)}`;
+
+            // Color code CV%
+            const cvStatus = document.getElementById(`stat-cv-status-${pipetteId}`);
+            if (cv < 1.0) {
+                cvStatus.textContent = '✓';
+                cvStatus.style.color = '#28a745';
+            } else if (cv < 2.0) {
+                cvStatus.textContent = '⚠️';
+                cvStatus.style.color = '#ffc107';
+            } else {
+                cvStatus.textContent = '✗';
+                cvStatus.style.color = '#dc3545';
+            }
+        }
+
+        // Detect outliers in readings
+        function detectOutliers(pipetteId, measurements, mean, sd) {
+            const outlierWarning = document.getElementById(`outlier-warning-${pipetteId}`);
+            const outlierMessage = document.getElementById(`outlier-message-${pipetteId}`);
+
+            if (!outlierWarning || !outlierMessage) return;
+
+            // Find outliers (>2 SD from mean)
+            const outliers = [];
+            measurements.forEach((val, idx) => {
+                const zScore = Math.abs((val - mean) / sd);
+                if (zScore > 2) {
+                    const percentDiff = ((val - mean) / mean * 100).toFixed(1);
+                    outliers.push({
+                        index: idx + 1,
+                        value: val.toFixed(3),
+                        percentDiff: percentDiff
+                    });
+                }
+            });
+
+            if (outliers.length > 0) {
+                outlierWarning.style.display = 'block';
+                const messages = outliers.map(o =>
+                    `Reading ${o.index} (${o.value} µL) is ${o.percentDiff}% ${o.percentDiff > 0 ? 'above' : 'below'} mean. Double-check?`
+                );
+                outlierMessage.textContent = messages.join(' ');
+
+                // Highlight outlier input fields
+                outliers.forEach(o => {
+                    const field = document.getElementById(`vol${o.index}-${pipetteId}`);
+                    if (field) {
+                        field.style.borderColor = '#ffc107';
+                        field.style.borderWidth = '3px';
+                    }
+                });
+            } else {
+                outlierWarning.style.display = 'none';
+                // Remove highlighting from all fields
+                for (let i = 1; i <= 4; i++) {
+                    const field = document.getElementById(`vol${i}-${pipetteId}`);
+                    if (field) {
+                        field.style.borderColor = '';
+                        field.style.borderWidth = '';
+                    }
+                }
             }
         }
 

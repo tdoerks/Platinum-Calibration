@@ -2,11 +2,12 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-2.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
 
+### Core Capabilities
 - ✅ **ISO 8655 Compliant** - Follows international pipette calibration standards
 - 💾 **Auto-Save** - Automatic browser localStorage persistence
 - 📊 **Real-time Validation** - Instant pass/fail calculations
@@ -16,6 +17,27 @@ Professional web-based pipette calibration management tool with ISO 8655 complia
 - 🖨️ **Print Optimized** - Beautiful certificates on standard paper
 - 📚 **Session History** - Track and recall past calibrations
 - 📥 **Import/Export** - JSON and CSV data exchange
+
+### 🎤 Voice Input & Commands (NEW!)
+- **Hands-Free Data Entry** - Speak volume readings instead of typing
+- **Voice Commands** - Navigate with "next pipette", "mark pass/fail", "repeat reading"
+- **Auto-Advance** - Automatically moves through 4 readings sequentially
+- **Smart Recognition** - Understands "ninety-nine point five" or "99.5"
+- **Visual Feedback** - Pulsing borders show active reading field
+- **Browser Support** - Chrome, Edge, Safari (built-in Speech API)
+
+### 📈 Data Quality Features (NEW!)
+- **Real-Time Statistics** - See mean, CV%, SD, and range as you type
+- **Outlier Detection** - Automatic warning if reading is >2 SD from mean
+- **CV% Color Coding** - Green (<1%), Yellow (1-2%), Red (>2%)
+- **Duplicate Serial Detection** - Warns if same serial used multiple times
+- **Highlighted Warnings** - Orange borders on suspicious readings
+
+### ⌨️ Productivity Features (NEW!)
+- **Keyboard Shortcuts** - Ctrl+N (new), Ctrl+D (duplicate), Ctrl+S (save)
+- **Copy from Previous** - Duplicate last pipette configuration
+- **Bulk Actions** - Select multiple pipettes, mark all as PASS/FAIL at once
+- **Session Name Auto-Fill** - Defaults to work order number
 
 ## 🚀 Quick Start
 
@@ -181,6 +203,17 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.1** (December 22, 2024)
+- 🎤 Voice input for hands-free data entry
+- 🗣️ Voice commands (next/previous, mark pass/fail, repeat, help)
+- 📊 Real-time statistical analysis (mean, CV%, SD, range)
+- ⚠️ Outlier detection with visual warnings
+- 🔍 Duplicate serial number detection
+- ⌨️ Keyboard shortcuts (Ctrl+N/D/S)
+- 📋 Copy from Previous button
+- ☑️ Bulk status update (select multiple, mark all PASS/FAIL)
+- 📝 Session name auto-fills from work order
 
 **v2.0** (December 2024)
 - Professional calibration certificates (ISO 8655/17025 compliant)
