@@ -1195,6 +1195,134 @@
             debouncedAutoSave();
         }
 
+        function copyFromPrevious() {
+            if (pipettes.length === 0) {
+                showAlert('No pipettes to copy from. Add a pipette first.', 'Info');
+                return;
+            }
+
+            saveStateForUndo('Copy from previous');
+            currentPipetteId++;
+
+            // Get the last pipette
+            const lastPipette = pipettes[pipettes.length - 1];
+
+            // Create new pipette with copied configuration
+            const pipette = {
+                id: currentPipetteId,
+                number: String(currentPipetteId).padStart(2, '0'),
+                serialNumber: '',  // Clear serial number
+                makeModel: lastPipette.makeModel,  // Copy make/model
+                maxVolume: lastPipette.maxVolume,  // Copy max volume
+                inSpec: lastPipette.inSpec,  // Copy in-spec checkbox
+                outSpec: lastPipette.outSpec,  // Copy out-spec checkbox
+                adjustments: {
+                    SE: lastPipette.adjustments.SE,
+                    COR: lastPipette.adjustments.COR,
+                    G: lastPipette.adjustments.G,
+                    SH: lastPipette.adjustments.SH,
+                    FR: lastPipette.adjustments.FR,
+                    O: lastPipette.adjustments.O,
+                    OTHER: lastPipette.adjustments.OTHER
+                },
+                finalVolumes: ['', '', '', ''],  // Clear volumes
+                passFail: '',  // Clear pass/fail
+                comments: ''  // Clear comments
+            };
+
+            pipettes.push(pipette);
+            renderPipette(pipette);
+            updateProgress();
+            updateEmptyState();
+            debouncedAutoSave();
+
+            // Scroll to new pipette
+            setTimeout(() => {
+                const newCard = document.querySelector(`[data-pipette-id="${pipette.id}"]`);
+                if (newCard) {
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+        }
+
+        // ========================================
+        // BULK ACTIONS
+        // ========================================
+
+        function updateBulkButtons() {
+            const checkboxes = document.querySelectorAll('.pipette-checkbox');
+            const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+            // Show/hide bulk actions bar
+            if (pipettes.length > 0) {
+                bulkBar.style.display = 'block';
+            } else {
+                bulkBar.style.display = 'none';
+            }
+
+            // Update count
+            selectedCount.textContent = `${checkedBoxes.length} selected`;
+
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                if (checkedBoxes.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (checkedBoxes.length === checkboxes.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllCheckbox').checked;
+            const checkboxes = document.querySelectorAll('.pipette-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll;
+            });
+            updateBulkButtons();
+        }
+
+        function bulkMarkStatus(status) {
+            const checkboxes = document.querySelectorAll('.pipette-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showAlert('Please select at least one pipette.', 'Info');
+                return;
+            }
+
+            saveStateForUndo(`Bulk mark ${status}`);
+
+            checkboxes.forEach(checkbox => {
+                const pipetteId = parseInt(checkbox.id.replace('checkbox-', ''));
+                const pipette = pipettes.find(p => p.id === pipetteId);
+                if (pipette) {
+                    pipette.passFail = status;
+                    // Update UI
+                    const passFailField = document.getElementById(`passfail-${pipetteId}`);
+                    if (passFailField) {
+                        passFailField.value = status;
+                    }
+                }
+            });
+
+            // Uncheck all checkboxes
+            checkboxes.forEach(cb => cb.checked = false);
+            updateBulkButtons();
+
+            // Re-render all pipettes to update status badges
+            renderAllPipettes();
+            debouncedAutoSave();
+
+            showAlert(`${checkboxes.length} pipette(s) marked as ${status}`, 'Success');
+        }
+
         function getPipetteBanner(pipette) {
             const serial = pipette.serialNumber || '';
             const makeModel = pipette.makeModel || '';
@@ -1354,7 +1482,12 @@
 
             card.innerHTML = `
                 <div class="pipette-header">
-                    <h3 id="pipette-banner-${pipette.id}">${getPipetteBanner(pipette)}</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" class="pipette-checkbox" id="checkbox-${pipette.id}"
+                               style="width: 18px; height: 18px; cursor: pointer;"
+                               onchange="updateBulkButtons()">
+                        <h3 id="pipette-banner-${pipette.id}" style="margin: 0;">${getPipetteBanner(pipette)}</h3>
+                    </div>
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-secondary" onclick="duplicatePipette(${pipette.id})" style="padding: 6px 12px; font-size: 12px;">
                             📋 Duplicate
@@ -2064,6 +2197,8 @@
                     </div>
                 `;
             }
+            // Update bulk actions bar visibility
+            updateBulkButtons();
         }
 
         function updateProgress() {
@@ -2237,6 +2372,12 @@
                 const piLastName = pi.trim().split(' ').pop(); // Get last word as last name
                 const workOrderNo = `${piLastName} ${month}-${day} ${counter}#${frequency}`;
                 document.getElementById('workOrderNo').value = workOrderNo;
+
+                // Auto-populate session name if empty
+                const sessionNameField = document.getElementById('sessionName');
+                if (sessionNameField && !sessionNameField.value) {
+                    sessionNameField.value = workOrderNo;
+                }
             }
 
             // Generate Invoice Number: "TSD2112241A"
@@ -2600,6 +2741,34 @@
                 if (e.key === 'Escape' && document.getElementById('customModal')?.style.display === 'flex') {
                     closeModal();
                 }
+
+                // Keyboard shortcuts (Ctrl/Cmd + key)
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+                    // Ignore if typing in an input/textarea (except Ctrl+S for save)
+                    const isInputField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+
+                    switch(e.key.toLowerCase()) {
+                        case 'n':
+                            // Ctrl+N: Add new pipette
+                            if (!isInputField) {
+                                e.preventDefault();
+                                addPipette();
+                            }
+                            break;
+                        case 's':
+                            // Ctrl+S: Save/export session
+                            e.preventDefault();
+                            exportToFile();
+                            break;
+                        case 'd':
+                            // Ctrl+D: Duplicate (copy from previous)
+                            if (!isInputField) {
+                                e.preventDefault();
+                                copyFromPrevious();
+                            }
+                            break;
+                    }
+                }
             });
 
             // Load saved session
@@ -2924,9 +3093,39 @@
 
         <!-- Calibration Tab -->
         <div id="calibration" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h2 style="color: #223077;">🔧 Pipette Calibration</h2>
-                <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="copyFromPrevious()" title="Copy configuration from last pipette (Ctrl+D)">📋 Copy from Previous</button>
+                    <button class="btn btn-primary" onclick="addPipette()" title="Add new pipette (Ctrl+N)">+ Add Pipette</button>
+                </div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #6c757d; margin-bottom: 10px;">
+                ⌨️ Shortcuts: <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+N</kbd> New
+                | <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+D</kbd> Duplicate
+                | <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+S</kbd> Save
+            </div>
+
+            <!-- Bulk Actions Bar (hidden when no pipettes selected) -->
+            <div id="bulkActionsBar" style="display: none; background: #f8f9fa; border: 2px solid #dee2e6; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label style="margin: 0; font-weight: 600;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"
+                                   style="width: 18px; height: 18px; cursor: pointer; margin-right: 5px;">
+                            Select All
+                        </label>
+                        <span id="selectedCount" style="color: #6c757d;">0 selected</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="bulkMarkStatus('PASS')" style="padding: 6px 16px; font-size: 13px;">
+                            ✓ Mark Selected as PASS
+                        </button>
+                        <button class="btn btn-danger" onclick="bulkMarkStatus('FAIL')" style="padding: 6px 16px; font-size: 13px;">
+                            ✗ Mark Selected as FAIL
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="progress-bar">
