@@ -1973,6 +1973,7 @@
 
         function getSessionInfo() {
             return {
+                sessionName: document.getElementById('sessionName')?.value || '',
                 pi: document.getElementById('pi')?.value || '',
                 contact: document.getElementById('contact')?.value || '',
                 phone: document.getElementById('phone')?.value || '',
@@ -2390,7 +2391,7 @@
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
                                     <div>
                                         <h3 style="color: #223077; font-size: 16px; margin-bottom: 5px;">
-                                            ${session.sessionInfo?.company || session.sessionInfo?.pi || `Session ${index + 1}`}
+                                            ${session.sessionInfo?.sessionName || session.sessionInfo?.company || session.sessionInfo?.pi || `Session ${index + 1}`}
                                         </h3>
                                         <p style="color: #6c757d; font-size: 13px; margin: 0;">
                                             ${date.toLocaleString()}
@@ -2505,6 +2506,15 @@
                     <button class="btn btn-primary" onclick="newSession()">🆕 New Session</button>
                     <button class="btn btn-secondary" onclick="importFromFile()">📥 Import</button>
                 </div>
+            </div>
+
+            <!-- Session Name -->
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: 600; color: #223077; display: block; margin-bottom: 8px;">Session Name</label>
+                <input type="text" id="sessionName" placeholder="e.g., Lab 204 Monthly Cal - Dec 2024"
+                       style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;"
+                       onchange="debouncedAutoSave()">
+                <p style="font-size: 12px; color: #6c757d; margin-top: 5px;">Give this session a memorable name for easy identification in history</p>
             </div>
 
             <div class="form-grid">
