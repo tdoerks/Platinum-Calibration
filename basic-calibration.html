@@ -2217,10 +2217,20 @@
             const counter = parseInt(document.getElementById('invoiceCounter')?.value || '1');
 
             // Use service date or today's date
-            const date = serviceDateInput ? new Date(serviceDateInput) : new Date();
-            const day = date.getDate(); // No leading zero - 1-9 or 10-31
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Always 2 digits
-            const year = String(date.getFullYear()).slice(-2); // Last 2 digits
+            let day, month, year;
+            if (serviceDateInput) {
+                // Parse YYYY-MM-DD directly to avoid timezone issues
+                const parts = serviceDateInput.split('-');
+                year = parts[0].slice(-2); // Last 2 digits of year
+                month = parts[1]; // Already 2 digits (01-12)
+                day = parseInt(parts[2]); // No leading zero (1-31)
+            } else {
+                // Use today's date
+                const today = new Date();
+                day = today.getDate();
+                month = String(today.getMonth() + 1).padStart(2, '0');
+                year = String(today.getFullYear()).slice(-2);
+            }
 
             // Generate Work Order Number: "Doerksen 12-24 1#A"
             if (pi) {
