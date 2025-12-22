@@ -2067,14 +2067,36 @@
         }
 
         function updateProgress() {
+            const progressTextEl = document.getElementById('progressText');
+
             if (pipettes.length === 0) {
                 document.getElementById('progressFill').style.width = '0%';
+                if (progressTextEl) progressTextEl.textContent = '';
                 return;
             }
 
             const completed = pipettes.filter(p => p.passFail !== '').length;
+            const pending = pipettes.length - completed;
             const progress = (completed / pipettes.length) * 100;
+
             document.getElementById('progressFill').style.width = `${progress}%`;
+
+            // Update progress text
+            if (progressTextEl) {
+                const passCount = pipettes.filter(p => p.passFail === 'P').length;
+                const failCount = pipettes.filter(p => p.passFail === 'F').length;
+                const repairCount = pipettes.filter(p => p.passFail === 'R').length;
+                const oosCount = pipettes.filter(p => p.passFail === 'OOS').length;
+
+                let statusParts = [];
+                if (passCount > 0) statusParts.push(`${passCount} passed`);
+                if (failCount > 0) statusParts.push(`${failCount} failed`);
+                if (repairCount > 0) statusParts.push(`${repairCount} for repair`);
+                if (oosCount > 0) statusParts.push(`${oosCount} OOS`);
+
+                const statusText = statusParts.length > 0 ? ` (${statusParts.join(', ')})` : '';
+                progressTextEl.textContent = `${pipettes.length} pipettes • ${completed} complete • ${pending} pending${statusText}`;
+            }
         }
 
         function updateSummaryTable() {
@@ -2912,6 +2934,7 @@
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill" style="width: 0%"></div>
             </div>
+            <div id="progressText" style="text-align: center; margin-top: 8px; font-size: 14px; color: #6c757d; font-weight: 500;"></div>
 
             <div id="pipettesContainer">
                 <div class="empty-state">
