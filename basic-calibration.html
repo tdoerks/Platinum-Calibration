@@ -390,6 +390,56 @@
             gap: 10px;
         }
 
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #6c757d;
+            font-size: 14px;
+            margin-left: 4px;
+        }
+
+        .tooltip:hover {
+            color: #223077;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #223077;
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #223077 transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -1371,7 +1421,7 @@
                             </label>
                             <div class="checkbox-group">
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">SE:</label>
+                                    <label style="font-weight: 600; margin: 0;">SE:<span class="tooltip">ℹ️<span class="tooltiptext">Seal Type</span></span></label>
                                     <select id="adj-SE-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'SE', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 120px;">
                                         <option value=""></option>
@@ -1387,7 +1437,7 @@
                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 120px; display: ${(pipette.adjustments.SE && pipette.adjustments.SE !== '*' && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'inline-block' : 'none'};">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">COR:</label>
+                                    <label style="font-weight: 600; margin: 0;">COR:<span class="tooltip">ℹ️<span class="tooltiptext">Corrosion Level</span></span></label>
                                     <select id="adj-COR-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'COR', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
                                         <option value=""></option>
@@ -1402,7 +1452,7 @@
                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.COR && pipette.adjustments.COR !== '*' && pipette.adjustments.COR !== '**' && pipette.adjustments.COR !== '***' && pipette.adjustments.COR !== '') ? 'inline-block' : 'none'};">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">G:</label>
+                                    <label style="font-weight: 600; margin: 0;">G:<span class="tooltip">ℹ️<span class="tooltiptext">Grease Applied</span></span></label>
                                     <select id="adj-G-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'G', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
                                         <option value=""></option>
@@ -1416,7 +1466,7 @@
                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.G && pipette.adjustments.G !== 'D' && pipette.adjustments.G !== 'K' && pipette.adjustments.G !== '') ? 'inline-block' : 'none'};">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">SH:</label>
+                                    <label style="font-weight: 600; margin: 0;">SH:<span class="tooltip">ℹ️<span class="tooltiptext">Shaft Condition</span></span></label>
                                     <select id="adj-SH-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'SH', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
                                         <option value=""></option>
@@ -1429,7 +1479,7 @@
                                            style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 100px; display: ${(pipette.adjustments.SH && pipette.adjustments.SH !== 'X' && pipette.adjustments.SH !== '') ? 'inline-block' : 'none'};">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">FR:</label>
+                                    <label style="font-weight: 600; margin: 0;">FR:<span class="tooltip">ℹ️<span class="tooltiptext">Friction Ring</span></span></label>
                                     <select id="adj-FR-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'FR', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
                                         <option value=""></option>
@@ -1439,7 +1489,7 @@
                                     </select>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
-                                    <label style="font-weight: 600; margin: 0;">O:</label>
+                                    <label style="font-weight: 600; margin: 0;">O:<span class="tooltip">ℹ️<span class="tooltiptext">O-Ring Condition</span></span></label>
                                     <select id="adj-O-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'O', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 80px;">
                                         <option value=""></option>
