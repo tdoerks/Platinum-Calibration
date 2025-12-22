@@ -1020,16 +1020,17 @@
                                     <label style="font-weight: 600; margin: 0;">SE:</label>
                                     <select id="adj-SE-${pipette.id}" onchange="updateAdjustment(${pipette.id}, 'SE', this.value)"
                                             style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; min-width: 120px;">
-                                        <option value="">*</option>
+                                        <option value=""></option>
+                                        <option value="*" ${pipette.adjustments.SE === '*' ? 'selected' : ''}>*</option>
                                         <option value="X" ${pipette.adjustments.SE === 'X' ? 'selected' : ''}>X</option>
                                         <option value="Silicone" ${pipette.adjustments.SE === 'Silicone' ? 'selected' : ''}>Silicone</option>
                                         <option value="No seal" ${pipette.adjustments.SE === 'No seal' ? 'selected' : ''}>No seal</option>
-                                        <option value="Other" ${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'selected' : ''}>Other</option>
+                                        <option value="Other" ${(pipette.adjustments.SE && pipette.adjustments.SE !== '*' && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'selected' : ''}>Other</option>
                                     </select>
-                                    <input type="text" id="adj-SE-OTHER-${pipette.id}" value="${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? pipette.adjustments.SE : ''}"
+                                    <input type="text" id="adj-SE-OTHER-${pipette.id}" value="${(pipette.adjustments.SE && pipette.adjustments.SE !== '*' && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? pipette.adjustments.SE : ''}"
                                            onchange="updateSEOther(${pipette.id}, this.value)"
                                            placeholder="Specify other..."
-                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 120px; display: ${(pipette.adjustments.SE && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'inline-block' : 'none'};">
+                                           style="padding: 6px 10px; border: 2px solid #e9ecef; border-radius: 6px; width: 120px; display: ${(pipette.adjustments.SE && pipette.adjustments.SE !== '*' && pipette.adjustments.SE !== 'X' && pipette.adjustments.SE !== 'Silicone' && pipette.adjustments.SE !== 'No seal' && pipette.adjustments.SE !== '') ? 'inline-block' : 'none'};">
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <label style="font-weight: 600; margin: 0;">COR:</label>
@@ -1201,9 +1202,9 @@
                             otherInput.style.display = 'inline-block';
                             otherInput.focus();
                         }
-                        if (!pipette.adjustments.SE || pipette.adjustments.SE === 'X' ||
-                            pipette.adjustments.SE === 'Silicone' || pipette.adjustments.SE === 'No seal' ||
-                            pipette.adjustments.SE === '') {
+                        if (!pipette.adjustments.SE || pipette.adjustments.SE === '*' ||
+                            pipette.adjustments.SE === 'X' || pipette.adjustments.SE === 'Silicone' ||
+                            pipette.adjustments.SE === 'No seal' || pipette.adjustments.SE === '') {
                             pipette.adjustments.SE = '';
                         }
                     } else {
