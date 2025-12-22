@@ -1379,6 +1379,8 @@
                                 <option value="">-- Select --</option>
                                 <option value="P" ${pipette.passFail === 'P' ? 'selected' : ''}>✓ PASS</option>
                                 <option value="F" ${pipette.passFail === 'F' ? 'selected' : ''}>✗ FAIL</option>
+                                <option value="R" ${pipette.passFail === 'R' ? 'selected' : ''}>🔧 Taken for Repair</option>
+                                <option value="OOS" ${pipette.passFail === 'OOS' ? 'selected' : ''}>⛔ OOS</option>
                             </select>
                         </div>
                         <div class="form-group" style="grid-column: span 2;">
@@ -1390,8 +1392,17 @@
                     </div>
 
                     ${pipette.passFail ? `<div style="margin-top: 10px; text-align: right;">
-                        <span class="status-indicator status-${pipette.passFail === 'P' ? 'pass' : 'fail'}">
-                            ${pipette.passFail === 'P' ? '✓ PASS' : '✗ FAIL'}
+                        <span class="status-indicator status-${
+                            pipette.passFail === 'P' ? 'pass' :
+                            pipette.passFail === 'F' ? 'fail' :
+                            pipette.passFail === 'R' ? 'pending' :
+                            pipette.passFail === 'OOS' ? 'fail' : 'pending'}">
+                            ${
+                                pipette.passFail === 'P' ? '✓ PASS' :
+                                pipette.passFail === 'F' ? '✗ FAIL' :
+                                pipette.passFail === 'R' ? '🔧 Taken for Repair' :
+                                pipette.passFail === 'OOS' ? '⛔ OOS' : pipette.passFail
+                            }
                         </span>
                     </div>` : ''}
                 </div>
@@ -1717,9 +1728,9 @@
             // Overall pass requires both accuracy and precision to pass
             const overallPass = accuracyPass && precisionPass;
 
-            // Auto-update Pass/Fail dropdown
+            // Auto-update Pass/Fail dropdown (only if not manually set to R or OOS)
             const pfSelect = document.getElementById(`pf-${pipetteId}`);
-            if (pfSelect) {
+            if (pfSelect && pipette.passFail !== 'R' && pipette.passFail !== 'OOS') {
                 pipette.passFail = overallPass ? 'P' : 'F';
                 pfSelect.value = pipette.passFail;
             }
@@ -1741,7 +1752,7 @@
 
             // Update the status indicator if it exists (without re-rendering everything)
             const existingIndicator = document.querySelector(`#pipette-${pipetteId} .status-indicator`);
-            if (existingIndicator) {
+            if (existingIndicator && pipette.passFail !== 'R' && pipette.passFail !== 'OOS') {
                 existingIndicator.className = `status-indicator status-${overallPass ? 'pass' : 'fail'}`;
                 existingIndicator.textContent = overallPass ? '✓ PASS' : '✗ FAIL';
             }
