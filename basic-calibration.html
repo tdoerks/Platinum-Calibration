@@ -2232,10 +2232,10 @@
                 year = String(today.getFullYear()).slice(-2);
             }
 
-            // Generate Work Order Number: "Doerksen 12-24 1#A"
+            // Generate Work Order Number: "Doerksen 12-22 1#A" (MM-DD format)
             if (pi) {
                 const piLastName = pi.trim().split(' ').pop(); // Get last word as last name
-                const workOrderNo = `${piLastName} ${month}-${year} ${counter}#${frequency}`;
+                const workOrderNo = `${piLastName} ${month}-${day} ${counter}#${frequency}`;
                 document.getElementById('workOrderNo').value = workOrderNo;
             }
 
