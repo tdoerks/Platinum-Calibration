@@ -1355,9 +1355,14 @@
             card.innerHTML = `
                 <div class="pipette-header">
                     <h3 id="pipette-banner-${pipette.id}">${getPipetteBanner(pipette)}</h3>
-                    <button class="btn btn-danger" onclick="removePipette(${pipette.id})" style="padding: 6px 12px; font-size: 12px;">
-                        ✕ Remove
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary" onclick="duplicatePipette(${pipette.id})" style="padding: 6px 12px; font-size: 12px;">
+                            📋 Duplicate
+                        </button>
+                        <button class="btn btn-danger" onclick="removePipette(${pipette.id})" style="padding: 6px 12px; font-size: 12px;">
+                            ✕ Remove
+                        </button>
+                    </div>
                 </div>
                 <div class="pipette-body">
                     <!-- Serial Number, Make/Model and Max Volume -->
@@ -1587,6 +1592,38 @@
             container.innerHTML = '';
             pipettes.forEach(pipette => renderPipette(pipette));
             updateEmptyState();
+        }
+
+        function duplicatePipette(pipetteId) {
+            saveStateForUndo('Duplicate pipette');
+            const sourcePipette = pipettes.find(p => p.id === pipetteId);
+            if (!sourcePipette) return;
+
+            currentPipetteId++;
+            const newPipette = {
+                id: currentPipetteId,
+                number: String(currentPipetteId).padStart(2, '0'),
+                serialNumber: '',  // CLEARED - must be unique
+                makeModel: sourcePipette.makeModel,
+                maxVolume: sourcePipette.maxVolume,
+                inSpec: sourcePipette.inSpec,
+                outSpec: sourcePipette.outSpec,
+                adjustments: { ...sourcePipette.adjustments },  // Copy adjustments
+                finalVolumes: ['', '', '', ''],  // CLEARED - new measurements needed
+                passFail: '',  // CLEARED
+                comments: ''  // CLEARED
+            };
+
+            pipettes.push(newPipette);
+            renderPipette(newPipette);
+            updateProgress();
+            updateEmptyState();
+            debouncedAutoSave();
+
+            // Scroll to the new pipette
+            setTimeout(() => {
+                document.getElementById(`pipette-${newPipette.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
 
         function removePipette(pipetteId) {
