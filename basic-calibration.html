@@ -1584,8 +1584,12 @@
                 measurements: measurements
             });
 
-            // Re-render to show updated Pass/Fail status
-            renderAllPipettes();
+            // Update the status indicator if it exists (without re-rendering everything)
+            const existingIndicator = document.querySelector(`#pipette-${pipetteId} .status-indicator`);
+            if (existingIndicator) {
+                existingIndicator.className = `status-indicator status-${overallPass ? 'pass' : 'fail'}`;
+                existingIndicator.textContent = overallPass ? '✓ PASS' : '✗ FAIL';
+            }
         }
 
         function updateValidationDisplay(pipetteId, data) {
@@ -1593,7 +1597,10 @@
             const pipetteCard = document.getElementById(`pipette-${pipetteId}`);
             if (!pipetteCard) return;
 
-            let validationDiv = pipetteCard.querySelector('.validation-results');
+            const pipetteBody = pipetteCard.querySelector('.pipette-body');
+            if (!pipetteBody) return;
+
+            let validationDiv = pipetteBody.querySelector('.validation-results');
 
             if (!data) {
                 // Clear validation display
@@ -1604,12 +1611,13 @@
             if (!validationDiv) {
                 validationDiv = document.createElement('div');
                 validationDiv.className = 'validation-results';
-                validationDiv.style.cssText = 'background: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 8px; border-left: 4px solid ' + (data.overallPass ? '#28a745' : '#dc3545');
+                validationDiv.style.cssText = 'background: #f8f9fa; padding: 15px; margin: 15px 0; border-radius: 8px; border-left: 4px solid ' + (data.overallPass ? '#28a745' : '#dc3545');
 
-                // Insert before the final Pass/Fail section
-                const passFailSection = pipetteCard.querySelector('.pipette-row:last-child');
-                if (passFailSection) {
-                    passFailSection.parentNode.insertBefore(validationDiv, passFailSection);
+                // Find the Pass/Fail row and insert before it
+                const pipetteRows = pipetteBody.querySelectorAll('.pipette-row');
+                const passFailRow = pipetteRows[pipetteRows.length - 1]; // Last row is Pass/Fail
+                if (passFailRow) {
+                    pipetteBody.insertBefore(validationDiv, passFailRow);
                 }
             } else {
                 validationDiv.style.borderLeftColor = data.overallPass ? '#28a745' : '#dc3545';
