@@ -2214,32 +2214,13 @@
             const technician = document.getElementById('technician')?.value || '';
             const serviceDateInput = document.getElementById('serviceDate')?.value;
             const frequency = document.getElementById('frequency')?.value || 'A';
+            const counter = parseInt(document.getElementById('invoiceCounter')?.value || '1');
 
             // Use service date or today's date
             const date = serviceDateInput ? new Date(serviceDateInput) : new Date();
             const day = date.getDate(); // No leading zero - 1-9 or 10-31
             const month = String(date.getMonth() + 1).padStart(2, '0'); // Always 2 digits
             const year = String(date.getFullYear()).slice(-2); // Last 2 digits
-
-            // Get or create daily counter
-            const dateKey = `${day}${month}${year}`;
-            const counterKey = `invoiceCounter_${dateKey}`;
-            let counter = parseInt(localStorage.getItem(counterKey) || '0');
-
-            // Only increment counter for NEW sessions (not when editing existing)
-            if (!currentSessionId || !document.getElementById('workOrderNo')?.value) {
-                counter++;
-                localStorage.setItem(counterKey, counter.toString());
-            } else {
-                // Use existing counter if already set
-                const existingWorkOrder = document.getElementById('workOrderNo')?.value;
-                if (existingWorkOrder) {
-                    const match = existingWorkOrder.match(/(\d+)#/);
-                    if (match) {
-                        counter = parseInt(match[1]);
-                    }
-                }
-            }
 
             // Generate Work Order Number: "Doerksen 12-24 1#A"
             if (pi) {
@@ -2271,6 +2252,7 @@
                 room: document.getElementById('room')?.value || '',
                 technician: document.getElementById('technician')?.value || '',
                 frequency: document.getElementById('frequency')?.value || 'A',
+                invoiceCounter: document.getElementById('invoiceCounter')?.value || '1',
                 workOrderNo: document.getElementById('workOrderNo')?.value || '',
                 invoiceNo: document.getElementById('invoiceNo')?.value || '',
                 serviceDate: document.getElementById('serviceDate')?.value || '',
@@ -2885,6 +2867,12 @@
                     <div class="form-group">
                         <label>Next Service Due</label>
                         <input type="date" id="nextServiceDue">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice # of Day</label>
+                        <input type="number" id="invoiceCounter" value="1" min="1" onchange="generateWorkOrderAndInvoice()"
+                               style="width: 100px;" placeholder="1">
+                        <p style="font-size: 11px; color: #6c757d; margin-top: 3px;">1st, 2nd, 3rd invoice of the day</p>
                     </div>
                     <div class="form-group">
                         <label>Work Order Number</label>
