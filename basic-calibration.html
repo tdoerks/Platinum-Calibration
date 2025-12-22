@@ -608,6 +608,44 @@
                 box-shadow: none;
             }
         }
+
+        /* Barcode Scanner Styles */
+        .scan-success {
+            animation: scanFlash 0.6s ease;
+        }
+
+        @keyframes scanFlash {
+            0%, 100% {
+                background-color: white;
+                border-color: #ced4da;
+            }
+            50% {
+                background-color: #d4edda;
+                border-color: #28a745;
+                box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+            }
+        }
+
+        .scan-status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .scan-counter {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .scan-status {
+            color: #28a745;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -639,6 +677,12 @@
         let undoStack = [];
         let redoStack = [];
         const MAX_HISTORY = 20;
+
+        // Barcode Scanner Variables
+        let barcodeBuffer = '';
+        let lastKeyTime = 0;
+        let barcodeScansToday = 0;
+        const BARCODE_SCAN_SPEED_MS = 50; // Keys <50ms apart = scanner
 
         // ========================================
         // ISO 8655 SPECIFICATIONS DATABASE
@@ -3348,6 +3392,101 @@
             showAlert('CSV exported successfully!', 'Success');
         }
 
+        // ============================================================
+        // BARCODE SCANNER FUNCTIONS
+        // ============================================================
+
+        // Show scan success feedback
+        function showScanFeedback(field, value) {
+            // Visual feedback - green flash
+            field.classList.add('scan-success');
+            setTimeout(() => field.classList.remove('scan-success'), 600);
+
+            // Update scan counter
+            barcodeScansToday++;
+            updateScanCounter();
+
+            // Status message
+            const statusDiv = document.getElementById('scan-status');
+            if (statusDiv) {
+                statusDiv.textContent = `✅ Scanned: ${value}`;
+                statusDiv.style.color = '#28a745';
+                setTimeout(() => {
+                    statusDiv.textContent = '';
+                }, 3000);
+            }
+
+            // Optional: Play beep sound (commented out - can enable if desired)
+            // playBeep();
+        }
+
+        // Update scan counter display
+        function updateScanCounter() {
+            const counterDiv = document.getElementById('scan-counter');
+            if (counterDiv) {
+                counterDiv.textContent = `📊 ${barcodeScansToday} scan${barcodeScansToday !== 1 ? 's' : ''} today`;
+            }
+        }
+
+        // Auto-advance to next field after barcode scan
+        function autoAdvanceAfterScan(currentField) {
+            // Determine which field was scanned
+            const fieldId = currentField.id;
+
+            // If it's a serial number field
+            if (fieldId.startsWith('serial-')) {
+                const pipetteId = fieldId.replace('serial-', '');
+
+                // Try to focus on make/model field
+                const makeModelField = document.getElementById(`makeModel-${pipetteId}`);
+                if (makeModelField) {
+                    setTimeout(() => {
+                        makeModelField.focus();
+                        makeModelField.select();
+                    }, 100);
+                    return;
+                }
+
+                // If make/model already filled, focus on max volume
+                const maxVolumeField = document.getElementById(`maxVolume-${pipetteId}`);
+                if (maxVolumeField) {
+                    setTimeout(() => {
+                        maxVolumeField.focus();
+                        maxVolumeField.select();
+                    }, 100);
+                    return;
+                }
+            }
+
+            // Default: try to focus next input field
+            const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="number"], select'));
+            const currentIndex = allInputs.indexOf(currentField);
+            if (currentIndex >= 0 && currentIndex < allInputs.length - 1) {
+                setTimeout(() => {
+                    allInputs[currentIndex + 1].focus();
+                }, 100);
+            }
+        }
+
+        // Optional: Play beep sound
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 1000; // 1000Hz beep
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkPassword()) {
@@ -3364,6 +3503,51 @@
                     closeModal();
                 }
 
+                // ========================================
+                // BARCODE SCANNER DETECTION
+                // ========================================
+                // Detect rapid keystrokes from barcode scanner
+                // Scanners type much faster than humans (<50ms between keys)
+
+                const now = Date.now();
+                const timeSinceLastKey = now - lastKeyTime;
+                const isInputField = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
+
+                // Only detect barcodes in text input fields
+                if (isInputField && e.target.type === 'text') {
+                    // Rapid keystrokes indicate barcode scanner
+                    if (timeSinceLastKey < BARCODE_SCAN_SPEED_MS && timeSinceLastKey > 0) {
+                        // Scanner is typing
+                        barcodeBuffer += e.key;
+                    } else {
+                        // Human typing or new scan starting
+                        barcodeBuffer = e.key;
+                    }
+
+                    lastKeyTime = now;
+
+                    // Enter key signals end of barcode scan
+                    if (e.key === 'Enter' && barcodeBuffer.length > 3) {
+                        e.preventDefault(); // Prevent form submission
+
+                        // Remove 'Enter' from buffer
+                        const scannedValue = barcodeBuffer.slice(0, -5).trim();
+
+                        // Show visual feedback
+                        showScanFeedback(e.target, scannedValue);
+
+                        // Auto-advance to next field
+                        autoAdvanceAfterScan(e.target);
+
+                        // Clear buffer
+                        barcodeBuffer = '';
+                        return;
+                    }
+                }
+
+                // ========================================
+                // KEYBOARD SHORTCUTS
+                // ========================================
                 // Keyboard shortcuts (Ctrl/Cmd + key)
                 if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
                     // Ignore if typing in an input/textarea (except Ctrl+S for save)
@@ -4107,6 +4291,15 @@
                 ⌨️ Shortcuts: <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+N</kbd> New
                 | <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+D</kbd> Duplicate
                 | <kbd style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; border: 1px solid #ccc;">Ctrl+S</kbd> Save
+            </div>
+
+            <!-- Barcode Scanner Status Bar -->
+            <div class="scan-status-bar">
+                <div class="scan-counter" id="scan-counter">📊 0 scans today</div>
+                <div class="scan-status" id="scan-status"></div>
+                <div style="color: #6c757d; font-size: 12px;">
+                    💡 Tip: Use barcode scanner to auto-fill serial numbers
+                </div>
             </div>
 
             <!-- Bulk Actions Bar (hidden when no pipettes selected) -->
