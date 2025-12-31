@@ -898,6 +898,238 @@
         }
 
         // ========================================
+        // INVENTORY TRACKING SYSTEM
+        // ========================================
+
+        let inventoryUsage = [];
+
+        // Load inventory usage from localStorage
+        function loadInventoryUsage() {
+            const saved = localStorage.getItem('basicCalInventoryUsage');
+            if (saved) {
+                try {
+                    inventoryUsage = JSON.parse(saved);
+                    renderInventoryUsage();
+                    updateInventoryStats();
+                } catch (e) {
+                    console.error('Error loading inventory usage:', e);
+                    inventoryUsage = [];
+                }
+            }
+        }
+
+        // Save inventory usage to localStorage
+        function saveInventoryUsage() {
+            localStorage.setItem('basicCalInventoryUsage', JSON.stringify(inventoryUsage));
+        }
+
+        // Open add inventory modal
+        function openAddInventoryModal() {
+            document.getElementById('addInventoryModal').style.display = 'block';
+            // Auto-fill job number if available
+            const jobNumber = document.getElementById('customerName')?.value || '';
+            if (jobNumber) {
+                document.getElementById('invJobNumber').value = jobNumber;
+            }
+        }
+
+        // Close inventory modal
+        function closeInventoryModal() {
+            document.getElementById('addInventoryModal').style.display = 'none';
+            document.getElementById('addInventoryForm').reset();
+        }
+
+        // Add inventory usage
+        document.getElementById('addInventoryForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const usage = {
+                id: Date.now(),
+                itemName: document.getElementById('invItemName').value.trim(),
+                quantity: parseInt(document.getElementById('invQuantity').value),
+                jobNumber: document.getElementById('invJobNumber').value.trim(),
+                usedBy: document.getElementById('invUsedBy').value.trim(),
+                notes: document.getElementById('invNotes').value.trim(),
+                timestamp: new Date().toISOString(),
+                sessionId: currentSessionId
+            };
+
+            inventoryUsage.push(usage);
+            saveInventoryUsage();
+            renderInventoryUsage();
+            updateInventoryStats();
+            closeInventoryModal();
+
+            showAlert(`✅ Added ${usage.quantity} ${usage.itemName}(s) to inventory usage log`, 'Item Added');
+        });
+
+        // Render inventory usage table
+        function renderInventoryUsage() {
+            const tbody = document.getElementById('inventoryUsageBody');
+            if (!tbody) return;
+
+            if (inventoryUsage.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
+                            <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px;">📦</div>
+                            <div>No items used yet. Click "Add Item Used" to log inventory usage.</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = inventoryUsage.map(item => {
+                const date = new Date(item.timestamp);
+                const timeStr = date.toLocaleString();
+
+                return `
+                    <tr style="transition: all 0.3s ease;">
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;"><strong>${item.itemName}</strong></td>
+                        <td style="padding: 15px; text-align: center; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #3b82f6;">${item.quantity}</td>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.jobNumber || '-'}</td>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.usedBy || '-'}</td>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem;">${timeStr}</td>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem;">${item.notes || '-'}</td>
+                        <td style="padding: 15px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+                            <button onclick="deleteInventoryUsage(${item.id})" class="btn btn-danger btn-small" style="padding: 6px 12px; font-size: 12px;">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Update inventory stats
+        function updateInventoryStats() {
+            const totalItems = inventoryUsage.reduce((sum, item) => sum + item.quantity, 0);
+            const currentSessionItems = inventoryUsage
+                .filter(item => item.sessionId === currentSessionId)
+                .reduce((sum, item) => sum + item.quantity, 0);
+            const uniqueItems = new Set(inventoryUsage.map(item => item.itemName.toLowerCase())).size;
+
+            document.getElementById('invTotalItems').textContent = totalItems;
+            document.getElementById('invCurrentSession').textContent = currentSessionItems;
+            document.getElementById('invUniqueItems').textContent = uniqueItems;
+        }
+
+        // Delete inventory usage
+        function deleteInventoryUsage(id) {
+            if (confirm('Are you sure you want to delete this inventory usage record?')) {
+                inventoryUsage = inventoryUsage.filter(item => item.id !== id);
+                saveInventoryUsage();
+                renderInventoryUsage();
+                updateInventoryStats();
+                showAlert('Inventory usage record deleted', 'Deleted');
+            }
+        }
+
+        // Clear all inventory usage
+        function clearInventoryUsage() {
+            showConfirm('Are you sure you want to clear ALL inventory usage records? This cannot be undone.', 'Clear All', () => {
+                inventoryUsage = [];
+                saveInventoryUsage();
+                renderInventoryUsage();
+                updateInventoryStats();
+                showAlert('All inventory usage records cleared', 'Cleared');
+            });
+        }
+
+        // Export inventory usage
+        function exportInventoryUsage() {
+            if (inventoryUsage.length === 0) {
+                showAlert('No inventory usage data to export', 'No Data');
+                return;
+            }
+
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory Usage Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f8fafc; }
+        .header { text-align: center; margin-bottom: 30px; padding: 30px; background: white; border-radius: 12px; }
+        .logo { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 15px 20px; border-radius: 8px; font-weight: bold; display: inline-block; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 15px; text-align: left; font-weight: 700; border-bottom: 2px solid #e5e7eb; }
+        td { padding: 12px 15px; border-bottom: 1px solid #e5e7eb; }
+        tr:hover { background: #f8fafc; }
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-box { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #3b82f6; }
+        .stat-label { color: #6b7280; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">CALIBRATIONS INTERNATIONAL INC.</div>
+        <h1>Inventory Usage Report</h1>
+        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>Total Records:</strong> ${inventoryUsage.length}</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box">
+            <div class="stat-number">${inventoryUsage.reduce((sum, item) => sum + item.quantity, 0)}</div>
+            <div class="stat-label">Total Items Used</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">${inventoryUsage.length}</div>
+            <div class="stat-label">Usage Records</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">${new Set(inventoryUsage.map(item => item.itemName.toLowerCase())).size}</div>
+            <div class="stat-label">Unique Items</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Job/Invoice</th>
+                <th>Used By</th>
+                <th>Date/Time</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${inventoryUsage.map(item => `
+                <tr>
+                    <td><strong>${item.itemName}</strong></td>
+                    <td style="text-align: center; font-weight: bold; color: #3b82f6;">${item.quantity}</td>
+                    <td>${item.jobNumber || '-'}</td>
+                    <td>${item.usedBy || '-'}</td>
+                    <td>${new Date(item.timestamp).toLocaleString()}</td>
+                    <td>${item.notes || '-'}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 40px; text-align: center; font-size: 0.8rem; color: #6b7280;">
+        This report was automatically generated by Basic Calibration Service - Calibrations International Inc.
+    </div>
+</body>
+</html>
+            `;
+
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `inventory_usage_report_${new Date().toISOString().split('T')[0]}.html`;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showAlert('📄 Inventory usage report exported successfully!', 'Export Complete');
+        }
+
+        // ========================================
         // UNDO/REDO SYSTEM
         // ========================================
 
@@ -1111,6 +1343,7 @@
 
                 renderAllPipettes();
                 updateProgress();
+                loadInventoryUsage(); // Load inventory usage data
                 return true;
             } catch (error) {
                 console.error('Error loading session:', error);
@@ -3592,6 +3825,9 @@
                 const nextMonth = new Date();
                 nextMonth.setMonth(nextMonth.getMonth() + 1);
                 document.getElementById('balanceCalDue').value = nextMonth.toISOString().split('T')[0];
+
+                // Load inventory usage even if no session
+                loadInventoryUsage();
             }
 
             // Setup autofill for common fields
@@ -3611,6 +3847,13 @@
             // Add autosave listeners to form fields
             document.querySelectorAll('#session input, #session select').forEach(input => {
                 input.addEventListener('change', debouncedAutoSave);
+            });
+
+            // Add click listener for inventory modal
+            document.getElementById('addInventoryModal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'addInventoryModal') {
+                    closeInventoryModal();
+                }
             });
 
             console.log('Basic Calibration System initialized');
@@ -4141,6 +4384,7 @@
             <button class="nav-tab" onclick="showTab('summary', this)">📊 Summary Table</button>
             <button class="nav-tab" onclick="showTab('report', this)">📄 Report</button>
             <button class="nav-tab" onclick="showTab('labels', this)">🏷️ Labels</button>
+            <button class="nav-tab" onclick="showTab('inventory', this)">📦 Inventory Used</button>
             <button class="nav-tab" onclick="showTab('history', this)">📚 History</button>
         </div>
 
@@ -4463,12 +4707,111 @@
             </div>
         </div>
 
+        <!-- Inventory Used Tab -->
+        <div id="inventory" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #223077;">📦 Inventory Used</h2>
+                <button onclick="openAddInventoryModal()" class="btn btn-primary">
+                    ✨ Add Item Used
+                </button>
+            </div>
+
+            <!-- Summary Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invTotalItems">0</div>
+                    <div style="opacity: 0.9;">Items Used</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invCurrentSession">0</div>
+                    <div style="opacity: 0.9;">Current Session</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invUniqueItems">0</div>
+                    <div style="opacity: 0.9;">Unique Items</div>
+                </div>
+            </div>
+
+            <!-- Usage Table -->
+            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h3 style="color: #223077; margin-bottom: 20px;">Items Used in Current Session</h3>
+                <div id="inventoryUsageContainer" style="overflow-x: auto;">
+                    <table id="inventoryUsageTable" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Item Name</th>
+                                <th style="padding: 15px; text-align: center; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Job/Invoice</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Used By</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Time</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Notes</th>
+                                <th style="padding: 15px; text-align: center; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryUsageBody">
+                            <tr>
+                                <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
+                                    <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px;">📦</div>
+                                    <div>No items used yet. Click "Add Item Used" to log inventory usage.</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div style="margin-top: 25px; text-align: right;">
+                <button onclick="exportInventoryUsage()" class="btn btn-secondary" id="exportInventoryBtn">
+                    📄 Export Usage Report
+                </button>
+                <button onclick="clearInventoryUsage()" class="btn btn-danger" id="clearInventoryBtn" style="margin-left: 10px;">
+                    🗑️ Clear All Usage
+                </button>
+            </div>
+        </div>
+
         <!-- History Tab -->
         <div id="history" class="tab-content">
             <h2 style="color: #223077;">📚 Session History</h2>
             <div id="historyContainer" style="margin-top: 20px;">
                 <p style="color: #6c757d;">No previous sessions found.</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Add Inventory Usage Modal -->
+    <div id="addInventoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 1000; animation: fadeIn 0.3s ease;">
+        <div style="background: white; margin: 50px auto; padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); animation: slideUp 0.3s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #e5e7eb;">
+                <h2 style="color: #1f2937; font-size: 1.5rem; margin: 0;">📦 Add Item Used</h2>
+                <button onclick="closeInventoryModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #6b7280; transition: color 0.3s ease;">&times;</button>
+            </div>
+            <form id="addInventoryForm">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Item Name *</label>
+                    <input type="text" id="invItemName" required style="width: 100%; padding: 12px 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.3s ease;" placeholder="e.g., Seal P1000, O-ring R200">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Quantity Used *</label>
+                    <input type="number" id="invQuantity" min="1" required style="width: 100%; padding: 12px 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.3s ease;" placeholder="1">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Job/Invoice Number</label>
+                    <input type="text" id="invJobNumber" style="width: 100%; padding: 12px 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.3s ease;" placeholder="e.g., CAL-2024-001">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Used By</label>
+                    <input type="text" id="invUsedBy" style="width: 100%; padding: 12px 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.3s ease;" placeholder="Technician name">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #374151;">Notes</label>
+                    <textarea id="invNotes" rows="3" style="width: 100%; padding: 12px 15px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.3s ease; resize: vertical;" placeholder="Optional notes about usage"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    ✨ Add Item Used
+                </button>
+            </form>
         </div>
     </div>
 </body>
