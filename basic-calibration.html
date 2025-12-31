@@ -1042,9 +1042,11 @@
                 !(item.autoDetected && item.sessionId === currentSessionId)
             );
 
-            // Get session info for job number
+            // Get session info for job number and invoice
             const sessionInfo = getSessionInfo();
             const workOrderNo = sessionInfo.workOrderNo || '';
+            const invoiceNo = sessionInfo.invoiceNo || '';
+            const jobNumber = invoiceNo ? `${workOrderNo} (Invoice: ${invoiceNo})` : workOrderNo;
             const technician = sessionInfo.technician || '';
 
             // Loop through each pipette and detect inventory usage
@@ -1060,54 +1062,54 @@
                 // SE: Seal
                 if (adjustments.SE === 'X' || adjustments.SE === '*') {
                     const sealType = adjustments.SE === '*' ? 'Seal (inspected)' : 'Seal';
-                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', workOrderNo, technician);
+                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', jobNumber, technician);
                     detectedCount++;
                 } else if (adjustments.SE && adjustments.SE !== '' && adjustments.SE !== 'No seal') {
                     // Specific seal type (Silicone, etc.)
                     const sealType = adjustments.SE === 'Silicone' ? 'Seal (Silicone)' : `Seal (${adjustments.SE})`;
-                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', workOrderNo, technician);
+                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', jobNumber, technician);
                     detectedCount++;
                 }
 
                 // O: O-Ring
                 if (adjustments.O === 'X') {
-                    addAutoDetectedItem('O-Ring', fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', workOrderNo, technician);
+                    addAutoDetectedItem('O-Ring', fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', jobNumber, technician);
                     detectedCount++;
                 } else if (adjustments.O && adjustments.O !== '') {
-                    addAutoDetectedItem(`O-Ring (${adjustments.O})`, fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', workOrderNo, technician);
+                    addAutoDetectedItem(`O-Ring (${adjustments.O})`, fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', jobNumber, technician);
                     detectedCount++;
                 }
 
                 // SH: Shaft
                 if (adjustments.SH === 'X') {
-                    addAutoDetectedItem('Shaft', fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', workOrderNo, technician);
+                    addAutoDetectedItem('Shaft', fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', jobNumber, technician);
                     detectedCount++;
                 } else if (adjustments.SH && adjustments.SH !== '') {
-                    addAutoDetectedItem(`Shaft (${adjustments.SH})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', workOrderNo, technician);
+                    addAutoDetectedItem(`Shaft (${adjustments.SH})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', jobNumber, technician);
                     detectedCount++;
                 }
 
                 // G: Grease
                 if (adjustments.G === 'D') {
-                    addAutoDetectedItem('Grease Type D', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    addAutoDetectedItem('Grease Type D', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', jobNumber, technician);
                     detectedCount++;
                 } else if (adjustments.G === 'K') {
-                    addAutoDetectedItem('Grease Type K', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    addAutoDetectedItem('Grease Type K', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', jobNumber, technician);
                     detectedCount++;
                 } else if (adjustments.G && adjustments.G !== '') {
-                    addAutoDetectedItem(`Grease (${adjustments.G})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    addAutoDetectedItem(`Grease (${adjustments.G})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', jobNumber, technician);
                     detectedCount++;
                 }
 
                 // FR: Friction Ring
                 if (adjustments.FR && adjustments.FR !== '') {
-                    addAutoDetectedItem(`Friction Ring (${adjustments.FR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Friction Ring', workOrderNo, technician);
+                    addAutoDetectedItem(`Friction Ring (${adjustments.FR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Friction Ring', jobNumber, technician);
                     detectedCount++;
                 }
 
                 // COR: Corrosion (track cleaning if corrosion found)
                 if (adjustments.COR && adjustments.COR !== '') {
-                    addAutoDetectedItem(`Corrosion Cleaning (${adjustments.COR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Cleaning', workOrderNo, technician);
+                    addAutoDetectedItem(`Corrosion Cleaning (${adjustments.COR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Cleaning', jobNumber, technician);
                     detectedCount++;
                 }
             });
