@@ -2084,11 +2084,30 @@
 
             if (!specs) return;
 
-            const mean = measurements.reduce((a, b) => a + b, 0) / 4;
-            const cv = calculateCV(measurements);
-            const sd = calculateSD(measurements);
+            // Get environmental conditions
+            const env = getEnvironmentalConditions();
 
-            const accuracyPass = measurements.every(reading =>
+            // Apply environmental corrections if data available
+            let correctedMeasurements = measurements;
+            let zFactor = 1.0;
+            let correctionApplied = false;
+
+            if (env.hasAllData) {
+                correctedMeasurements = measurements.map(rawValue => {
+                    const result = applyEnvironmentalCorrection(rawValue, env.temperature, env.pressure, env.humidity);
+                    zFactor = result.zFactor;
+                    correctionApplied = result.correctionApplied;
+                    return result.corrected;
+                });
+            }
+
+            // Calculate statistics using CORRECTED values
+            const mean = correctedMeasurements.reduce((a, b) => a + b, 0) / 4;
+            const cv = calculateCV(correctedMeasurements);
+            const sd = calculateSD(correctedMeasurements);
+
+            // Check pass/fail using CORRECTED values
+            const accuracyPass = correctedMeasurements.every(reading =>
                 reading >= specs.accuracy.from && reading <= specs.accuracy.to
             );
 
@@ -2123,7 +2142,11 @@
                 precisionPass: precisionPass,
                 cvPass: cvPass,
                 sdPass: sdPass,
-                measurements: measurements
+                measurements: correctedMeasurements,
+                rawMeasurements: measurements,
+                zFactor: zFactor,
+                correctionApplied: correctionApplied,
+                environmental: env
             });
         }
 
@@ -2134,6 +2157,9 @@
             // For multi-channel, we validate each test point across ALL channels
             // Each test point has ONE measurement per channel (e.g., 8 readings for LOW)
             const testPoints = ['low', 'mid', 'high'];
+
+            // Get environmental conditions once for this validation
+            const env = getEnvironmentalConditions();
 
             // Validate each test point independently
             testPoints.forEach(testPoint => {
@@ -2155,13 +2181,27 @@
 
                 if (!specs) return;
 
-                // Calculate statistics across all channels
-                const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
-                const cv = calculateCV(measurements);
-                const sd = calculateSD(measurements);
+                // Apply environmental corrections if data available
+                let correctedMeasurements = measurements;
+                let zFactor = 1.0;
+                let correctionApplied = false;
 
-                // Check accuracy: all readings must be within range
-                const accuracyPass = measurements.every(reading =>
+                if (env.hasAllData) {
+                    correctedMeasurements = measurements.map(rawValue => {
+                        const result = applyEnvironmentalCorrection(rawValue, env.temperature, env.pressure, env.humidity);
+                        zFactor = result.zFactor;
+                        correctionApplied = result.correctionApplied;
+                        return result.corrected;
+                    });
+                }
+
+                // Calculate statistics using CORRECTED values
+                const mean = correctedMeasurements.reduce((a, b) => a + b, 0) / correctedMeasurements.length;
+                const cv = calculateCV(correctedMeasurements);
+                const sd = calculateSD(correctedMeasurements);
+
+                // Check accuracy: all readings must be within range (using CORRECTED values)
+                const accuracyPass = correctedMeasurements.every(reading =>
                     reading >= specs.accuracy.from && reading <= specs.accuracy.to
                 );
 
@@ -2187,7 +2227,7 @@
                     }
                 }
 
-                // Display calculation results
+                // Display calculation results with both raw and corrected values
                 updateCalculationsDisplay(pipetteId, condition, testPoint, {
                     nominal: nominalVolume,
                     mean: mean,
@@ -2198,7 +2238,11 @@
                     precisionPass: precisionPass,
                     cvPass: cvPass,
                     sdPass: sdPass,
-                    measurements: measurements
+                    measurements: correctedMeasurements,
+                    rawMeasurements: measurements,  // Keep raw values
+                    zFactor: zFactor,                // Z-factor for display
+                    correctionApplied: correctionApplied,  // Flag
+                    environmental: env               // Environmental conditions
                 });
             });
         }
@@ -2255,6 +2299,191 @@
             return stdDev;
         }
 
+        // ========================================
+        // ENVIRONMENTAL CORRECTIONS (ISO 8655-6)
+        // ========================================
+
+        // Calculate water density at given temperature (°C)
+        // Formula from ISO 8655-6:2002
+        function calculateWaterDensity(tempC) {
+            // Polynomial approximation for water density (kg/m³)
+            // Valid for 15-30°C range
+            const t = tempC;
+            const density = 999.85308 + 6.32693e-2 * t - 8.523829e-3 * t * t
+                          + 6.943248e-5 * t * t * t - 3.821216e-7 * t * t * t * t;
+            return density;
+        }
+
+        // Calculate air density from temperature, pressure, and humidity
+        // Simplified formula suitable for laboratory conditions
+        function calculateAirDensity(tempC, pressureKPa, humidityPercent) {
+            const T = tempC + 273.15; // Convert to Kelvin
+            const P = pressureKPa * 1000; // Convert kPa to Pa
+            const RH = humidityPercent / 100; // Convert to fraction
+
+            // Saturation vapor pressure (Pa) - Magnus formula
+            const Psat = 611.2 * Math.exp((17.67 * tempC) / (tempC + 243.5));
+
+            // Partial pressure of water vapor
+            const Pw = RH * Psat;
+
+            // Partial pressure of dry air
+            const Pd = P - Pw;
+
+            // Air density (kg/m³)
+            // Using specific gas constants
+            const Rd = 287.05; // Specific gas constant for dry air (J/kg·K)
+            const Rv = 461.495; // Specific gas constant for water vapor (J/kg·K)
+
+            const rho_air = (Pd / (Rd * T)) + (Pw / (Rv * T));
+
+            return rho_air;
+        }
+
+        // Calculate Z-factor for air buoyancy correction
+        function calculateZFactor(tempC, pressureKPa, humidityPercent) {
+            const rho_air = calculateAirDensity(tempC, pressureKPa, humidityPercent);
+            const rho_water = calculateWaterDensity(tempC);
+            const rho_weights = 8000; // Standard stainless steel calibration weights (kg/m³)
+
+            // Z-factor formula per ISO 8655-6
+            const Z = (1 - rho_air / rho_weights) / (1 - rho_air / rho_water);
+
+            return Z;
+        }
+
+        // Apply environmental correction to raw gravimetric measurement
+        function applyEnvironmentalCorrection(rawValueUL, tempC, pressureKPa, humidityPercent) {
+            // If environmental data is missing, return raw value
+            if (!tempC || !pressureKPa || !humidityPercent) {
+                return {
+                    corrected: rawValueUL,
+                    zFactor: 1.0,
+                    correctionApplied: false
+                };
+            }
+
+            const zFactor = calculateZFactor(tempC, pressureKPa, humidityPercent);
+            const correctedValue = rawValueUL * zFactor;
+
+            return {
+                corrected: correctedValue,
+                zFactor: zFactor,
+                correctionApplied: true
+            };
+        }
+
+        // Get current environmental conditions from session
+        function getEnvironmentalConditions() {
+            const temp = parseFloat(document.getElementById('temperature')?.value);
+            const pressure = parseFloat(document.getElementById('pressure')?.value);
+            const humidity = parseFloat(document.getElementById('humidity')?.value);
+
+            return {
+                temperature: temp || null,
+                pressure: pressure || null,
+                humidity: humidity || null,
+                hasAllData: !!(temp && pressure && humidity)
+            };
+        }
+
+        // ========================================
+        // ENVIRONMENTAL VALIDATION & WARNINGS
+        // ========================================
+
+        // ISO 8655-6 recommended ranges:
+        const ENV_RANGES = {
+            temperature: { min: 15, max: 30, optimal: { min: 20, max: 25 }, unit: '°C' },
+            pressure: { min: 95, max: 105, optimal: { min: 98, max: 102 }, unit: 'kPa' },
+            humidity: { min: 30, max: 80, optimal: { min: 40, max: 60 }, unit: '% RH' }
+        };
+
+        function validateEnvironmentalParameter(value, paramName) {
+            const range = ENV_RANGES[paramName];
+            if (!value || isNaN(value)) {
+                return { valid: false, warning: null };
+            }
+
+            if (value < range.min || value > range.max) {
+                return {
+                    valid: false,
+                    warning: `${paramName.charAt(0).toUpperCase() + paramName.slice(1)} out of range! Acceptable: ${range.min}-${range.max} ${range.unit}`
+                };
+            }
+
+            if (value < range.optimal.min || value > range.optimal.max) {
+                return {
+                    valid: true,
+                    warning: `${paramName.charAt(0).toUpperCase() + paramName.slice(1)} outside optimal range (${range.optimal.min}-${range.optimal.max} ${range.unit})`
+                };
+            }
+
+            return { valid: true, warning: null };
+        }
+
+        function validateTemperature(input) {
+            const value = parseFloat(input.value);
+            const result = validateEnvironmentalParameter(value, 'temperature');
+
+            input.style.borderColor = result.valid ? '' : '#dc3545';
+            showEnvironmentalWarning('temperature', result.warning);
+            updateAllCalculations(); // Recalculate with new environmental conditions
+        }
+
+        function validatePressure(input) {
+            const value = parseFloat(input.value);
+            const result = validateEnvironmentalParameter(value, 'pressure');
+
+            input.style.borderColor = result.valid ? '' : '#dc3545';
+            showEnvironmentalWarning('pressure', result.warning);
+            updateAllCalculations();
+        }
+
+        function validateHumidity(input) {
+            const value = parseFloat(input.value);
+            const result = validateEnvironmentalParameter(value, 'humidity');
+
+            input.style.borderColor = result.valid ? '' : '#dc3545';
+            showEnvironmentalWarning('humidity', result.warning);
+            updateAllCalculations();
+        }
+
+        function showEnvironmentalWarning(paramName, warningText) {
+            let warningDiv = document.getElementById(`warning-${paramName}`);
+
+            if (!warningDiv) {
+                const input = document.getElementById(paramName);
+                if (!input) return;
+
+                warningDiv = document.createElement('div');
+                warningDiv.id = `warning-${paramName}`;
+                warningDiv.style.cssText = 'color: #dc3545; font-size: 12px; margin-top: 3px;';
+                input.parentElement.appendChild(warningDiv);
+            }
+
+            if (warningText) {
+                warningDiv.textContent = `⚠ ${warningText}`;
+                warningDiv.style.color = warningText.includes('out of range') ? '#dc3545' : '#ff9800';
+            } else {
+                warningDiv.textContent = '';
+            }
+        }
+
+        function updateAllCalculations() {
+            // Recalculate all pipette validations when environmental conditions change
+            pipettes.forEach(pipette => {
+                if (pipette.channelType === 'single') {
+                    ['low', 'mid', 'high'].forEach(point => {
+                        validateSingleChannel(pipette.id, 'asFound', point);
+                        validateSingleChannel(pipette.id, 'asLeft', point);
+                    });
+                } else {
+                    validateMultiChannel(pipette.id, 'asFound', null);
+                    validateMultiChannel(pipette.id, 'asLeft', null);
+                }
+            });
+        }
+
         function updateCalculationsDisplay(pipetteId, condition, point, data) {
             const container = document.getElementById(`calculations-${condition}-${pipetteId}`);
             if (!container) return;
@@ -2271,9 +2500,28 @@
             const precision = getVolumePrecision(data.nominal);
             const readings = data.measurements.map(val => formatVolume(val)).join(', ');
 
+            // Build environmental correction info if applicable
+            let environmentalInfo = '';
+            if (data.correctionApplied && data.environmental) {
+                const rawReadings = data.rawMeasurements.map(val => formatVolume(val)).join(', ');
+                environmentalInfo = `
+                    <div style="background: #e3f2fd; padding: 8px; margin: 8px 0; border-left: 3px solid #2196f3; border-radius: 3px;">
+                        <strong>Environmental Corrections Applied (ISO 8655-6):</strong><br>
+                        Temp: ${data.environmental.temperature}°C | Pressure: ${data.environmental.pressure} kPa | Humidity: ${data.environmental.humidity}%<br>
+                        Z-factor: ${data.zFactor.toFixed(6)}<br>
+                        <span style="color: #666;">Raw readings: ${rawReadings} μL</span><br>
+                        <strong>Corrected readings: ${readings} μL</strong>
+                    </div>
+                `;
+            } else {
+                // No correction - show readings normally
+                environmentalInfo = `Readings: ${readings} μL | Mean: ${formatVolume(data.mean)} μL<br>`;
+            }
+
             calculationsDiv.innerHTML = `
                 <strong>${point.toUpperCase()} (${formatVolume(data.nominal)} μL):</strong><br>
-                Readings: ${readings} μL | Mean: ${formatVolume(data.mean)} μL<br>
+                ${environmentalInfo}
+                ${data.correctionApplied ? `Mean (corrected): ${formatVolume(data.mean)} μL<br>` : ''}
                 <strong>Accuracy:</strong> Range ${formatVolume(data.specs.accuracy.from)}-${formatVolume(data.specs.accuracy.to)} μL
                 <span style="color: ${data.accuracyPass ? 'green' : 'red'}; font-weight: bold;"> ${data.accuracyPass ? '✓ PASS' : '✗ FAIL'}</span><br>
                 <strong>Precision (ISO 8655 - pass if EITHER criterion met):</strong><br>
@@ -2873,8 +3121,14 @@
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong>Pressure:</strong></td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.pressure || 'N/A'} kPa</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Z-Factor Correction:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.temperature && sessionInfo.pressure && sessionInfo.humidity ? 'Applied per ISO 8655-6' : 'Not Applied'}</td>
+                    </tr>
+                    <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong>Balance S/N:</strong></td>
                         <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.balanceSerial || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Water Density:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.temperature ? calculateWaterDensity(parseFloat(sessionInfo.temperature)).toFixed(2) + ' kg/m³' : 'N/A'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong>Balance Cal Date:</strong></td>
@@ -3006,8 +3260,12 @@
         }
 
         function generateSingleChannelResults(pipette, testPoints) {
+            // Get environmental conditions for corrections
+            const env = getEnvironmentalConditions();
+
             let html = `
                 <h4 style="color: #2c5282; margin-top: 20px;">As Found Measurements</h4>
+                ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
                     <thead>
                         <tr style="background: #667eea; color: white;">
@@ -3026,7 +3284,16 @@
             `;
 
             testPoints.forEach(point => {
-                const measurements = pipette.measurements.asFound[point.key];
+                const rawMeasurements = pipette.measurements.asFound[point.key];
+
+                // Apply environmental corrections if available
+                let measurements = rawMeasurements;
+                if (env.hasAllData) {
+                    measurements = rawMeasurements.map(val =>
+                        applyEnvironmentalCorrection(val, env.temperature, env.pressure, env.humidity).corrected
+                    );
+                }
+
                 const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
                 const cv = calculateCV(measurements);
                 const specs = getSpecifications(pipette.model, point.volume, false);
@@ -3052,6 +3319,7 @@
                 </table>
 
                 <h4 style="color: #2c5282; margin-top: 20px;">As Left Measurements</h4>
+                ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px;">
                     <thead>
                         <tr style="background: #667eea; color: white;">
@@ -3070,7 +3338,16 @@
             `;
 
             testPoints.forEach(point => {
-                const measurements = pipette.measurements.asLeft[point.key];
+                const rawMeasurements = pipette.measurements.asLeft[point.key];
+
+                // Apply environmental corrections if available
+                let measurements = rawMeasurements;
+                if (env.hasAllData) {
+                    measurements = rawMeasurements.map(val =>
+                        applyEnvironmentalCorrection(val, env.temperature, env.pressure, env.humidity).corrected
+                    );
+                }
+
                 const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
                 const cv = calculateCV(measurements);
                 const specs = getSpecifications(pipette.model, point.volume, false);
@@ -3100,9 +3377,13 @@
         }
 
         function generateMultiChannelResults(pipette, testPoints) {
+            // Get environmental conditions for corrections
+            const env = getEnvironmentalConditions();
+
             // For multi-channel, show calculated statistics across all channels
             let html = `
                 <h4 style="color: #2c5282; margin-top: 20px;">As Found Measurements (Across All Channels)</h4>
+                ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
                     <thead>
                         <tr style="background: #667eea; color: white;">
@@ -3118,10 +3399,19 @@
             `;
 
             testPoints.forEach(point => {
-                const measurements = [];
+                const rawMeasurements = [];
                 for (let ch = 0; ch < pipette.channelCount; ch++) {
-                    measurements.push(pipette.measurements.asFound[point.key][ch]);
+                    rawMeasurements.push(pipette.measurements.asFound[point.key][ch]);
                 }
+
+                // Apply environmental corrections if available
+                let measurements = rawMeasurements;
+                if (env.hasAllData) {
+                    measurements = rawMeasurements.map(val =>
+                        applyEnvironmentalCorrection(val, env.temperature, env.pressure, env.humidity).corrected
+                    );
+                }
+
                 const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
                 const cv = calculateCV(measurements);
                 const sd = calculateSD(measurements);
@@ -3145,6 +3435,7 @@
                 </table>
 
                 <h4 style="color: #2c5282; margin-top: 20px;">As Left Measurements (Across All Channels)</h4>
+                ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px;">
                     <thead>
                         <tr style="background: #667eea; color: white;">
@@ -3160,10 +3451,19 @@
             `;
 
             testPoints.forEach(point => {
-                const measurements = [];
+                const rawMeasurements = [];
                 for (let ch = 0; ch < pipette.channelCount; ch++) {
-                    measurements.push(pipette.measurements.asLeft[point.key][ch]);
+                    rawMeasurements.push(pipette.measurements.asLeft[point.key][ch]);
                 }
+
+                // Apply environmental corrections if available
+                let measurements = rawMeasurements;
+                if (env.hasAllData) {
+                    measurements = rawMeasurements.map(val =>
+                        applyEnvironmentalCorrection(val, env.temperature, env.pressure, env.humidity).corrected
+                    );
+                }
+
                 const mean = measurements.reduce((a, b) => a + b, 0) / measurements.length;
                 const cv = calculateCV(measurements);
                 const sd = calculateSD(measurements);
