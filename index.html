@@ -1477,6 +1477,108 @@
             }
         }
 
+        // ========================================
+        // WORK ORDER & INVOICE GENERATION
+        // ========================================
+
+        function generateWorkOrderAndInvoice() {
+            const pi = document.getElementById('pi')?.value || '';
+            const technician = document.getElementById('technician')?.value || '';
+            const serviceDateInput = document.getElementById('serviceDate')?.value;
+            const frequency = document.getElementById('frequency')?.value || 'A';
+            const counter = parseInt(document.getElementById('invoiceCounter')?.value || '1');
+
+            // Use service date or calibration date or today's date
+            let day, month, year;
+            const dateToUse = serviceDateInput || document.getElementById('calDate')?.value;
+
+            if (dateToUse) {
+                // Parse YYYY-MM-DD directly to avoid timezone issues
+                const parts = dateToUse.split('-');
+                year = parts[0].slice(-2); // Last 2 digits of year
+                month = parts[1]; // Already 2 digits (01-12)
+                day = parseInt(parts[2]); // No leading zero (1-31)
+            } else {
+                // Use today's date
+                const today = new Date();
+                day = today.getDate();
+                month = String(today.getMonth() + 1).padStart(2, '0');
+                year = String(today.getFullYear()).slice(-2);
+            }
+
+            // Generate Work Order Number: "Doerksen 12-22 1#A" (MM-DD format)
+            if (pi) {
+                const piLastName = pi.trim().split(' ').pop(); // Get last word as last name
+                const workOrderNo = `${piLastName} ${month}-${day} ${counter}#${frequency}`;
+                document.getElementById('workOrderNo').value = workOrderNo;
+            }
+
+            // Generate Invoice Number: "TSD2112241A"
+            if (technician) {
+                const techInitials = technician.trim().toUpperCase();
+                const invoiceNo = `${techInitials}${day}${month}${year}${counter}${frequency}`;
+                document.getElementById('invoiceNo').value = invoiceNo;
+            }
+
+            debouncedAutoSave();
+        }
+
+        // ========================================
+        // SERVICE LEVEL MANAGEMENT
+        // ========================================
+
+        function handleServiceLevelChange(newLevel) {
+            const badge = document.getElementById('serviceLevelBadge');
+            const description = document.getElementById('serviceLevelDescription');
+
+            if (newLevel === 'platinum') {
+                badge.innerHTML = `
+                    <div style="color: white; font-size: 28px; margin-bottom: 5px;">🏆</div>
+                    <div style="color: white; font-weight: 600; font-size: 14px;">PLATINUM</div>
+                `;
+                description.textContent = 'Full gravimetric calibration with environmental corrections, multi-channel support, and ISO 8655 compliance';
+
+                // Show Analysis tab, hide Summary Table tab
+                updateTabVisibility('platinum');
+            } else {
+                badge.innerHTML = `
+                    <div style="color: white; font-size: 28px; margin-bottom: 5px;">⚡</div>
+                    <div style="color: white; font-weight: 600; font-size: 14px;">BASIC</div>
+                `;
+                description.textContent = 'Quick pass/fail calibration with adjustment tracking and final volume verification';
+
+                // Hide Analysis tab, show Summary Table tab
+                updateTabVisibility('basic');
+            }
+
+            // Warn if switching with existing pipettes
+            if (pipettes.length > 0) {
+                showAlert(`⚠️ Changing service level with ${pipettes.length} pipette(s) already added. Existing data may not be compatible. Consider starting a new session.`, 'Warning');
+            }
+
+            // Save choice
+            debouncedAutoSave();
+        }
+
+        function updateTabVisibility(serviceLevel) {
+            const analysisTab = document.querySelector('.nav-tab[onclick*="analysis"]');
+            const summaryTab = document.querySelector('.nav-tab[onclick*="summary"]');
+            const inventoryTab = document.querySelector('.nav-tab[onclick*="inventory"]');
+            const labelsTab = document.querySelector('.nav-tab[onclick*="labels"]');
+
+            if (serviceLevel === 'platinum') {
+                // Show Analysis, hide Summary (if it exists)
+                if (analysisTab) analysisTab.style.display = '';
+                if (summaryTab) summaryTab.style.display = 'none';
+            } else {
+                // Hide Analysis, show Summary (if it exists)
+                if (analysisTab) analysisTab.style.display = 'none';
+                if (summaryTab) summaryTab.style.display = '';
+            }
+
+            // Inventory and Labels always visible once added
+        }
+
         function newSession() {
             if (pipettes.length > 0) {
                 showConfirm('Start a new session? Current data will be saved to history.', 'New Session', () => {
@@ -3047,6 +3149,7 @@
 
         function getSessionInfo() {
             return {
+                serviceLevel: document.getElementById('serviceLevel')?.value || 'platinum',
                 serviceProvider: document.getElementById('serviceProvider')?.value || '',
                 location: document.getElementById('location')?.value || '',
                 address: document.getElementById('address')?.value || '',
@@ -3055,6 +3158,11 @@
                 calDate: document.getElementById('calDate')?.value || '',
                 dueDate: document.getElementById('dueDate')?.value || '',
                 frequency: document.getElementById('frequency')?.value || '',
+                pi: document.getElementById('pi')?.value || '',
+                serviceDate: document.getElementById('serviceDate')?.value || '',
+                invoiceCounter: document.getElementById('invoiceCounter')?.value || '1',
+                workOrderNo: document.getElementById('workOrderNo')?.value || '',
+                invoiceNo: document.getElementById('invoiceNo')?.value || '',
                 temperature: document.getElementById('temperature')?.value || '',
                 humidity: document.getElementById('humidity')?.value || '',
                 pressure: document.getElementById('pressure')?.value || '',
@@ -3975,6 +4083,29 @@
                 </div>
             </div>
 
+            <!-- Service Level Selector -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <div style="flex: 1;">
+                        <label style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px; display: block;">
+                            Service Level
+                        </label>
+                        <select id="serviceLevel" onchange="handleServiceLevelChange(this.value)"
+                                style="width: 100%; padding: 12px 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; background: white; cursor: pointer;">
+                            <option value="platinum">🏆 Platinum Service (ISO 8655 Full Gravimetric Validation)</option>
+                            <option value="basic">⚡ Basic Service (Quick Pass/Fail Calibration)</option>
+                        </select>
+                    </div>
+                    <div id="serviceLevelBadge" style="padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 8px; text-align: center; min-width: 120px;">
+                        <div style="color: white; font-size: 28px; margin-bottom: 5px;">🏆</div>
+                        <div style="color: white; font-weight: 600; font-size: 14px;">PLATINUM</div>
+                    </div>
+                </div>
+                <div id="serviceLevelDescription" style="color: rgba(255,255,255,0.9); margin-top: 12px; font-size: 13px;">
+                    Full gravimetric calibration with environmental corrections, multi-channel support, and ISO 8655 compliance
+                </div>
+            </div>
+
             <div class="form-grid">
                 <div class="form-group">
                     <label>Service Provider</label>
@@ -3994,11 +4125,11 @@
                 </div>
                 <div class="form-group">
                     <label>Technician</label>
-                    <input type="text" id="technician" value="TSD">
+                    <input type="text" id="technician" value="TSD" onchange="generateWorkOrderAndInvoice()">
                 </div>
                 <div class="form-group">
                     <label>Calibration Date</label>
-                    <input type="date" id="calDate">
+                    <input type="date" id="calDate" onchange="generateWorkOrderAndInvoice()">
                 </div>
                 <div class="form-group">
                     <label>Due Date</label>
@@ -4006,13 +4137,46 @@
                 </div>
                 <div class="form-group">
                     <label>Frequency</label>
-                    <select id="frequency">
-                        <option value="Annual">Annual</option>
-                        <option value="Semi-Annual">Semi-Annual</option>
-                        <option value="Quarterly">Quarterly</option>
-                        <option value="Monthly">Monthly</option>
+                    <select id="frequency" onchange="generateWorkOrderAndInvoice()">
+                        <option value="A">Annual (A)</option>
+                        <option value="S">Semi-Annual (S)</option>
+                        <option value="Q">Quarterly (Q)</option>
+                        <option value="M">Monthly (M)</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- Work Order & Invoice Section -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #28a745;">
+                <h3 style="color: #28a745; margin-bottom: 15px;">📝 Work Order & Invoice</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>PI Name (Principal Investigator)</label>
+                        <input type="text" id="pi" placeholder="e.g., John Doerksen" onchange="generateWorkOrderAndInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Service Date</label>
+                        <input type="date" id="serviceDate" onchange="generateWorkOrderAndInvoice()">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice # of Day</label>
+                        <input type="number" id="invoiceCounter" value="1" min="1" onchange="generateWorkOrderAndInvoice()"
+                               title="How many invoices have been generated today? Usually 1.">
+                    </div>
+                    <div class="form-group">
+                        <label>Work Order Number</label>
+                        <input type="text" id="workOrderNo" readonly style="background: #e9ecef; cursor: not-allowed;"
+                               title="Auto-generated from PI + Date + Counter + Frequency">
+                    </div>
+                    <div class="form-group">
+                        <label>Invoice Number</label>
+                        <input type="text" id="invoiceNo" readonly style="background: #e9ecef; cursor: not-allowed;"
+                               title="Auto-generated from Technician + Date + Counter + Frequency">
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: #6c757d; margin-top: 10px;">
+                    💡 Work Order and Invoice numbers are auto-generated when PI, Technician, Date, and Frequency are filled.
+                </p>
             </div>
 
             <div class="environmental-data">
