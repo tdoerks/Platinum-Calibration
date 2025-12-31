@@ -895,6 +895,12 @@
             if (tabName === 'labels') {
                 initLabelsTab();
             }
+
+            // Auto-detect inventory when switching to inventory tab
+            if (tabName === 'inventory') {
+                renderInventoryUsage(); // Refresh display
+                updateInventoryStats(); // Update stats
+            }
         }
 
         // ========================================
@@ -968,26 +974,34 @@
             const tbody = document.getElementById('inventoryUsageBody');
             if (!tbody) return;
 
-            if (inventoryUsage.length === 0) {
+            // Filter to show only current session items
+            const sessionItems = inventoryUsage.filter(item => item.sessionId === currentSessionId);
+
+            if (sessionItems.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
+                        <td colspan="8" style="padding: 40px; text-align: center; color: #6c757d;">
                             <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px;">📦</div>
-                            <div>No items used yet. Click "Add Item Used" to log inventory usage.</div>
+                            <div>No items used yet. Click "🔄 Refresh from Calibrations" to auto-detect or "Add Item Used" to add manually.</div>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = inventoryUsage.map(item => {
+            tbody.innerHTML = sessionItems.map(item => {
                 const date = new Date(item.timestamp);
                 const timeStr = date.toLocaleString();
+                const autoBadge = item.autoDetected ? '<span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">🤖 AUTO</span>' : '';
+                const pipetteInfo = item.pipetteNumber ? `Pipette #${item.pipetteNumber}` : '-';
 
                 return `
-                    <tr style="transition: all 0.3s ease;">
-                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;"><strong>${item.itemName}</strong></td>
+                    <tr style="transition: all 0.3s ease; background: ${item.autoDetected ? '#f0fdf4' : 'white'};">
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">
+                            <strong>${item.itemName}</strong>${autoBadge}
+                        </td>
                         <td style="padding: 15px; text-align: center; border-bottom: 1px solid #e5e7eb; font-weight: bold; color: #3b82f6;">${item.quantity}</td>
+                        <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem;">${pipetteInfo}</td>
                         <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.jobNumber || '-'}</td>
                         <td style="padding: 15px; border-bottom: 1px solid #e5e7eb;">${item.usedBy || '-'}</td>
                         <td style="padding: 15px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem;">${timeStr}</td>
@@ -1013,6 +1027,118 @@
             document.getElementById('invTotalItems').textContent = totalItems;
             document.getElementById('invCurrentSession').textContent = currentSessionItems;
             document.getElementById('invUniqueItems').textContent = uniqueItems;
+        }
+
+        // Auto-detect inventory usage from calibration adjustments
+        function autoDetectInventoryUsage() {
+            if (!currentSessionId || pipettes.length === 0) {
+                return;
+            }
+
+            let detectedCount = 0;
+
+            // Remove previously auto-detected items for this session to avoid duplicates
+            inventoryUsage = inventoryUsage.filter(item =>
+                !(item.autoDetected && item.sessionId === currentSessionId)
+            );
+
+            // Get session info for job number
+            const sessionInfo = getSessionInfo();
+            const workOrderNo = sessionInfo.workOrderNo || '';
+            const technician = sessionInfo.technician || '';
+
+            // Loop through each pipette and detect inventory usage
+            pipettes.forEach(pipette => {
+                const makeModel = pipette.makeModel || 'Unknown Model';
+                const volume = pipette.maxVolume || '';
+                const fullSpec = volume ? `${makeModel} ${volume}` : makeModel;
+                const pipetteNum = pipette.number || pipette.id;
+
+                // Check each adjustment field
+                const adjustments = pipette.adjustments || {};
+
+                // SE: Seal
+                if (adjustments.SE === 'X' || adjustments.SE === '*') {
+                    const sealType = adjustments.SE === '*' ? 'Seal (inspected)' : 'Seal';
+                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', workOrderNo, technician);
+                    detectedCount++;
+                } else if (adjustments.SE && adjustments.SE !== '' && adjustments.SE !== 'No seal') {
+                    // Specific seal type (Silicone, etc.)
+                    const sealType = adjustments.SE === 'Silicone' ? 'Seal (Silicone)' : `Seal (${adjustments.SE})`;
+                    addAutoDetectedItem(sealType, fullSpec, 1, pipetteNum, makeModel, volume, 'Seal', workOrderNo, technician);
+                    detectedCount++;
+                }
+
+                // O: O-Ring
+                if (adjustments.O === 'X') {
+                    addAutoDetectedItem('O-Ring', fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', workOrderNo, technician);
+                    detectedCount++;
+                } else if (adjustments.O && adjustments.O !== '') {
+                    addAutoDetectedItem(`O-Ring (${adjustments.O})`, fullSpec, 1, pipetteNum, makeModel, volume, 'O-Ring', workOrderNo, technician);
+                    detectedCount++;
+                }
+
+                // SH: Shaft
+                if (adjustments.SH === 'X') {
+                    addAutoDetectedItem('Shaft', fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', workOrderNo, technician);
+                    detectedCount++;
+                } else if (adjustments.SH && adjustments.SH !== '') {
+                    addAutoDetectedItem(`Shaft (${adjustments.SH})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Shaft', workOrderNo, technician);
+                    detectedCount++;
+                }
+
+                // G: Grease
+                if (adjustments.G === 'D') {
+                    addAutoDetectedItem('Grease Type D', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    detectedCount++;
+                } else if (adjustments.G === 'K') {
+                    addAutoDetectedItem('Grease Type K', fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    detectedCount++;
+                } else if (adjustments.G && adjustments.G !== '') {
+                    addAutoDetectedItem(`Grease (${adjustments.G})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Grease', workOrderNo, technician);
+                    detectedCount++;
+                }
+
+                // FR: Friction Ring
+                if (adjustments.FR && adjustments.FR !== '') {
+                    addAutoDetectedItem(`Friction Ring (${adjustments.FR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Friction Ring', workOrderNo, technician);
+                    detectedCount++;
+                }
+
+                // COR: Corrosion (track cleaning if corrosion found)
+                if (adjustments.COR && adjustments.COR !== '') {
+                    addAutoDetectedItem(`Corrosion Cleaning (${adjustments.COR})`, fullSpec, 1, pipetteNum, makeModel, volume, 'Cleaning', workOrderNo, technician);
+                    detectedCount++;
+                }
+            });
+
+            if (detectedCount > 0) {
+                saveInventoryUsage();
+                renderInventoryUsage();
+                updateInventoryStats();
+                showAlert(`🤖 Auto-detected ${detectedCount} inventory item(s) from calibration data`, 'Auto-Detection Complete');
+            }
+        }
+
+        // Helper function to add auto-detected inventory item
+        function addAutoDetectedItem(partType, fullSpec, quantity, pipetteNum, makeModel, volume, category, workOrderNo, technician) {
+            const itemName = `${partType} - ${fullSpec}`;
+
+            inventoryUsage.push({
+                id: Date.now() + Math.random(), // Unique ID
+                itemName: itemName,
+                quantity: quantity,
+                pipetteNumber: pipetteNum,
+                makeModel: makeModel,
+                volume: volume,
+                partType: category,
+                jobNumber: workOrderNo,
+                usedBy: technician,
+                notes: 'Auto-detected from calibration',
+                timestamp: new Date().toISOString(),
+                sessionId: currentSessionId,
+                autoDetected: true
+            });
         }
 
         // Delete inventory usage
@@ -4711,9 +4837,14 @@
         <div id="inventory" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="color: #223077;">📦 Inventory Used</h2>
-                <button onclick="openAddInventoryModal()" class="btn btn-primary">
-                    ✨ Add Item Used
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="autoDetectInventoryUsage()" class="btn btn-secondary" title="Auto-detect inventory from calibration adjustments">
+                        🔄 Refresh from Calibrations
+                    </button>
+                    <button onclick="openAddInventoryModal()" class="btn btn-primary">
+                        ✨ Add Item Used
+                    </button>
+                </div>
             </div>
 
             <!-- Summary Stats -->
@@ -4741,6 +4872,7 @@
                             <tr style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
                                 <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Item Name</th>
                                 <th style="padding: 15px; text-align: center; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Pipette #</th>
                                 <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Job/Invoice</th>
                                 <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Used By</th>
                                 <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Time</th>
@@ -4750,9 +4882,9 @@
                         </thead>
                         <tbody id="inventoryUsageBody">
                             <tr>
-                                <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
+                                <td colspan="8" style="padding: 40px; text-align: center; color: #6c757d;">
                                     <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px;">📦</div>
-                                    <div>No items used yet. Click "Add Item Used" to log inventory usage.</div>
+                                    <div>No items used yet. Click "🔄 Refresh from Calibrations" to auto-detect or "Add Item Used" to add manually.</div>
                                 </td>
                             </tr>
                         </tbody>
