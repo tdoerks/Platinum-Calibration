@@ -1869,7 +1869,16 @@
             renderPipette(pipette);
             updateProgress();
             updateSummaryTable(); // Update summary table
+            updateBulkActionsBar(); // Update bulk actions
+            updateCopyButton(); // Show/hide copy button
             debouncedAutoSave();
+        }
+
+        function updateCopyButton() {
+            const copyBtn = document.getElementById('copyPrevBtn');
+            if (copyBtn) {
+                copyBtn.style.display = pipettes.length > 0 ? 'inline-block' : 'none';
+            }
         }
 
         // Generate measurement table HTML based on channel type
@@ -2409,13 +2418,239 @@
             }
         }
 
+        // ========================================
+        // SEARCH AND FILTER FUNCTIONS
+        // ========================================
+
+        function filterPipettes() {
+            const searchTerm = document.getElementById('searchPipettes')?.value.toLowerCase() || '';
+            const statusFilter = document.getElementById('filterStatus')?.value || '';
+            const serviceLevelFilter = document.getElementById('filterServiceLevel')?.value || '';
+
+            const pipetteCards = document.querySelectorAll('.pipette-card');
+
+            pipetteCards.forEach(card => {
+                const pipetteId = parseInt(card.getAttribute('data-pipette-id'));
+                const pipette = pipettes.find(p => p.id === pipetteId);
+
+                if (!pipette) {
+                    card.style.display = 'none';
+                    return;
+                }
+
+                // Search filter
+                const searchableText = `
+                    ${pipette.id}
+                    ${pipette.number || ''}
+                    ${pipette.serial || ''}
+                    ${pipette.brand || ''}
+                    ${pipette.model || ''}
+                    ${pipette.pipetteModel || ''}
+                    ${pipette.makeModel || ''}
+                `.toLowerCase();
+
+                const matchesSearch = !searchTerm || searchableText.includes(searchTerm);
+
+                // Status filter
+                const matchesStatus = !statusFilter || pipette.status === statusFilter || pipette.passFail === statusFilter.toUpperCase();
+
+                // Service level filter
+                const matchesServiceLevel = !serviceLevelFilter || pipette.serviceLevel === serviceLevelFilter;
+
+                // Show/hide based on all filters
+                if (matchesSearch && matchesStatus && matchesServiceLevel) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function clearFilters() {
+            document.getElementById('searchPipettes').value = '';
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterServiceLevel').value = '';
+            filterPipettes();
+        }
+
+        // ========================================
+        // BULK ACTIONS FUNCTIONS
+        // ========================================
+
         function togglePipetteSelect(pipetteId, checked) {
-            // For bulk actions - will implement later
             updateBulkActionsBar();
         }
 
         function updateBulkActionsBar() {
-            // Placeholder for bulk actions
+            const checkboxes = document.querySelectorAll('.pipette-checkbox');
+            const checkedBoxes = Array.from(checkboxes).filter(cb => cb.checked);
+            const bulkBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+            // Only show bulk actions bar if we have Basic mode pipettes
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+            if (basicPipettes.length > 0) {
+                bulkBar.style.display = 'block';
+            } else {
+                bulkBar.style.display = 'none';
+                return;
+            }
+
+            // Update count
+            if (selectedCount) {
+                selectedCount.textContent = `${checkedBoxes.length} selected`;
+            }
+
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                if (checkedBoxes.length === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (checkedBoxes.length === checkboxes.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllCheckbox')?.checked || false;
+            const checkboxes = document.querySelectorAll('.pipette-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll;
+            });
+            updateBulkActionsBar();
+        }
+
+        function bulkMarkStatus(status) {
+            const checkboxes = document.querySelectorAll('.pipette-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showAlert('Please select at least one pipette.', 'No Selection');
+                return;
+            }
+
+            saveStateForUndo(`Bulk mark ${status}`);
+
+            const selectedIds = [];
+            checkboxes.forEach(checkbox => {
+                const pipetteId = parseInt(checkbox.getAttribute('data-pipette-id'));
+                selectedIds.push(pipetteId);
+                const pipette = pipettes.find(p => p.id === pipetteId);
+                if (pipette && pipette.serviceLevel === 'basic') {
+                    pipette.passFail = status;
+                    pipette.status = status.toLowerCase();
+                }
+            });
+
+            // Uncheck all checkboxes
+            checkboxes.forEach(cb => cb.checked = false);
+            updateBulkActionsBar();
+
+            // Re-render affected pipettes
+            selectedIds.forEach(id => {
+                const element = document.getElementById(`pipette-${id}`);
+                if (element) {
+                    element.remove();
+                    const pipette = pipettes.find(p => p.id === id);
+                    if (pipette) {
+                        renderPipette(pipette);
+                    }
+                }
+            });
+
+            updateProgress();
+            updateSummaryTable();
+            debouncedAutoSave();
+
+            showAlert(`${checkboxes.length} pipette(s) marked as ${status}`, 'Bulk Action Complete');
+        }
+
+        // ========================================
+        // COPY FROM PREVIOUS FUNCTION
+        // ========================================
+
+        function copyFromPrevious() {
+            if (pipettes.length === 0) {
+                showAlert('No pipettes to copy from. Add your first pipette first.', 'No Pipettes');
+                return;
+            }
+
+            saveStateForUndo('Copy from previous');
+            const lastPipette = pipettes[pipettes.length - 1];
+            currentPipetteId++;
+
+            const newPipette = {
+                id: currentPipetteId,
+                serviceLevel: lastPipette.serviceLevel,
+                number: '',
+                serial: '', // Clear serial - should be unique
+
+                // Common fields - copy from previous
+                brand: lastPipette.brand,
+                pipetteModel: lastPipette.pipetteModel,
+                volume: lastPipette.volume,
+                model: lastPipette.model,
+                comments: '',
+                status: 'pending',
+
+                // Platinum fields
+                testVolume: lastPipette.testVolume,
+                channelType: lastPipette.channelType,
+                channelCount: lastPipette.channelCount,
+                measurements: {
+                    asFound: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] },
+                    asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
+                },
+                statusAsFound: 'pending',
+                statusAsLeft: 'pending',
+
+                // Basic fields - copy some, clear others
+                makeModel: lastPipette.makeModel,
+                maxVolume: lastPipette.maxVolume,
+                inSpec: false,
+                outSpec: false,
+                adjustments: {
+                    SE: lastPipette.adjustments?.SE || '',
+                    COR: lastPipette.adjustments?.COR || '',
+                    G: lastPipette.adjustments?.G || '',
+                    SH: lastPipette.adjustments?.SH || '',
+                    FR: lastPipette.adjustments?.FR || '',
+                    O: lastPipette.adjustments?.O || '',
+                    OTHER: lastPipette.adjustments?.OTHER || ''
+                },
+                finalVolumes: ['', '', '', ''],
+                passFail: ''
+            };
+
+            // Handle multi-channel measurements
+            if (lastPipette.channelType === 'multi' && lastPipette.channelCount) {
+                const emptyArray = Array(lastPipette.channelCount).fill('');
+                newPipette.measurements = {
+                    asFound: { low: [...emptyArray], mid: [...emptyArray], high: [...emptyArray] },
+                    asLeft: { low: [...emptyArray], mid: [...emptyArray], high: [...emptyArray] }
+                };
+            }
+
+            pipettes.push(newPipette);
+            renderPipette(newPipette);
+            updateProgress();
+            updateSummaryTable();
+            updateBulkActionsBar();
+            debouncedAutoSave();
+
+            // Scroll to new pipette
+            setTimeout(() => {
+                const newCard = document.querySelector(`[data-pipette-id="${newPipette.id}"]`);
+                if (newCard) {
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+
+            showAlert('Pipette copied! Serial number and measurements have been cleared.', 'Copy Successful');
         }
 
         function updatePipetteInfo(pipetteId, field, value) {
@@ -2997,6 +3232,8 @@
             updateProgress();
             updateAnalysis();
             updateSummaryTable(); // Update summary table
+            updateBulkActionsBar(); // Update bulk actions
+            updateCopyButton(); // Show/hide copy button
             debouncedAutoSave();
         }
 
@@ -5167,9 +5404,59 @@
         <div id="calibration" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2>⚖️ Pipette Calibration</h2>
-                <div>
+                <div style="display: flex; gap: 10px;">
                     <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
+                    <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtn" style="display: none;">📋 Copy from Previous</button>
                     <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
+                </div>
+            </div>
+
+            <!-- Search and Filter Bar -->
+            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div style="flex: 1;">
+                        <input type="text" id="searchPipettes" placeholder="🔍 Search by serial, brand, model, or pipette number..."
+                               oninput="filterPipettes()"
+                               style="width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                    </div>
+                    <select id="filterStatus" onchange="filterPipettes()"
+                            style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="pass">✅ Pass</option>
+                        <option value="fail">❌ Fail</option>
+                        <option value="pending">⏳ Pending</option>
+                    </select>
+                    <select id="filterServiceLevel" onchange="filterPipettes()"
+                            style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
+                        <option value="">All Service Levels</option>
+                        <option value="platinum">🏆 Platinum</option>
+                        <option value="basic">⚡ Basic</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="clearFilters()" style="padding: 10px 16px; white-space: nowrap;">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar (for Basic mode) -->
+            <div id="bulkActionsBar" style="display: none; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #69B135; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <label style="margin: 0; font-weight: 600; display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"
+                                   style="width: 20px; height: 20px; cursor: pointer; margin-right: 8px;">
+                            Select All
+                        </label>
+                        <span id="selectedCount" style="color: #6c757d; font-weight: 600;">0 selected</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="bulkMarkStatus('PASS')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
+                            ✓ Mark as PASS
+                        </button>
+                        <button class="btn btn-danger" onclick="bulkMarkStatus('FAIL')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
+                            ✗ Mark as FAIL
+                        </button>
+                    </div>
                 </div>
             </div>
 
