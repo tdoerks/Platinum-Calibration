@@ -12,11 +12,67 @@
             box-sizing: border-box;
         }
 
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.dark-mode .container {
+            background: #0f3460;
+            color: #e6e6e6;
+        }
+
+        body.dark-mode .header {
+            background: linear-gradient(135deg, #0a1929 0%, #16213e 100%);
+        }
+
+        body.dark-mode .nav-tab {
+            background: #1a1a2e;
+            color: #e6e6e6;
+        }
+
+        body.dark-mode .nav-tab.active {
+            background: #16537e;
+            color: white;
+        }
+
+        body.dark-mode .tab-content {
+            background: #0f3460;
+            color: #e6e6e6;
+        }
+
+        body.dark-mode .pipette-card {
+            background: #16213e;
+            border-color: #1a1a2e;
+        }
+
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #1a1a2e;
+            color: #e6e6e6;
+            border-color: #2c3e50;
+        }
+
+        body.dark-mode table {
+            background: #16213e;
+            color: #e6e6e6;
+        }
+
+        body.dark-mode th {
+            background: #1a1a2e;
+        }
+
+        body.dark-mode td {
+            border-color: #2c3e50;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.3s ease;
         }
 
         .container {
@@ -696,6 +752,56 @@
         .session-stat {
             font-size: 14px;
             color: #6c757d;
+        }
+
+        /* Print Optimization */
+        @media print {
+            body {
+                background: white !important;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: 100%;
+            }
+
+            .header {
+                break-after: avoid;
+            }
+
+            .nav-tabs,
+            #darkModeToggle,
+            #undoBtn,
+            #redoBtn,
+            button:not(.print-keep) {
+                display: none !important;
+            }
+
+            .tab-content {
+                display: block !important;
+                page-break-inside: avoid;
+            }
+
+            .pipette-card {
+                page-break-inside: avoid;
+                border: 1px solid #000;
+                margin-bottom: 20px;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            @page {
+                margin: 1cm;
+                size: letter;
+            }
         }
     </style>
 </head>
@@ -5179,6 +5285,215 @@
             printWindow.print();
         }
 
+        // ========================================
+        // TEMPLATES SYSTEM
+        // ========================================
+
+        let pipetteTemplates = JSON.parse(localStorage.getItem('pipetteTemplates') || '[]');
+
+        function openTemplatesModal() {
+            document.getElementById('templatesModal').style.display = 'flex';
+            renderTemplatesList();
+            populateTemplatePipetteSelect();
+        }
+
+        function closeTemplatesModal() {
+            document.getElementById('templatesModal').style.display = 'none';
+        }
+
+        function renderTemplatesList() {
+            const container = document.getElementById('templatesList');
+            if (!container) return;
+
+            if (pipetteTemplates.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">📝</div>
+                        <div>No templates saved yet</div>
+                        <div style="font-size: 14px; margin-top: 5px;">Add a pipette and save it as a template to get started</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pipetteTemplates.map((template, index) => `
+                <div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 10px 0; color: #17a2b8;">${template.name}</h4>
+                            <div style="font-size: 13px; color: #6c757d;">
+                                <div><strong>Brand:</strong> ${template.data.brand || 'N/A'}</div>
+                                <div><strong>Model:</strong> ${template.data.makeModel || template.data.model || 'N/A'}</div>
+                                <div><strong>Volume:</strong> ${template.data.maxVolume || template.data.volume || 'N/A'} µL</div>
+                                <div><strong>Service:</strong> ${template.data.serviceLevel === 'basic' ? '⚡ Basic' : '🏆 Platinum'}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-primary btn-sm" onclick="loadFromTemplate(${index})" style="padding: 6px 12px; font-size: 12px;">
+                                ➕ Use Template
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${index})" style="padding: 6px 12px; font-size: 12px;">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function populateTemplatePipetteSelect() {
+            const select = document.getElementById('templatePipetteSelect');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">-- Select a pipette --</option>';
+            pipettes.forEach(pipette => {
+                const label = `Pipette #${String(pipette.id).padStart(2, '0')} - ${pipette.brand} ${pipette.makeModel || pipette.model || ''}`;
+                select.innerHTML += `<option value="${pipette.id}">${label}</option>`;
+            });
+        }
+
+        function saveAsTemplate() {
+            const pipetteId = parseInt(document.getElementById('templatePipetteSelect')?.value);
+            const templateName = document.getElementById('templateName')?.value.trim();
+
+            if (!pipetteId) {
+                showAlert('Please select a pipette to save as template', 'Validation Error');
+                return;
+            }
+
+            if (!templateName) {
+                showAlert('Please enter a template name', 'Validation Error');
+                return;
+            }
+
+            const pipette = pipettes.find(p => p.id === pipetteId);
+            if (!pipette) {
+                showAlert('Pipette not found', 'Error');
+                return;
+            }
+
+            // Create template (exclude ID and specific data like serial, measurements)
+            const template = {
+                name: templateName,
+                data: {
+                    serviceLevel: pipette.serviceLevel,
+                    brand: pipette.brand,
+                    pipetteModel: pipette.pipetteModel,
+                    volume: pipette.volume,
+                    model: pipette.model,
+                    testVolume: pipette.testVolume,
+                    channelType: pipette.channelType,
+                    channelCount: pipette.channelCount,
+                    makeModel: pipette.makeModel,
+                    maxVolume: pipette.maxVolume,
+                    adjustments: pipette.adjustments
+                },
+                createdAt: new Date().toISOString()
+            };
+
+            pipetteTemplates.push(template);
+            localStorage.setItem('pipetteTemplates', JSON.stringify(pipetteTemplates));
+
+            document.getElementById('templateName').value = '';
+            renderTemplatesList();
+            showAlert(`Template "${templateName}" saved successfully!`, 'Template Saved');
+        }
+
+        function loadFromTemplate(index) {
+            const template = pipetteTemplates[index];
+            if (!template) return;
+
+            saveStateForUndo('Load from template');
+            currentPipetteId++;
+
+            const newPipette = {
+                id: currentPipetteId,
+                ...template.data,
+                number: '',
+                serial: '',
+                comments: '',
+                status: 'pending',
+                measurements: {
+                    asFound: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] },
+                    asLeft: { low: ['', '', '', ''], mid: ['', '', '', ''], high: ['', '', '', ''] }
+                },
+                statusAsFound: 'pending',
+                statusAsLeft: 'pending',
+                inSpec: false,
+                outSpec: false,
+                finalVolumes: ['', '', '', ''],
+                passFail: ''
+            };
+
+            // Handle multi-channel
+            if (template.data.channelType === 'multi' && template.data.channelCount) {
+                const emptyArray = Array(template.data.channelCount).fill('');
+                newPipette.measurements = {
+                    asFound: { low: [...emptyArray], mid: [...emptyArray], high: [...emptyArray] },
+                    asLeft: { low: [...emptyArray], mid: [...emptyArray], high: [...emptyArray] }
+                };
+            }
+
+            pipettes.push(newPipette);
+            renderPipette(newPipette);
+            updateProgress();
+            updateSummaryTable();
+            updateBulkActionsBar();
+            updateCopyButton();
+            debouncedAutoSave();
+
+            closeTemplatesModal();
+            showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'));
+
+            // Scroll to new pipette
+            setTimeout(() => {
+                const newCard = document.querySelector(`[data-pipette-id="${newPipette.id}"]`);
+                if (newCard) {
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+
+            showAlert(`Pipette created from template "${template.name}"`, 'Template Loaded');
+        }
+
+        function deleteTemplate(index) {
+            const template = pipetteTemplates[index];
+            showConfirm(`Delete template "${template.name}"?`, 'Confirm Delete', () => {
+                pipetteTemplates.splice(index, 1);
+                localStorage.setItem('pipetteTemplates', JSON.stringify(pipetteTemplates));
+                renderTemplatesList();
+            });
+        }
+
+        // ========================================
+        // DARK MODE
+        // ========================================
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+
+            // Update button
+            const btn = document.getElementById('darkModeToggle');
+            if (btn) {
+                btn.textContent = isDark ? '☀️' : '🌙';
+                btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+            }
+        }
+
+        function initDarkMode() {
+            const darkMode = localStorage.getItem('darkMode');
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                const btn = document.getElementById('darkModeToggle');
+                if (btn) {
+                    btn.textContent = '☀️';
+                    btn.title = 'Switch to light mode';
+                }
+            }
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             // Check password first
@@ -5232,6 +5547,9 @@
             updateInventoryStats();
             updateSummaryTable();
 
+            // Initialize dark mode
+            initDarkMode();
+
             // Add listeners to session form fields for auto-save
             document.querySelectorAll('#session input, #session select').forEach(input => {
                 input.addEventListener('change', debouncedAutoSave);
@@ -5244,6 +5562,8 @@
             <h1>🧪 Advanced Pipette Calibration System</h1>
             <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
             <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px;">
+                <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">📝 Templates</button>
+                <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 8px 16px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🌙</button>
                 <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↶ Undo</button>
                 <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↷ Redo</button>
                 <button onclick="logout()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
@@ -5698,6 +6018,48 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeInventoryModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="addInventoryItem()">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Modal -->
+    <div id="templatesModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>📝 Pipette Templates</h2>
+                <button class="close-btn" onclick="closeTemplatesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #6c757d; margin-bottom: 20px;">Save commonly used pipette configurations as templates for quick entry.</p>
+
+                <!-- Saved Templates List -->
+                <div style="margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px;">Saved Templates</h3>
+                    <div id="templatesList" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Templates will be listed here -->
+                    </div>
+                </div>
+
+                <!-- Save Current as Template -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+                    <h3 style="margin-bottom: 15px; color: #17a2b8;">💾 Save Current Pipette as Template</h3>
+                    <div class="form-group">
+                        <label>Select Pipette to Save</label>
+                        <select id="templatePipetteSelect" style="width: 100%;">
+                            <option value="">-- Select a pipette --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Template Name</label>
+                        <input type="text" id="templateName" placeholder="e.g., Eppendorf P-100 Standard" style="width: 100%;">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveAsTemplate()" style="width: 100%;">
+                        💾 Save as Template
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTemplatesModal()">Close</button>
             </div>
         </div>
     </div>
