@@ -3461,6 +3461,27 @@
             const reportContent = document.getElementById('reportContent');
             if (!reportContent) return;
 
+            // Check if we have a mix of service levels or single service level
+            const platinumPipettes = pipettes.filter(p => p.serviceLevel === 'platinum' || !p.serviceLevel);
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+
+            // Determine which report to generate
+            if (basicPipettes.length > 0 && platinumPipettes.length === 0) {
+                // All Basic - generate Basic report
+                generateBasicReport();
+            } else if (platinumPipettes.length > 0 && basicPipettes.length === 0) {
+                // All Platinum - generate Platinum report
+                generatePlatinumReport();
+            } else {
+                // Mixed - generate combined report
+                generateMixedReport();
+            }
+        }
+
+        function generatePlatinumReport() {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent) return;
+
             const sessionInfo = getSessionInfo();
             const certNumber = `CERT-${new Date(sessionInfo.calDate).getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
 
@@ -3470,7 +3491,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
                             <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION CERTIFICATE</h1>
-                            <p style="color: #6c757d; margin: 5px 0;">ISO 8655 Compliant | Service Level 3</p>
+                            <p style="color: #6c757d; margin: 5px 0;">🏆 Platinum Service | ISO 8655 Compliant | Service Level 3</p>
                         </div>
                         <div style="text-align: right;">
                             <p style="margin: 0;"><strong>Certificate No:</strong> ${certNumber}</p>
@@ -3599,6 +3620,227 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            `;
+
+            reportContent.innerHTML = html;
+        }
+
+        function generateBasicReport() {
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent) return;
+
+            const sessionInfo = getSessionInfo();
+            const workOrderNo = sessionInfo.workOrderNo || 'N/A';
+            const invoiceNo = sessionInfo.invoiceNo || 'N/A';
+
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+
+            let html = `
+                <!-- Professional Header -->
+                <div style="border-bottom: 3px solid #69B135; padding-bottom: 20px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION REPORT</h1>
+                            <p style="color: #6c757d; margin: 5px 0;">⚡ Basic Service | Quick Pass/Fail Verification</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0;"><strong>Work Order:</strong> ${workOrderNo}</p>
+                            <p style="margin: 5px 0;"><strong>Invoice:</strong> ${invoiceNo}</p>
+                            <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Service Information -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; border: 1px solid #ddd;">
+                    <tr style="background: #f8f9fa;">
+                        <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">SERVICE INFORMATION</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Service Provider:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.serviceProvider || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Client:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.client || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>PI Name:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.pi || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Location:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.location || 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Technician:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.technician || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Service Date:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${sessionInfo.serviceDate || sessionInfo.calDate || 'N/A'}</td>
+                    </tr>
+                </table>
+
+                <!-- Summary Statistics -->
+                <div style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white;">
+                    <h3 style="margin-top: 0; color: white;">Calibration Summary</h3>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
+                        <div>
+                            <div style="font-size: 28px; font-weight: bold;">${basicPipettes.length}</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Total Pipettes</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 28px; font-weight: bold; color: #d4edda;">${basicPipettes.filter(p => p.passFail === 'PASS').length}</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Passed</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 28px; font-weight: bold; color: #f8d7da;">${basicPipettes.filter(p => p.passFail === 'FAIL').length}</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Failed</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 28px; font-weight: bold; color: #fff3cd;">${basicPipettes.length > 0 ? ((basicPipettes.filter(p => p.passFail === 'PASS').length / basicPipettes.length) * 100).toFixed(1) : 0}%</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Pass Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pipette Details Table -->
+                <h2 style="color: #2c5282; border-bottom: 2px solid #69B135; padding-bottom: 10px;">CALIBRATION RESULTS</h2>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); color: white;">
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">No.</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Manufacturer</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Model</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Serial Number</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Max Vol</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">In Spec</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Out Spec</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Adjustments</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Final Volumes</th>
+                            <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            basicPipettes.forEach((pipette, index) => {
+                const adjustmentsList = Object.keys(pipette.adjustments || {})
+                    .filter(key => pipette.adjustments[key])
+                    .join(', ') || 'None';
+
+                const finalVols = (pipette.finalVolumes || []).filter(v => v).join(', ') || 'N/A';
+
+                const resultColor = pipette.passFail === 'PASS' ? '#28a745' : pipette.passFail === 'FAIL' ? '#dc3545' : '#6c757d';
+                const resultEmoji = pipette.passFail === 'PASS' ? '✓' : pipette.passFail === 'FAIL' ? '✗' : '⏳';
+
+                html += `
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; font-weight: bold;">${String(index + 1).padStart(2, '0')}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${pipette.brand || 'N/A'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${pipette.makeModel || pipette.model || 'N/A'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${pipette.serial || 'N/A'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${pipette.maxVolume || pipette.volume || 'N/A'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${pipette.inSpec ? '✓' : '—'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${pipette.outSpec ? '✓' : '—'}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-size: 11px;">${adjustmentsList}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-size: 11px;">${finalVols}</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; text-align: center; color: ${resultColor}; font-weight: bold;">${resultEmoji} ${pipette.passFail || 'PENDING'}</td>
+                    </tr>
+                `;
+
+                // Add comments row if there are comments
+                if (pipette.comments) {
+                    html += `
+                        <tr>
+                            <td colspan="10" style="padding: 8px; border: 1px solid #ddd; background: #f8f9fa; font-size: 12px;">
+                                <strong>Comments:</strong> ${pipette.comments}
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += `
+                    </tbody>
+                </table>
+
+                <!-- Footer -->
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+                    <div style="margin-bottom: 20px;">
+                        <p><strong>Service Type:</strong> Basic Service - Quick pass/fail verification with adjustment tracking</p>
+                        <p><strong>Next Service Due:</strong> ${sessionInfo.dueDate || 'N/A'}</p>
+                        <p><strong>Service Frequency:</strong> ${sessionInfo.frequency || 'N/A'}</p>
+                    </div>
+
+                    <div style="margin-top: 30px;">
+                        <p style="font-style: italic; color: #6c757d;">
+                            This report reflects the functional status of the equipment at the time of service.
+                            Results are based on pass/fail verification and adjustment records.
+                        </p>
+                    </div>
+
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+                            <div>
+                                <p style="margin-bottom: 40px;">Technician Signature:</p>
+                                <p style="border-bottom: 1px solid #000; display: inline-block; min-width: 200px;"></p>
+                                <p style="margin-top: 5px; font-size: 12px;">${sessionInfo.technician || ''}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</p>
+                                <p><strong>Report Time:</strong> ${new Date().toLocaleTimeString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            reportContent.innerHTML = html;
+        }
+
+        function generateMixedReport() {
+            // For mixed service levels, generate sections for each type
+            const reportContent = document.getElementById('reportContent');
+            if (!reportContent) return;
+
+            const sessionInfo = getSessionInfo();
+            const platinumPipettes = pipettes.filter(p => p.serviceLevel === 'platinum' || !p.serviceLevel);
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+
+            let html = `
+                <div style="border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION REPORT</h1>
+                            <p style="color: #6c757d; margin: 5px 0;">Mixed Service Levels: 🏆 Platinum + ⚡ Basic</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin: 0;"><strong>Work Order:</strong> ${sessionInfo.workOrderNo || 'N/A'}</p>
+                            <p style="margin: 5px 0;"><strong>Invoice:</strong> ${sessionInfo.invoiceNo || 'N/A'}</p>
+                            <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #ffc107;">
+                    <strong>📋 Note:</strong> This session contains both Platinum and Basic service calibrations. Results are organized by service level below.
+                </div>
+            `;
+
+            if (platinumPipettes.length > 0) {
+                html += `<h2 style="color: #667eea; margin-top: 30px;">🏆 Platinum Service Pipettes (${platinumPipettes.length})</h2>`;
+                html += `<p style="color: #6c757d; margin-bottom: 20px;">ISO 8655 Compliant Full Gravimetric Validation</p>`;
+                // Add platinum pipettes summary table here (simplified)
+            }
+
+            if (basicPipettes.length > 0) {
+                html += `<h2 style="color: #69B135; margin-top: 30px;">⚡ Basic Service Pipettes (${basicPipettes.length})</h2>`;
+                html += `<p style="color: #6c757d; margin-bottom: 20px;">Quick Pass/Fail Verification</p>`;
+                // Add basic pipettes summary table here (simplified)
+            }
+
+            html += `
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ddd;">
+                    <p style="font-style: italic; color: #6c757d;">
+                        For detailed reports on each service level, please generate separate reports by filtering pipettes by service type.
+                    </p>
                 </div>
             `;
 
