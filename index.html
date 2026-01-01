@@ -857,6 +857,140 @@
             }
         }
 
+        /* Global Voice Navigation Styles */
+        #globalVoiceBtn {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        #globalVoiceBtn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        #globalVoiceBtn.listening {
+            background: #dc3545;
+            animation: pulse-mic 1.5s ease-in-out infinite;
+        }
+
+        #globalVoiceBtn.listening:hover {
+            background: #c82333;
+        }
+
+        @keyframes pulse-mic {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+                transform: scale(1.05);
+            }
+        }
+
+        #globalVoiceStatus {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: rgba(40, 167, 69, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            display: none;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+
+        #globalVoiceStatus.show {
+            display: block;
+            animation: slideInRight 0.3s ease;
+        }
+
+        #globalVoiceStatus.error {
+            background: rgba(220, 53, 69, 0.95);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .voice-highlight {
+            animation: highlightPulse 1.5s ease;
+            border: 3px solid #28a745 !important;
+            box-shadow: 0 0 0 5px rgba(40, 167, 69, 0.3) !important;
+        }
+
+        @keyframes highlightPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(40, 167, 69, 0);
+            }
+        }
+
+        /* Voice Help Panel */
+        #voiceHelpPanel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 10001;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        #voiceHelpPanel.show {
+            display: block;
+        }
+
+        .voice-help-category {
+            margin-bottom: 25px;
+        }
+
+        .voice-help-category h3 {
+            color: #28a745;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 5px;
+        }
+
+        .voice-help-command {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
         /* Print Optimization */
         @media print {
             body {
@@ -911,6 +1045,73 @@
 <body>
     <div id="saveIndicator" class="save-indicator">Saved</div>
 
+    <!-- Global Voice Status -->
+    <div id="globalVoiceStatus"></div>
+
+    <!-- Voice Help Panel -->
+    <div id="voiceHelpPanel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 3px solid #28a745; padding-bottom: 15px;">
+            <h2 style="margin: 0; color: #28a745;">🎙️ Voice Control Commands</h2>
+            <button onclick="closeVoiceHelp()" style="background: #dc3545; color: white; border: none; border-radius: 5px; padding: 8px 16px; cursor: pointer; font-size: 16px; font-weight: 600;">&times; Close</button>
+        </div>
+
+        <div class="voice-help-category">
+            <h3>📑 Tab Navigation</h3>
+            <div class="voice-help-command">"Go to session" or "Show session info"</div>
+            <div class="voice-help-command">"Go to calibration"</div>
+            <div class="voice-help-command">"Go to analysis" or "Show analysis"</div>
+            <div class="voice-help-command">"Go to summary" or "Show summary table"</div>
+            <div class="voice-help-command">"Go to report"</div>
+            <div class="voice-help-command">"Go to labels"</div>
+            <div class="voice-help-command">"Go to inventory"</div>
+            <div class="voice-help-command">"Go to history"</div>
+        </div>
+
+        <div class="voice-help-category">
+            <h3>📝 Field Navigation</h3>
+            <div class="voice-help-command">"Service provider" - Jump to service provider field</div>
+            <div class="voice-help-command">"Location" - Jump to location field</div>
+            <div class="voice-help-command">"Technician" - Jump to technician field</div>
+            <div class="voice-help-command">"Temperature" - Jump to temperature field</div>
+            <div class="voice-help-command">"Humidity" - Jump to humidity field</div>
+            <div class="voice-help-command">"Pressure" - Jump to pressure field</div>
+            <div class="voice-help-command">"PI name" or "Principal investigator"</div>
+        </div>
+
+        <div class="voice-help-category">
+            <h3>🧪 Pipette Navigation</h3>
+            <div class="voice-help-command">"Pipette [number]" - Navigate to specific pipette (e.g., "Pipette three")</div>
+            <div class="voice-help-command">"Reading [1-4] pipette [number]" - Jump to specific reading field</div>
+            <div class="voice-help-command">"Serial number pipette [number]" - Jump to serial field</div>
+            <div class="voice-help-command">"First pipette" - Go to first pipette</div>
+            <div class="voice-help-command">"Last pipette" - Go to last pipette</div>
+        </div>
+
+        <div class="voice-help-category">
+            <h3>⚡ Action Commands</h3>
+            <div class="voice-help-command">"Add pipette" or "New pipette"</div>
+            <div class="voice-help-command">"New session"</div>
+            <div class="voice-help-command">"Generate report"</div>
+            <div class="voice-help-command">"Scroll up" / "Scroll down"</div>
+        </div>
+
+        <div class="voice-help-category">
+            <h3>🎛️ Control Commands</h3>
+            <div class="voice-help-command">"Help" or "What can I say" - Show this panel</div>
+            <div class="voice-help-command">"Stop listening" or "Turn off voice" - Disable voice control</div>
+        </div>
+
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #28a745;">
+            <strong style="color: #2e7d32;">💡 Pro Tips:</strong>
+            <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Voice control works system-wide for navigation</li>
+                <li>Click 🎤 Voice Input on individual pipettes for hands-free volume entry</li>
+                <li>Both systems work together - navigation commands won't interfere with volume entry</li>
+                <li>Best used in Chrome, Edge, or Safari browsers</li>
+            </ul>
+        </div>
+    </div>
+
     <script>
         // Define ALL functions first to avoid reference errors
         let pipettes = [];
@@ -919,11 +1120,16 @@
         let saveTimeout = null;
         let inventoryUsage = [];
 
-        // Voice Recognition Variables
+        // Voice Recognition Variables (for volume entry)
         let voiceRecognition = null;
         let currentVoicePipetteId = null;
         let currentReadingIndex = 0;
         let voiceSupported = false;
+
+        // Global Voice Navigation Variables
+        let globalVoiceRecognition = null;
+        let globalVoiceActive = false;
+        let globalVoiceStatusTimeout = null;
 
         // Barcode Scanner Variables
         let barcodeBuffer = '';
@@ -1333,6 +1539,444 @@
                         maxVolumeField.select();
                     }, 100);
                 }
+            }
+        }
+
+        // ========================================
+        // GLOBAL VOICE NAVIGATION SYSTEM
+        // ========================================
+
+        // Show global voice status message
+        function showGlobalVoiceStatus(message, isError = false) {
+            const statusEl = document.getElementById('globalVoiceStatus');
+            if (!statusEl) return;
+
+            statusEl.textContent = message;
+            statusEl.className = 'show' + (isError ? ' error' : '');
+
+            // Clear previous timeout
+            if (globalVoiceStatusTimeout) {
+                clearTimeout(globalVoiceStatusTimeout);
+            }
+
+            // Auto-hide after 3 seconds
+            globalVoiceStatusTimeout = setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Parse spoken numbers from words
+        function parseSpokenNumberGlobal(text) {
+            const wordToNumber = {
+                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
+                'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13,
+                'fourteen': 14, 'fifteen': 15, 'sixteen': 16, 'seventeen': 17,
+                'eighteen': 18, 'nineteen': 19, 'twenty': 20
+            };
+
+            // Try direct number first
+            const directNum = parseInt(text);
+            if (!isNaN(directNum)) return directNum;
+
+            // Try word conversion
+            const lower = text.toLowerCase().trim();
+            return wordToNumber[lower] || null;
+        }
+
+        // Focus and highlight a field
+        function focusAndHighlight(element) {
+            if (!element) return;
+
+            // Scroll to element
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Add highlight
+            element.classList.add('voice-highlight');
+            setTimeout(() => {
+                element.classList.remove('voice-highlight');
+            }, 1500);
+
+            // Focus if it's an input
+            if (element.tagName === 'INPUT' || element.tagName === 'SELECT' || element.tagName === 'TEXTAREA') {
+                setTimeout(() => {
+                    element.focus();
+                    if (element.type === 'text' || element.tagName === 'TEXTAREA') {
+                        element.select();
+                    }
+                }, 500);
+            }
+        }
+
+        // Navigate to a specific pipette
+        function navigateToPipette(pipetteNumber) {
+            const pipetteCard = document.getElementById(`pipette-${pipetteNumber}`);
+            if (pipetteCard) {
+                focusAndHighlight(pipetteCard);
+                showGlobalVoiceStatus(`Navigated to Pipette #${pipetteNumber}`);
+                return true;
+            }
+            showGlobalVoiceStatus(`Pipette #${pipetteNumber} not found`, true);
+            return false;
+        }
+
+        // Execute global voice navigation command
+        function executeGlobalVoiceCommand(transcript) {
+            const lower = transcript.toLowerCase().trim();
+
+            // Help command
+            if (lower.includes('help') || lower.includes('what can i say') || lower.includes('commands')) {
+                showVoiceHelp();
+                return true;
+            }
+
+            // Stop listening
+            if (lower.includes('stop listening') || lower.includes('turn off voice') || lower.includes('disable voice')) {
+                showGlobalVoiceStatus('Voice control disabled');
+                stopGlobalVoice();
+                return true;
+            }
+
+            // Tab navigation
+            if (lower.includes('go to') || lower.includes('show')) {
+                if (lower.includes('session')) {
+                    showTab('session', document.querySelector('.nav-tab:nth-child(1)'));
+                    showGlobalVoiceStatus('Switched to Session Info');
+                    return true;
+                }
+                if (lower.includes('calibration')) {
+                    showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'));
+                    showGlobalVoiceStatus('Switched to Calibration');
+                    return true;
+                }
+                if (lower.includes('analysis')) {
+                    showTab('analysis', document.querySelector('.nav-tab:nth-child(3)'));
+                    showGlobalVoiceStatus('Switched to Analysis');
+                    return true;
+                }
+                if (lower.includes('summary')) {
+                    showTab('summary', document.querySelector('.nav-tab:nth-child(4)'));
+                    showGlobalVoiceStatus('Switched to Summary Table');
+                    return true;
+                }
+                if (lower.includes('report')) {
+                    showTab('report', document.querySelector('.nav-tab:nth-child(5)'));
+                    showGlobalVoiceStatus('Switched to Report');
+                    return true;
+                }
+                if (lower.includes('label')) {
+                    showTab('labels', document.querySelector('.nav-tab:nth-child(6)'));
+                    showGlobalVoiceStatus('Switched to Labels');
+                    return true;
+                }
+                if (lower.includes('inventory')) {
+                    showTab('inventory', document.querySelector('.nav-tab:nth-child(7)'));
+                    showGlobalVoiceStatus('Switched to Inventory');
+                    return true;
+                }
+                if (lower.includes('history')) {
+                    showTab('history', document.querySelector('.nav-tab:nth-child(8)'));
+                    showGlobalVoiceStatus('Switched to History');
+                    return true;
+                }
+            }
+
+            // Field navigation - Session Info fields
+            if (lower.includes('service provider')) {
+                const field = document.getElementById('serviceProvider');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Service Provider field');
+                return true;
+            }
+            if (lower.includes('location')) {
+                const field = document.getElementById('location');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Location field');
+                return true;
+            }
+            if (lower.includes('address')) {
+                const field = document.getElementById('address');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Address field');
+                return true;
+            }
+            if (lower.includes('client')) {
+                const field = document.getElementById('client');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Client field');
+                return true;
+            }
+            if (lower.includes('technician')) {
+                const field = document.getElementById('technician');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Technician field');
+                return true;
+            }
+            if (lower.includes('temperature')) {
+                const field = document.getElementById('temperature');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Temperature field');
+                return true;
+            }
+            if (lower.includes('humidity')) {
+                const field = document.getElementById('humidity');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Humidity field');
+                return true;
+            }
+            if (lower.includes('pressure')) {
+                const field = document.getElementById('pressure');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('Pressure field');
+                return true;
+            }
+            if (lower.includes('pi name') || lower.includes('principal investigator')) {
+                const field = document.getElementById('pi');
+                focusAndHighlight(field);
+                showGlobalVoiceStatus('PI Name field');
+                return true;
+            }
+
+            // Pipette navigation
+            if (lower.includes('pipette')) {
+                // Extract pipette number
+                const words = lower.split(' ');
+                const pipetteIndex = words.indexOf('pipette');
+                if (pipetteIndex !== -1 && pipetteIndex < words.length - 1) {
+                    const numberWord = words[pipetteIndex + 1];
+                    const pipetteNum = parseSpokenNumberGlobal(numberWord);
+                    if (pipetteNum !== null) {
+                        // Check for reading number
+                        if (lower.includes('reading')) {
+                            const readingIndex = words.indexOf('reading');
+                            if (readingIndex !== -1 && readingIndex < words.length - 1) {
+                                const readingWord = words[readingIndex + 1];
+                                const readingNum = parseSpokenNumberGlobal(readingWord);
+                                if (readingNum !== null && readingNum >= 1 && readingNum <= 4) {
+                                    const field = document.getElementById(`vol${readingNum}-${pipetteNum}`);
+                                    if (field) {
+                                        focusAndHighlight(field);
+                                        showGlobalVoiceStatus(`Pipette #${pipetteNum}, Reading ${readingNum}`);
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        // Check for serial number
+                        if (lower.includes('serial')) {
+                            const field = document.getElementById(`serial-${pipetteNum}`);
+                            if (field) {
+                                focusAndHighlight(field);
+                                showGlobalVoiceStatus(`Pipette #${pipetteNum}, Serial Number`);
+                                return true;
+                            }
+                        }
+                        // Just pipette number - navigate to card
+                        return navigateToPipette(pipetteNum);
+                    }
+                }
+
+                // Next/Previous pipette
+                if (lower.includes('next')) {
+                    if (pipettes.length > 0) {
+                        // Find first visible pipette or first pipette
+                        const firstPipette = pipettes[0];
+                        navigateToPipette(firstPipette.id);
+                    }
+                    return true;
+                }
+                if (lower.includes('previous')) {
+                    if (pipettes.length > 0) {
+                        const lastPipette = pipettes[pipettes.length - 1];
+                        navigateToPipette(lastPipette.id);
+                    }
+                    return true;
+                }
+                if (lower.includes('first')) {
+                    if (pipettes.length > 0) {
+                        navigateToPipette(pipettes[0].id);
+                    }
+                    return true;
+                }
+                if (lower.includes('last')) {
+                    if (pipettes.length > 0) {
+                        navigateToPipette(pipettes[pipettes.length - 1].id);
+                    }
+                    return true;
+                }
+            }
+
+            // Action commands
+            if (lower.includes('add pipette') || lower.includes('new pipette')) {
+                addPipette();
+                showGlobalVoiceStatus('Added new pipette');
+                return true;
+            }
+            if (lower.includes('new session')) {
+                newSession();
+                showGlobalVoiceStatus('Starting new session');
+                return true;
+            }
+            if (lower.includes('generate report')) {
+                generateReport();
+                showGlobalVoiceStatus('Generating report');
+                return true;
+            }
+
+            // Scroll commands
+            if (lower.includes('scroll up')) {
+                window.scrollBy({ top: -300, behavior: 'smooth' });
+                showGlobalVoiceStatus('Scrolling up');
+                return true;
+            }
+            if (lower.includes('scroll down')) {
+                window.scrollBy({ top: 300, behavior: 'smooth' });
+                showGlobalVoiceStatus('Scrolling down');
+                return true;
+            }
+
+            return false; // No command matched
+        }
+
+        // Handle global voice recognition results
+        function handleGlobalVoiceResult(transcript) {
+            console.log('Global voice heard:', transcript);
+
+            // If volume voice is active, ignore (let volume voice handle it)
+            if (currentVoicePipetteId) {
+                return;
+            }
+
+            // Try to execute command
+            const handled = executeGlobalVoiceCommand(transcript);
+
+            if (!handled) {
+                showGlobalVoiceStatus(`❓ Didn't understand: "${transcript}". Say "help" for commands.`, true);
+            }
+        }
+
+        // Initialize global voice recognition
+        function initGlobalVoiceRecognition() {
+            if (!checkVoiceSupport()) {
+                return null;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = (event) => {
+                const lastResult = event.results[event.results.length - 1];
+                if (lastResult.isFinal) {
+                    const transcript = lastResult[0].transcript.trim();
+                    handleGlobalVoiceResult(transcript);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Global voice recognition error:', event.error);
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    showGlobalVoiceStatus('❌ Microphone access denied', true);
+                    stopGlobalVoice();
+                } else if (event.error === 'no-speech') {
+                    // Ignore no-speech errors for global voice
+                } else if (event.error === 'network') {
+                    showGlobalVoiceStatus('📡 Network error', true);
+                }
+            };
+
+            recognition.onend = () => {
+                // If still active, restart
+                if (globalVoiceActive) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Failed to restart global voice:', e);
+                    }
+                }
+            };
+
+            return recognition;
+        }
+
+        // Start global voice control
+        function startGlobalVoice() {
+            if (!checkVoiceSupport()) {
+                showAlert('Voice control is not supported in your browser. Please use Chrome, Edge, or Safari.', 'Info');
+                return;
+            }
+
+            globalVoiceActive = true;
+
+            // Initialize if needed
+            if (!globalVoiceRecognition) {
+                globalVoiceRecognition = initGlobalVoiceRecognition();
+            }
+
+            try {
+                globalVoiceRecognition.start();
+
+                // Update button
+                const btn = document.getElementById('globalVoiceBtn');
+                if (btn) {
+                    btn.classList.add('listening');
+                    btn.innerHTML = '🔴 Listening';
+                }
+
+                showGlobalVoiceStatus('🎙️ Voice control active. Say "help" for commands.');
+            } catch (error) {
+                console.error('Failed to start global voice:', error);
+                showGlobalVoiceStatus('Failed to start voice control', true);
+                globalVoiceActive = false;
+            }
+        }
+
+        // Stop global voice control
+        function stopGlobalVoice() {
+            globalVoiceActive = false;
+
+            if (globalVoiceRecognition) {
+                try {
+                    globalVoiceRecognition.stop();
+                } catch (e) {
+                    console.error('Error stopping global voice:', e);
+                }
+            }
+
+            // Update button
+            const btn = document.getElementById('globalVoiceBtn');
+            if (btn) {
+                btn.classList.remove('listening');
+                btn.innerHTML = '🎙️ Voice Control';
+            }
+        }
+
+        // Toggle global voice control
+        function toggleGlobalVoice() {
+            if (globalVoiceActive) {
+                stopGlobalVoice();
+            } else {
+                startGlobalVoice();
+            }
+        }
+
+        // Show voice help panel
+        function showVoiceHelp() {
+            const panel = document.getElementById('voiceHelpPanel');
+            if (panel) {
+                panel.classList.add('show');
+            }
+        }
+
+        // Close voice help panel
+        function closeVoiceHelp() {
+            const panel = document.getElementById('voiceHelpPanel');
+            if (panel) {
+                panel.classList.remove('show');
             }
         }
 
@@ -6113,6 +6757,7 @@
             <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
             <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px;">
                 <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">📝 Templates</button>
+                <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation">🎙️ Voice Control</button>
                 <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 8px 16px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🌙</button>
                 <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↶ Undo</button>
                 <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↷ Redo</button>
