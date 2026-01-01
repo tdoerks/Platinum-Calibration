@@ -708,6 +708,7 @@
         let currentPipetteId = 0;
         let currentSessionId = null;
         let saveTimeout = null;
+        let inventoryUsage = [];
 
         // ========================================
         // CUSTOM MODAL FUNCTIONS
@@ -1371,6 +1372,7 @@
                 id: currentSessionId,
                 sessionInfo: getSessionInfo(),
                 pipettes: pipettes,
+                inventoryUsage: inventoryUsage,
                 currentPipetteId: currentPipetteId,
                 timestamp: new Date().toISOString(),
                 lastModified: new Date().toISOString()
@@ -1441,6 +1443,7 @@
                 const sessionData = JSON.parse(savedSession);
                 currentSessionId = sessionData.id;
                 pipettes = sessionData.pipettes || [];
+                inventoryUsage = sessionData.inventoryUsage || [];
                 currentPipetteId = sessionData.currentPipetteId || 0;
 
                 // Restore session info
@@ -1459,6 +1462,10 @@
                         pipette.channelType = 'single';
                         pipette.channelCount = 1;
                     }
+                    // Add default serviceLevel for old sessions
+                    if (!pipette.serviceLevel) {
+                        pipette.serviceLevel = 'platinum';
+                    }
                     renderPipette(pipette);
                     ['asFound', 'asLeft'].forEach(condition => {
                         ['low', 'mid', 'high'].forEach(point => {
@@ -1470,6 +1477,9 @@
 
                 updateProgress();
                 updateAnalysis();
+                renderInventoryUsage();
+                updateInventoryStats();
+                updateSummaryTable();
                 return true;
             } catch (e) {
                 console.error('Error loading session:', e);
@@ -1561,22 +1571,20 @@
         }
 
         function updateTabVisibility(serviceLevel) {
-            const analysisTab = document.querySelector('.nav-tab[onclick*="analysis"]');
-            const summaryTab = document.querySelector('.nav-tab[onclick*="summary"]');
-            const inventoryTab = document.querySelector('.nav-tab[onclick*="inventory"]');
-            const labelsTab = document.querySelector('.nav-tab[onclick*="labels"]');
+            const analysisTab = document.getElementById('analysisTab');
+            const summaryTab = document.getElementById('summaryTab');
 
             if (serviceLevel === 'platinum') {
-                // Show Analysis, hide Summary (if it exists)
+                // Show Analysis, hide Summary
                 if (analysisTab) analysisTab.style.display = '';
                 if (summaryTab) summaryTab.style.display = 'none';
             } else {
-                // Hide Analysis, show Summary (if it exists)
+                // Hide Analysis, show Summary
                 if (analysisTab) analysisTab.style.display = 'none';
                 if (summaryTab) summaryTab.style.display = '';
             }
 
-            // Inventory and Labels always visible once added
+            // Labels and Inventory always visible
         }
 
         function newSession() {
@@ -1630,10 +1638,12 @@
                 // Clear current
                 document.getElementById('pipettesContainer').innerHTML = '';
                 pipettes = [];
+                inventoryUsage = [];
 
                 // Load selected session
                 currentSessionId = session.id;
                 pipettes = session.pipettes || [];
+                inventoryUsage = session.inventoryUsage || [];
                 currentPipetteId = session.currentPipetteId || 0;
 
                 // Restore session info
@@ -1647,6 +1657,10 @@
 
                 // Render pipettes
                 pipettes.forEach(pipette => {
+                    // Add backward compatibility
+                    if (!pipette.serviceLevel) {
+                        pipette.serviceLevel = 'platinum';
+                    }
                     renderPipette(pipette);
                     ['asFound', 'asLeft'].forEach(condition => {
                         ['low', 'mid', 'high'].forEach(point => {
@@ -1658,6 +1672,9 @@
 
                 updateProgress();
                 updateAnalysis();
+                renderInventoryUsage();
+                updateInventoryStats();
+                updateSummaryTable();
 
                 // Save as current session
                 localStorage.setItem('currentSession', JSON.stringify(session));
@@ -1851,6 +1868,7 @@
             pipettes.push(pipette);
             renderPipette(pipette);
             updateProgress();
+            updateSummaryTable(); // Update summary table
             debouncedAutoSave();
         }
 
@@ -2386,6 +2404,7 @@
                 document.getElementById(`pipette-${pipetteId}`).remove();
                 renderPipette(pipette);
                 updateProgress();
+                updateSummaryTable(); // Update summary table
                 debouncedAutoSave();
             }
         }
@@ -2977,6 +2996,7 @@
             updateEmptyState(); // Show empty state if no pipettes left
             updateProgress();
             updateAnalysis();
+            updateSummaryTable(); // Update summary table
             debouncedAutoSave();
         }
 
@@ -4264,6 +4284,422 @@
 
         // ========== End Password Protection ==========
 
+        // ========================================
+        // INVENTORY MANAGEMENT FUNCTIONS
+        // ========================================
+
+        function autoDetectInventory() {
+            // Auto-detect inventory items from Basic mode pipettes
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+            const detected = [];
+
+            basicPipettes.forEach(pipette => {
+                const adjustments = pipette.adjustments || {};
+                const pipetteNo = String(pipette.id).padStart(2, '0');
+
+                // Check each adjustment type
+                Object.keys(adjustments).forEach(adjType => {
+                    if (adjustments[adjType] && adjustments[adjType].trim() !== '') {
+                        const itemName = getAdjustmentItemName(adjType);
+                        detected.push({
+                            item: itemName,
+                            quantity: 1,
+                            pipetteNo: pipetteNo,
+                            notes: `Auto-detected from ${adjType} adjustment`
+                        });
+                    }
+                });
+            });
+
+            return detected;
+        }
+
+        function autoDetectAndAddInventory() {
+            const detected = autoDetectInventory();
+
+            if (detected.length === 0) {
+                showAlert('No adjustments found in Basic mode pipettes. Complete calibrations first.', 'No Items Detected');
+                return;
+            }
+
+            const sessionInfo = getSessionInfo();
+            const technician = sessionInfo.technician || 'Unknown';
+            const invoice = sessionInfo.invoiceNo || '';
+
+            // Add each detected item to inventory
+            detected.forEach(det => {
+                const item = {
+                    id: Date.now() + Math.random(), // Ensure unique IDs
+                    item: det.item,
+                    quantity: det.quantity,
+                    pipetteNo: det.pipetteNo,
+                    jobInvoice: invoice,
+                    usedBy: technician,
+                    timestamp: new Date().toLocaleString(),
+                    notes: det.notes
+                };
+                inventoryUsage.push(item);
+            });
+
+            renderInventoryUsage();
+            updateInventoryStats();
+            debouncedAutoSave();
+
+            showAlert(`Auto-detected and added ${detected.length} inventory item(s) from calibration adjustments.`, 'Inventory Detected');
+        }
+
+        function getAdjustmentItemName(adjType) {
+            const itemMap = {
+                'SE': 'Seal/Ejector Adjustment',
+                'COR': 'Corrector/Piston Adjustment',
+                'G': 'Grease Application',
+                'SH': 'Shaft Adjustment',
+                'FR': 'Frame Repair',
+                'O': 'O-Ring Replacement',
+                'OTHER': 'Miscellaneous Part'
+            };
+            return itemMap[adjType] || adjType;
+        }
+
+        function openAddInventoryModal() {
+            document.getElementById('inventoryModal').style.display = 'flex';
+            document.getElementById('invItemName').value = '';
+            document.getElementById('invQuantity').value = '1';
+            document.getElementById('invPipetteNo').value = '';
+            document.getElementById('invNotes').value = '';
+            document.getElementById('invItemName').focus();
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').style.display = 'none';
+        }
+
+        function addInventoryItem() {
+            const itemName = document.getElementById('invItemName')?.value.trim();
+            const quantity = parseInt(document.getElementById('invQuantity')?.value || '1');
+            const pipetteNo = document.getElementById('invPipetteNo')?.value.trim();
+            const notes = document.getElementById('invNotes')?.value.trim();
+
+            if (!itemName) {
+                showAlert('Please enter an item name', 'Validation Error');
+                return;
+            }
+
+            const sessionInfo = getSessionInfo();
+            const technician = sessionInfo.technician || 'Unknown';
+            const invoice = sessionInfo.invoiceNo || '';
+
+            const item = {
+                id: Date.now(),
+                item: itemName,
+                quantity: quantity,
+                pipetteNo: pipetteNo,
+                jobInvoice: invoice,
+                usedBy: technician,
+                timestamp: new Date().toLocaleString(),
+                notes: notes
+            };
+
+            inventoryUsage.push(item);
+            renderInventoryUsage();
+            updateInventoryStats();
+            closeInventoryModal();
+            debouncedAutoSave();
+        }
+
+        function renderInventoryUsage() {
+            const tbody = document.getElementById('inventoryUsageBody');
+            if (!tbody) return;
+
+            if (inventoryUsage.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">📦</div>
+                            <div style="font-size: 16px;">No inventory items used yet</div>
+                            <div style="font-size: 14px; margin-top: 5px;">Items will be auto-detected from adjustments or added manually</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = inventoryUsage.map(item => `
+                <tr>
+                    <td>${item.item}</td>
+                    <td style="text-align: center;">${item.quantity}</td>
+                    <td style="text-align: center;">${item.pipetteNo || '-'}</td>
+                    <td>${item.jobInvoice || '-'}</td>
+                    <td>${item.usedBy}</td>
+                    <td style="font-size: 12px;">${item.timestamp}</td>
+                    <td>${item.notes || '-'}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteInventoryUsage(${item.id})"
+                                style="padding: 5px 10px; font-size: 12px;">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateInventoryStats() {
+            const totalItems = inventoryUsage.reduce((sum, item) => sum + item.quantity, 0);
+            const uniqueItems = new Set(inventoryUsage.map(item => item.item)).size;
+            const currentSessionItems = inventoryUsage.length;
+
+            document.getElementById('invTotalItems').textContent = totalItems;
+            document.getElementById('invCurrentSession').textContent = currentSessionItems;
+            document.getElementById('invUniqueItems').textContent = uniqueItems;
+        }
+
+        function deleteInventoryUsage(id) {
+            showConfirm('Delete this inventory item?', 'Confirm Delete', () => {
+                inventoryUsage = inventoryUsage.filter(item => item.id !== id);
+                renderInventoryUsage();
+                updateInventoryStats();
+                debouncedAutoSave();
+            });
+        }
+
+        function clearInventoryUsage() {
+            if (inventoryUsage.length === 0) {
+                showAlert('Inventory is already empty', 'Notice');
+                return;
+            }
+
+            showConfirm('Clear all inventory items?', 'Confirm Clear', () => {
+                inventoryUsage = [];
+                renderInventoryUsage();
+                updateInventoryStats();
+                debouncedAutoSave();
+            });
+        }
+
+        function exportInventoryUsage() {
+            if (inventoryUsage.length === 0) {
+                showAlert('No inventory items to export', 'Notice');
+                return;
+            }
+
+            const sessionInfo = getSessionInfo();
+            const headers = ['Item Name', 'Quantity', 'Pipette #', 'Job/Invoice', 'Used By', 'Timestamp', 'Notes'];
+
+            const rows = inventoryUsage.map(item => [
+                item.item,
+                item.quantity,
+                item.pipetteNo || '',
+                item.jobInvoice || '',
+                item.usedBy,
+                item.timestamp,
+                item.notes || ''
+            ]);
+
+            const csv = [headers, ...rows].map(row =>
+                row.map(cell => `"${cell}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventory-usage-${sessionInfo.invoiceNo || 'export'}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ========================================
+        // SUMMARY TABLE FUNCTIONS (Basic Mode)
+        // ========================================
+
+        function updateSummaryTable() {
+            const tbody = document.getElementById('summaryTableBody');
+            if (!tbody) return;
+
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+
+            if (basicPipettes.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">📊</div>
+                            <div style="font-size: 16px;">No Basic service pipettes added yet</div>
+                            <div style="font-size: 14px; margin-top: 5px;">Add pipettes in the Calibration tab</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = basicPipettes.map(pipette => {
+                const adjustmentsList = Object.keys(pipette.adjustments || {})
+                    .filter(key => pipette.adjustments[key])
+                    .join(', ') || '-';
+
+                const finalVols = (pipette.finalVolumes || []).filter(v => v).join(', ') || '-';
+
+                const statusClass = pipette.passFail === 'PASS' ? 'pass' : pipette.passFail === 'FAIL' ? 'fail' : 'pending';
+                const statusBadge = `<span class="status-badge status-${statusClass}">${pipette.passFail || 'PENDING'}</span>`;
+
+                return `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">${String(pipette.id).padStart(2, '0')}</td>
+                        <td>${pipette.brand || '-'}</td>
+                        <td>${pipette.makeModel || pipette.model || '-'}</td>
+                        <td>${pipette.maxVolume || pipette.volume || '-'}</td>
+                        <td style="text-align: center;">${pipette.inSpec ? '✅' : '—'}</td>
+                        <td style="text-align: center;">${pipette.outSpec ? '❌' : '—'}</td>
+                        <td style="font-size: 12px;">${adjustmentsList}</td>
+                        <td style="font-size: 12px;">${finalVols}</td>
+                        <td style="text-align: center;">${statusBadge}</td>
+                        <td style="text-align: center;">
+                            <button class="btn btn-sm btn-danger" onclick="removePipette(${pipette.id})"
+                                    style="padding: 5px 10px; font-size: 12px;">
+                                🗑️
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportSummaryToCSV() {
+            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+
+            if (basicPipettes.length === 0) {
+                showAlert('No Basic service pipettes to export', 'Notice');
+                return;
+            }
+
+            const sessionInfo = getSessionInfo();
+            const headers = ['No.', 'Manufacturer', 'Model', 'Max Vol', 'In Spec', 'Out Spec', 'Adjustments', 'Final Volumes', 'P/F'];
+
+            const rows = basicPipettes.map(pipette => {
+                const adjustmentsList = Object.keys(pipette.adjustments || {})
+                    .filter(key => pipette.adjustments[key])
+                    .join(', ') || '';
+
+                const finalVols = (pipette.finalVolumes || []).filter(v => v).join(', ') || '';
+
+                return [
+                    String(pipette.id).padStart(2, '0'),
+                    pipette.brand || '',
+                    pipette.makeModel || pipette.model || '',
+                    pipette.maxVolume || pipette.volume || '',
+                    pipette.inSpec ? 'Yes' : 'No',
+                    pipette.outSpec ? 'Yes' : 'No',
+                    adjustmentsList,
+                    finalVols,
+                    pipette.passFail || 'PENDING'
+                ];
+            });
+
+            const csv = [headers, ...rows].map(row =>
+                row.map(cell => `"${cell}"`).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `summary-table-${sessionInfo.invoiceNo || 'export'}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ========================================
+        // LABELS FUNCTIONS
+        // ========================================
+
+        function generateLabels() {
+            const container = document.getElementById('labelsContainer');
+            if (!container) return;
+
+            if (pipettes.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🏷️</div>
+                        <div style="font-size: 16px;">No pipettes to generate labels for</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sessionInfo = getSessionInfo();
+            const calDate = sessionInfo.calDate || new Date().toISOString().split('T')[0];
+            const dueDate = sessionInfo.dueDate || '';
+            const technician = sessionInfo.technician || '';
+
+            container.innerHTML = pipettes.map(pipette => {
+                const statusEmoji = pipette.serviceLevel === 'basic'
+                    ? (pipette.passFail === 'PASS' ? '✅' : pipette.passFail === 'FAIL' ? '❌' : '⏳')
+                    : (pipette.statusAsLeft === 'pass' ? '✅' : pipette.statusAsLeft === 'fail' ? '❌' : '⏳');
+
+                const status = pipette.serviceLevel === 'basic'
+                    ? pipette.passFail || 'PENDING'
+                    : pipette.statusAsLeft.toUpperCase();
+
+                return `
+                    <div class="label" style="border: 2px solid #333; padding: 15px; margin: 10px; width: 300px;
+                                               display: inline-block; font-family: monospace; background: white;">
+                        <div style="text-align: center; font-weight: bold; font-size: 18px; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 10px;">
+                            CALIBRATION LABEL
+                        </div>
+                        <div style="margin: 5px 0;"><strong>Pipette #:</strong> ${String(pipette.id).padStart(2, '0')}</div>
+                        <div style="margin: 5px 0;"><strong>Serial:</strong> ${pipette.serial || 'N/A'}</div>
+                        <div style="margin: 5px 0;"><strong>Brand:</strong> ${pipette.brand}</div>
+                        <div style="margin: 5px 0;"><strong>Model:</strong> ${pipette.makeModel || pipette.model || 'N/A'}</div>
+                        <div style="margin: 5px 0;"><strong>Volume:</strong> ${pipette.maxVolume || pipette.volume} µL</div>
+                        <div style="margin: 5px 0;"><strong>Cal Date:</strong> ${calDate}</div>
+                        <div style="margin: 5px 0;"><strong>Due Date:</strong> ${dueDate}</div>
+                        <div style="margin: 5px 0;"><strong>Technician:</strong> ${technician}</div>
+                        <div style="margin: 5px 0;"><strong>Status:</strong> ${statusEmoji} ${status}</div>
+                        <div style="margin: 5px 0;"><strong>Service:</strong> ${pipette.serviceLevel === 'basic' ? '⚡ Basic' : '🏆 Platinum'}</div>
+                    </div>
+                `;
+            }).join('');
+
+            showAlert(`Generated ${pipettes.length} label(s). Click "Print Labels" to print.`, 'Labels Generated');
+        }
+
+        function printLabels() {
+            const container = document.getElementById('labelsContainer');
+            if (!container || !container.innerHTML.trim() || pipettes.length === 0) {
+                showAlert('Please generate labels first', 'Notice');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Calibration Labels</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; }
+                        .label {
+                            border: 2px solid #333;
+                            padding: 15px;
+                            margin: 10px;
+                            width: 300px;
+                            display: inline-block;
+                            font-family: monospace;
+                            background: white;
+                            page-break-inside: avoid;
+                        }
+                        @media print {
+                            .label { page-break-inside: avoid; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${container.innerHTML}
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             // Check password first
@@ -4312,6 +4748,11 @@
             // Check if backup reminder should be shown
             checkBackupReminder();
 
+            // Initialize inventory and summary table
+            renderInventoryUsage();
+            updateInventoryStats();
+            updateSummaryTable();
+
             // Add listeners to session form fields for auto-save
             document.querySelectorAll('#session input, #session select').forEach(input => {
                 input.addEventListener('change', debouncedAutoSave);
@@ -4333,8 +4774,11 @@
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showTab('session', this)">📋 Session Info</button>
             <button class="nav-tab" onclick="showTab('calibration', this)">⚖️ Calibration</button>
-            <button class="nav-tab" onclick="showTab('analysis', this)">📊 Analysis</button>
+            <button class="nav-tab" id="analysisTab" onclick="showTab('analysis', this)">📊 Analysis</button>
+            <button class="nav-tab" id="summaryTab" onclick="showTab('summary', this)" style="display: none;">📊 Summary Table</button>
             <button class="nav-tab" onclick="showTab('report', this)">📄 Report</button>
+            <button class="nav-tab" id="labelsTab" onclick="showTab('labels', this)">🏷️ Labels</button>
+            <button class="nav-tab" id="inventoryTab" onclick="showTab('inventory', this)">📦 Inventory</button>
             <button class="nav-tab" onclick="showTab('history', this)">📚 History</button>
         </div>
 
@@ -4546,6 +4990,127 @@
             </div>
         </div>
 
+        <!-- Summary Table Tab (Basic Mode Only) -->
+        <div id="summary" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #69B135;">📊 Summary Table</h2>
+                <button class="btn btn-secondary" onclick="exportSummaryToCSV()">📥 Export CSV</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="pipette-table" id="summaryTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); color: white;">
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">No.</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Manufacturer</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Model</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Max Vol</th>
+                            <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">In Spec</th>
+                            <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Out Spec</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Adjustments</th>
+                            <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Final Volumes</th>
+                            <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">P/F</th>
+                            <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 40px; color: #6c757d; border: 1px solid #ddd;">
+                                No pipettes to display. Add pipettes in the Calibration tab.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Labels Tab -->
+        <div id="labels" class="tab-content">
+            <h2 style="color: #667eea;">🏷️ Calibration Labels</h2>
+            <p style="color: #6c757d; margin-bottom: 20px;">Generate printable calibration labels for your pipettes</p>
+
+            <div style="margin-bottom: 20px;">
+                <button class="btn btn-primary" onclick="generateLabels()">🖨️ Generate Labels</button>
+                <button class="btn btn-secondary" onclick="printLabels()">📄 Print Labels</button>
+            </div>
+
+            <div id="labelsContainer" style="background: white; padding: 20px; border-radius: 8px;">
+                <p style="text-align: center; color: #6c757d; padding: 40px;">
+                    Click "Generate Labels" to create printable calibration labels
+                </p>
+            </div>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div id="inventory" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #667eea;">📦 Inventory Used</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="autoDetectAndAddInventory()" class="btn btn-secondary" title="Auto-detect inventory from calibration data">
+                        🔄 Auto-Detect from Calibrations
+                    </button>
+                    <button onclick="openAddInventoryModal()" class="btn btn-primary">
+                        ✨ Add Item Used
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invTotalItems">0</div>
+                    <div style="opacity: 0.9;">Total Items Used</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invCurrentSession">0</div>
+                    <div style="opacity: 0.9;">Current Session</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 2rem; font-weight: bold;" id="invUniqueItems">0</div>
+                    <div style="opacity: 0.9;">Unique Items</div>
+                </div>
+            </div>
+
+            <!-- Usage Table -->
+            <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <h3 style="color: #667eea; margin-bottom: 20px;">Items Used in Current Session</h3>
+                <div style="overflow-x: auto;">
+                    <table id="inventoryUsageTable" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Item Name</th>
+                                <th style="padding: 15px; text-align: center; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Quantity</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Pipette #</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Job/Invoice</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Used By</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Time</th>
+                                <th style="padding: 15px; text-align: left; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Notes</th>
+                                <th style="padding: 15px; text-align: center; font-weight: 700; color: #374151; border-bottom: 2px solid #e5e7eb;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryUsageBody">
+                            <tr>
+                                <td colspan="8" style="padding: 40px; text-align: center; color: #6c757d;">
+                                    <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px;">📦</div>
+                                    <div>No items used yet. Click "Auto-Detect" or "Add Item Used" to track inventory.</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div style="margin-top: 25px; text-align: right;">
+                <button onclick="exportInventoryUsage()" class="btn btn-secondary">
+                    📄 Export Usage Report
+                </button>
+                <button onclick="clearInventoryUsage()" class="btn btn-danger" style="margin-left: 10px;">
+                    🗑️ Clear All Usage
+                </button>
+            </div>
+        </div>
+
         <!-- History Tab -->
         <div id="history" class="tab-content">
             <h2>📚 Calibration History</h2>
@@ -4575,5 +5140,38 @@
             </div>
         </div>
     </div>
+
+    <!-- Inventory Modal -->
+    <div id="inventoryModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>📦 Add Inventory Item</h2>
+                <button class="close-btn" onclick="closeInventoryModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Item Name/Part Number</label>
+                    <input type="text" id="invItemName" placeholder="e.g., SE Adjustment Screw, O-Ring Kit">
+                </div>
+                <div class="form-group">
+                    <label>Quantity Used</label>
+                    <input type="number" id="invQuantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Pipette Number (optional)</label>
+                    <input type="text" id="invPipetteNo" placeholder="e.g., 01, 02">
+                </div>
+                <div class="form-group">
+                    <label>Notes (optional)</label>
+                    <textarea id="invNotes" rows="3" placeholder="Additional details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeInventoryModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addInventoryItem()">Add Item</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
