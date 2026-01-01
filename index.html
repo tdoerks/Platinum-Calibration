@@ -754,6 +754,109 @@
             color: #6c757d;
         }
 
+        /* Voice Input Styles */
+        .voice-button {
+            padding: 6px 12px;
+            border: 2px solid #28a745;
+            background: #28a745;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .voice-button:hover {
+            background: #218838;
+            border-color: #218838;
+            transform: translateY(-1px);
+        }
+
+        .voice-button.listening {
+            background: #dc3545;
+            border-color: #dc3545;
+            animation: pulse-button 1.5s ease-in-out infinite;
+        }
+
+        .voice-button.listening:hover {
+            background: #c82333;
+            border-color: #c82333;
+        }
+
+        .voice-button:disabled {
+            background: #6c757d;
+            border-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .voice-status {
+            font-size: 12px;
+            color: #28a745;
+            font-weight: 600;
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .voice-status.error {
+            color: #dc3545;
+        }
+
+        .volume-inputs input.voice-active {
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+            animation: pulse-border 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-button {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: #28a745; }
+            50% { border-color: #5cb85c; }
+        }
+
+        /* Barcode Scanner Styles */
+        .scan-success {
+            animation: scanFlash 0.6s ease;
+        }
+
+        @keyframes scanFlash {
+            0%, 100% {
+                background-color: white;
+                border-color: #ced4da;
+            }
+            50% {
+                background-color: #d4edda;
+                border-color: #28a745;
+                box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+            }
+        }
+
+        body.dark-mode .scan-success {
+            animation: scanFlashDark 0.6s ease;
+        }
+
+        @keyframes scanFlashDark {
+            0%, 100% {
+                background-color: #1a1a2e;
+                border-color: #2c3e50;
+            }
+            50% {
+                background-color: #28a745;
+                border-color: #28a745;
+                box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+            }
+        }
+
         /* Print Optimization */
         @media print {
             body {
@@ -816,6 +919,18 @@
         let saveTimeout = null;
         let inventoryUsage = [];
 
+        // Voice Recognition Variables
+        let voiceRecognition = null;
+        let currentVoicePipetteId = null;
+        let currentReadingIndex = 0;
+        let voiceSupported = false;
+
+        // Barcode Scanner Variables
+        let barcodeBuffer = '';
+        let lastKeyTime = 0;
+        let barcodeScansToday = 0;
+        const BARCODE_SCAN_SPEED_MS = 50; // Keys <50ms apart = scanner
+
         // ========================================
         // CUSTOM MODAL FUNCTIONS
         // ========================================
@@ -849,6 +964,377 @@
         }
 
         // Modal event listeners will be set up in main DOMContentLoaded below
+
+        // ========================================
+        // VOICE INPUT SYSTEM (FOR BASIC MODE)
+        // ========================================
+
+        // Check if voice recognition is supported
+        function checkVoiceSupport() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            voiceSupported = !!SpeechRecognition;
+
+            if (!voiceSupported) {
+                console.warn('Speech Recognition not supported in this browser');
+            }
+
+            return voiceSupported;
+        }
+
+        // Initialize speech recognition
+        function initVoiceRecognition() {
+            if (!checkVoiceSupport()) {
+                return null;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = (event) => {
+                const lastResult = event.results[event.results.length - 1];
+                if (lastResult.isFinal) {
+                    const transcript = lastResult[0].transcript.trim();
+                    handleVoiceResult(transcript);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                const statusEl = document.getElementById(`voice-status-${currentVoicePipetteId}`);
+
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    updateVoiceStatus('❌ Microphone access denied', true);
+                    stopVoiceInput();
+                } else if (event.error === 'no-speech') {
+                    updateVoiceStatus('⏱️ No speech detected. Try again.', true);
+                } else if (event.error === 'network') {
+                    updateVoiceStatus('📡 Network error. Check connection.', true);
+                    stopVoiceInput();
+                } else {
+                    updateVoiceStatus(`❌ Error: ${event.error}`, true);
+                }
+            };
+
+            recognition.onend = () => {
+                // If we're still in voice mode, restart recognition
+                if (currentVoicePipetteId && currentReadingIndex < 4) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Failed to restart recognition:', e);
+                        stopVoiceInput();
+                    }
+                }
+            };
+
+            return recognition;
+        }
+
+        // Parse spoken number to float
+        function parseSpokenNumber(transcript) {
+            // Clean up transcript
+            let text = transcript.toLowerCase()
+                .replace(/point/g, '.')
+                .replace(/decimal/g, '.')
+                .trim();
+
+            // Try to parse as a direct number first
+            let number = parseFloat(text);
+            if (!isNaN(number)) {
+                return number;
+            }
+
+            // Handle word numbers (basic support)
+            const wordNumbers = {
+                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
+                'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13,
+                'fourteen': 14, 'fifteen': 15, 'sixteen': 16, 'seventeen': 17,
+                'eighteen': 18, 'nineteen': 19, 'twenty': 20, 'thirty': 30,
+                'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
+                'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000
+            };
+
+            // Simple word-to-number conversion
+            for (const [word, value] of Object.entries(wordNumbers)) {
+                text = text.replace(new RegExp(word, 'g'), value.toString());
+            }
+
+            // Try parsing again
+            number = parseFloat(text);
+            if (!isNaN(number) && number >= 0 && number <= 100000) {
+                return number;
+            }
+
+            return null;
+        }
+
+        // Update voice status message
+        function updateVoiceStatus(message, isError = false) {
+            if (!currentVoicePipetteId) return;
+
+            const statusEl = document.getElementById(`voice-status-${currentVoicePipetteId}`);
+            if (statusEl) {
+                statusEl.textContent = message;
+                statusEl.className = isError ? 'voice-status error' : 'voice-status';
+            }
+        }
+
+        // Handle voice recognition result
+        function handleVoiceResult(transcript) {
+            if (!currentVoicePipetteId || currentReadingIndex >= 4) {
+                stopVoiceInput();
+                return;
+            }
+
+            const lowerTranscript = transcript.toLowerCase().trim();
+
+            // Check for voice commands first (commands take priority over numbers)
+            if (executeVoiceCommand(lowerTranscript, currentVoicePipetteId)) {
+                return; // Command was executed
+            }
+
+            // Try to parse as number
+            const number = parseSpokenNumber(transcript);
+
+            if (number === null) {
+                updateVoiceStatus(`❓ Didn't understand "${transcript}". Try again or say "help"`, true);
+                return;
+            }
+
+            // Round to 3 decimal places
+            const roundedNumber = Math.round(number * 1000) / 1000;
+
+            // Update the field (for Basic mode)
+            updateFinalVolume(currentVoicePipetteId, currentReadingIndex, roundedNumber.toString());
+
+            // Update UI
+            const inputField = document.getElementById(`vol${currentReadingIndex + 1}-${currentVoicePipetteId}`);
+            if (inputField) {
+                inputField.value = roundedNumber;
+                inputField.classList.remove('voice-active');
+            }
+
+            updateVoiceStatus(`✓ Heard: ${roundedNumber} µL`, false);
+
+            // Move to next reading
+            currentReadingIndex++;
+
+            if (currentReadingIndex >= 4) {
+                // All readings captured
+                setTimeout(() => {
+                    updateVoiceStatus('✅ All readings captured!', false);
+                    stopVoiceInput();
+                }, 500);
+            } else {
+                // Highlight next reading
+                setTimeout(() => {
+                    const nextField = document.getElementById(`vol${currentReadingIndex + 1}-${currentVoicePipetteId}`);
+                    if (nextField) {
+                        nextField.classList.add('voice-active');
+                    }
+                    updateVoiceStatus(`🎤 Listening for Reading ${currentReadingIndex + 1}...`, false);
+                }, 600);
+            }
+        }
+
+        // Execute voice command
+        function executeVoiceCommand(transcript, pipetteId) {
+            // Help command
+            if (transcript.includes('help') || transcript.includes('commands')) {
+                updateVoiceStatus(`📋 Commands: "stop", "repeat", "mark pass", "mark fail"`, false);
+                return true;
+            }
+
+            // Stop/cancel
+            if (transcript.includes('stop') || transcript.includes('cancel') || transcript.includes('quit')) {
+                updateVoiceStatus('⏹️ Stopped listening', false);
+                stopVoiceInput();
+                return true;
+            }
+
+            // Repeat last reading
+            if (transcript.includes('repeat') || transcript.includes('redo') || transcript.includes('again')) {
+                if (currentReadingIndex > 0) {
+                    currentReadingIndex--;
+                    const field = document.getElementById(`vol${currentReadingIndex + 1}-${pipetteId}`);
+                    if (field) {
+                        field.value = '';
+                        field.classList.add('voice-active');
+                        // Clear previous field highlight
+                        for (let i = 1; i <= 4; i++) {
+                            if (i !== currentReadingIndex + 1) {
+                                document.getElementById(`vol${i}-${pipetteId}`)?.classList.remove('voice-active');
+                            }
+                        }
+                    }
+                    updateVoiceStatus(`🔄 Ready to re-enter Reading ${currentReadingIndex + 1}`, false);
+                } else {
+                    updateVoiceStatus('⚠️ No reading to repeat yet', true);
+                }
+                return true;
+            }
+
+            // Mark as PASS
+            if (transcript.includes('mark pass') || transcript.includes('passed') || transcript.includes('mark as pass')) {
+                updateBasicStatus(pipetteId, 'PASS');
+                const selectField = document.getElementById(`pf-${pipetteId}`);
+                if (selectField) selectField.value = 'PASS';
+                updateVoiceStatus('✅ Marked as PASS', false);
+                return true;
+            }
+
+            // Mark as FAIL
+            if (transcript.includes('mark fail') || transcript.includes('failed') || transcript.includes('mark as fail')) {
+                updateBasicStatus(pipetteId, 'FAIL');
+                const selectField = document.getElementById(`pf-${pipetteId}`);
+                if (selectField) selectField.value = 'FAIL';
+                updateVoiceStatus('❌ Marked as FAIL', false);
+                return true;
+            }
+
+            return false; // No command matched
+        }
+
+        // Start voice input
+        function startVoiceInput(pipetteId) {
+            if (!checkVoiceSupport()) {
+                showAlert('Voice input is not supported in your browser. Please use Chrome, Edge, or Safari.', 'Info');
+                return;
+            }
+
+            currentVoicePipetteId = pipetteId;
+            currentReadingIndex = 0;
+
+            // Initialize recognition if needed
+            if (!voiceRecognition) {
+                voiceRecognition = initVoiceRecognition();
+            }
+
+            try {
+                voiceRecognition.start();
+
+                // Update button state
+                const button = document.getElementById(`voice-btn-${pipetteId}`);
+                if (button) {
+                    button.classList.add('listening');
+                    button.innerHTML = '⏹️ Stop';
+                }
+
+                // Highlight first reading field
+                const firstField = document.getElementById(`vol1-${pipetteId}`);
+                if (firstField) {
+                    firstField.classList.add('voice-active');
+                }
+
+                updateVoiceStatus('🎤 Listening for Reading 1... (Say "help" for commands)', false);
+            } catch (error) {
+                console.error('Failed to start voice recognition:', error);
+                showAlert('Failed to start voice input. Please check microphone permissions.', 'Error');
+                stopVoiceInput();
+            }
+        }
+
+        // Stop voice input
+        function stopVoiceInput() {
+            if (voiceRecognition) {
+                try {
+                    voiceRecognition.stop();
+                } catch (e) {
+                    console.error('Error stopping recognition:', e);
+                }
+            }
+
+            if (currentVoicePipetteId) {
+                // Update button state
+                const button = document.getElementById(`voice-btn-${currentVoicePipetteId}`);
+                if (button) {
+                    button.classList.remove('listening');
+                    button.innerHTML = '🎤 Voice Input';
+                }
+
+                // Remove voice-active class from all fields
+                for (let i = 1; i <= 4; i++) {
+                    const field = document.getElementById(`vol${i}-${currentVoicePipetteId}`);
+                    if (field) {
+                        field.classList.remove('voice-active');
+                    }
+                }
+
+                // Clear status after a delay if not error
+                const statusEl = document.getElementById(`voice-status-${currentVoicePipetteId}`);
+                if (statusEl && !statusEl.classList.contains('error')) {
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                    }, 3000);
+                }
+            }
+
+            currentVoicePipetteId = null;
+            currentReadingIndex = 0;
+        }
+
+        // Toggle voice input on/off
+        function toggleVoiceInput(pipetteId) {
+            if (currentVoicePipetteId === pipetteId) {
+                stopVoiceInput();
+            } else {
+                if (currentVoicePipetteId) {
+                    stopVoiceInput();
+                }
+                startVoiceInput(pipetteId);
+            }
+        }
+
+        // ========================================
+        // BARCODE SCANNER SYSTEM
+        // ========================================
+
+        function showScanFeedback(field, value) {
+            // Visual feedback - green flash
+            field.classList.add('scan-success');
+            setTimeout(() => field.classList.remove('scan-success'), 600);
+
+            // Update scan counter
+            barcodeScansToday++;
+
+            // Status message (if there's a status area)
+            console.log(`✅ Barcode scanned: ${value}`);
+        }
+
+        function autoAdvanceAfterScan(currentField) {
+            // Determine which field was scanned
+            const fieldId = currentField.id;
+
+            // If it's a serial number field in Basic mode
+            if (fieldId.startsWith('serial-')) {
+                const pipetteId = fieldId.replace('serial-', '');
+
+                // Try to focus on make/model field
+                const makeModelField = document.getElementById(`makeModel-${pipetteId}`);
+                if (makeModelField) {
+                    setTimeout(() => {
+                        makeModelField.focus();
+                        makeModelField.select();
+                    }, 100);
+                    return;
+                }
+
+                // If make/model already filled, focus on max volume
+                const maxVolumeField = document.getElementById(`maxVolume-${pipetteId}`);
+                if (maxVolumeField) {
+                    setTimeout(() => {
+                        maxVolumeField.focus();
+                        maxVolumeField.select();
+                    }, 100);
+                }
+            }
+        }
 
         // ========================================
         // UNDO/REDO SYSTEM
@@ -1646,6 +2132,7 @@
         function handleServiceLevelChange(newLevel) {
             const badge = document.getElementById('serviceLevelBadge');
             const description = document.getElementById('serviceLevelDescription');
+            const envSection = document.getElementById('environmentalSection');
 
             if (newLevel === 'platinum') {
                 badge.innerHTML = `
@@ -1656,6 +2143,9 @@
 
                 // Show Analysis tab, hide Summary Table tab
                 updateTabVisibility('platinum');
+
+                // Show environmental conditions (needed for Platinum)
+                if (envSection) envSection.style.display = 'block';
             } else {
                 badge.innerHTML = `
                     <div style="color: white; font-size: 28px; margin-bottom: 5px;">⚡</div>
@@ -1665,6 +2155,9 @@
 
                 // Hide Analysis tab, show Summary Table tab
                 updateTabVisibility('basic');
+
+                // Hide environmental conditions (not needed for Basic)
+                if (envSection) envSection.style.display = 'none';
             }
 
             // Warn if switching with existing pipettes
@@ -2344,13 +2837,13 @@
                         </div>
                         <div class="form-group">
                             <label>Serial Number</label>
-                            <input type="text" value="${pipette.serial || ''}"
+                            <input type="text" id="serial-${pipette.id}" value="${pipette.serial || ''}"
                                    onchange="updateBasicPipetteInfo(${pipette.id}, 'serial', this.value)"
                                    placeholder="Scan or enter serial">
                         </div>
                         <div class="form-group">
                             <label>Make/Model</label>
-                            <select onchange="updateBasicPipetteInfo(${pipette.id}, 'makeModel', this.value)">
+                            <select id="makeModel-${pipette.id}" onchange="updateBasicPipetteInfo(${pipette.id}, 'makeModel', this.value)">
                                 <option value="">Select...</option>
                                 <option value="Eppendorf Research Plus" ${pipette.makeModel === 'Eppendorf Research Plus' ? 'selected' : ''}>Eppendorf Research Plus</option>
                                 <option value="Eppendorf Reference 2" ${pipette.makeModel === 'Eppendorf Reference 2' ? 'selected' : ''}>Eppendorf Reference 2</option>
@@ -2362,7 +2855,7 @@
                         </div>
                         <div class="form-group">
                             <label>Max Volume</label>
-                            <input type="text" value="${pipette.maxVolume || ''}"
+                            <input type="text" id="maxVolume-${pipette.id}" value="${pipette.maxVolume || ''}"
                                    onchange="updateBasicPipetteInfo(${pipette.id}, 'maxVolume', this.value)"
                                    placeholder="e.g., 1000 μL">
                         </div>
@@ -2444,14 +2937,22 @@
                     </div>
 
                     <!-- Final Volumes -->
-                    <h4 style="color: #69B135; margin: 20px 0 10px 0;">📏 Final Volumes (μL)</h4>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px 0;">
+                        <h4 style="color: #69B135; margin: 0;">📏 Final Volumes (μL)</h4>
+                        <div style="display: flex; align-items: center;">
+                            <button class="voice-button" id="voice-btn-${pipette.id}" onclick="toggleVoiceInput(${pipette.id})" title="Start voice input for readings">
+                                🎤 Voice Input
+                            </button>
+                            <span class="voice-status" id="voice-status-${pipette.id}"></span>
+                        </div>
+                    </div>
+                    <div class="volume-inputs" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                         ${[0, 1, 2, 3].map(i => `
                             <div class="form-group">
                                 <label>Volume ${i + 1}</label>
-                                <input type="number" step="0.01" value="${pipette.finalVolumes?.[i] || ''}"
+                                <input type="number" step="0.001" id="vol${i + 1}-${pipette.id}" value="${pipette.finalVolumes?.[i] || ''}"
                                        onchange="updateFinalVolume(${pipette.id}, ${i}, this.value)"
-                                       placeholder="0.00">
+                                       placeholder="0.000">
                             </div>
                         `).join('')}
                     </div>
@@ -2460,7 +2961,7 @@
                     <div class="form-grid" style="margin-top: 20px;">
                         <div class="form-group">
                             <label>Pass/Fail</label>
-                            <select onchange="updateBasicPipetteInfo(${pipette.id}, 'passFail', this.value); updateBasicStatus(${pipette.id})">
+                            <select id="pf-${pipette.id}" onchange="updateBasicPipetteInfo(${pipette.id}, 'passFail', this.value); updateBasicStatus(${pipette.id})">
                                 <option value="">Pending...</option>
                                 <option value="PASS" ${pipette.passFail === 'PASS' ? 'selected' : ''}>✅ PASS</option>
                                 <option value="FAIL" ${pipette.passFail === 'FAIL' ? 'selected' : ''}>❌ FAIL</option>
@@ -5511,6 +6012,48 @@
                 if (e.key === 'Escape' && document.getElementById('customModal')?.style.display === 'flex') {
                     closeModal();
                 }
+
+                // ========================================
+                // BARCODE SCANNER DETECTION
+                // ========================================
+                // Detect rapid keystrokes from barcode scanner
+                // Scanners type much faster than humans (<50ms between keys)
+
+                const now = Date.now();
+                const timeSinceLastKey = now - lastKeyTime;
+                const isInputField = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
+
+                // Only detect barcodes in text input fields
+                if (isInputField && e.target.type === 'text') {
+                    // Rapid keystrokes indicate barcode scanner
+                    if (timeSinceLastKey < BARCODE_SCAN_SPEED_MS && timeSinceLastKey > 0) {
+                        // Scanner is typing
+                        barcodeBuffer += e.key;
+                    } else {
+                        // Human typing or new scan starting
+                        barcodeBuffer = e.key;
+                    }
+
+                    lastKeyTime = now;
+
+                    // Enter key signals end of barcode scan
+                    if (e.key === 'Enter' && barcodeBuffer.length > 3) {
+                        e.preventDefault(); // Prevent form submission
+
+                        // Remove 'Enter' from buffer
+                        const scannedValue = barcodeBuffer.slice(0, -5).trim();
+
+                        // Show visual feedback
+                        showScanFeedback(e.target, scannedValue);
+
+                        // Auto-advance to next field
+                        autoAdvanceAfterScan(e.target);
+
+                        // Clear buffer
+                        barcodeBuffer = '';
+                        return;
+                    }
+                }
             });
 
             // Try to load saved session first
@@ -5549,6 +6092,13 @@
 
             // Initialize dark mode
             initDarkMode();
+
+            // Initialize environmental section visibility based on service level
+            const serviceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
+            const envSection = document.getElementById('environmentalSection');
+            if (envSection) {
+                envSection.style.display = serviceLevel === 'platinum' ? 'block' : 'none';
+            }
 
             // Add listeners to session form fields for auto-save
             document.querySelectorAll('#session input, #session select').forEach(input => {
@@ -5687,7 +6237,7 @@
                 </p>
             </div>
 
-            <div class="environmental-data">
+            <div id="environmentalSection" class="environmental-data">
                 <h3>🌡️ Environmental Conditions</h3>
                 <div class="form-grid">
                     <div class="form-group">
