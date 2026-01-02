@@ -682,11 +682,63 @@
             }
         }
 
+        /* Modal styles for Templates and Inventory modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 700px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6c757d;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #f8f9fa;
+            color: #dc3545;
+        }
+
         .modal-header {
             padding: 20px 24px;
             border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        .modal-header h2,
         .modal-header h3 {
             margin: 0;
             color: #2c5282;
@@ -7141,13 +7193,19 @@
         <div class="header">
             <h1>🧪 Advanced Pipette Calibration System</h1>
             <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
-            <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px;">
-                <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">📝 Templates</button>
-                <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation">🎙️ Voice Control</button>
-                <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 8px 16px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🌙</button>
-                <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↶ Undo</button>
-                <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↷ Redo</button>
-                <button onclick="logout()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
+            <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <!-- Row 1: Templates, Voice, Dark Mode -->
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 8px 16px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">📝 Templates</button>
+                    <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation">🎙️ Voice Control</button>
+                    <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 8px 16px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🌙</button>
+                </div>
+                <!-- Row 2: Undo, Redo, Logout -->
+                <div style="display: flex; gap: 8px;">
+                    <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↶ Undo</button>
+                    <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">↷ Redo</button>
+                    <button onclick="logout()" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🔒 Logout</button>
+                </div>
             </div>
         </div>
 
