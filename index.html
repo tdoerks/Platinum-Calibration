@@ -188,6 +188,34 @@
             color: #ffc107 !important;
         }
 
+        /* Fix dark inline text colors that are unreadable in dark mode */
+        body.dark-mode h1[style*="color: #2c5282"],
+        body.dark-mode h2[style*="color: #2c5282"],
+        body.dark-mode h3[style*="color: #2c5282"],
+        body.dark-mode h4[style*="color: #2c5282"],
+        body.dark-mode h5[style*="color: #2c5282"] {
+            color: #9fa8da !important; /* Light purple-blue for headings */
+        }
+
+        body.dark-mode p[style*="color: #adb5bd"],
+        body.dark-mode p[style*="color: #6c757d"] {
+            color: #c0c0c0 !important; /* Lighter gray for paragraphs */
+        }
+
+        body.dark-mode span[style*="color: #666"],
+        body.dark-mode span[style*="color: #6c757d"] {
+            color: #b0b0b0 !important; /* Lighter gray for spans */
+        }
+
+        body.dark-mode strong[style*="color: #2e7d32"],
+        body.dark-mode p[style*="color: #2e7d32"] {
+            color: #81c784 !important; /* Lighter green */
+        }
+
+        body.dark-mode div[style*="color: #6c757d"] {
+            color: #c0c0c0 !important; /* Lighter gray for divs */
+        }
+
         body.dark-mode a {
             color: #667eea;
         }
