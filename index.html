@@ -1340,6 +1340,16 @@
         let saveTimeout = null;
         let inventoryUsage = [];
 
+        // Multi-Equipment Support
+        let balances = [];
+        let currentBalanceId = 0;
+        let timers = [];
+        let currentTimerId = 0;
+        let centrifuges = [];
+        let currentCentrifugeId = 0;
+        let temperatureDevices = [];
+        let currentTemperatureDeviceId = 0;
+
         // Voice Recognition Variables (for volume entry)
         let voiceRecognition = null;
         let currentVoicePipetteId = null;
@@ -3198,8 +3208,16 @@
                 id: currentSessionId,
                 sessionInfo: getSessionInfo(),
                 pipettes: pipettes,
+                balances: balances,
+                timers: timers,
+                centrifuges: centrifuges,
+                temperatureDevices: temperatureDevices,
                 inventoryUsage: inventoryUsage,
                 currentPipetteId: currentPipetteId,
+                currentBalanceId: currentBalanceId,
+                currentTimerId: currentTimerId,
+                currentCentrifugeId: currentCentrifugeId,
+                currentTemperatureDeviceId: currentTemperatureDeviceId,
                 timestamp: new Date().toISOString(),
                 lastModified: new Date().toISOString()
             };
@@ -3248,7 +3266,7 @@
 
         // Save before window closes to prevent data loss
         window.addEventListener('beforeunload', (e) => {
-            if (pipettes.length > 0) {
+            if (pipettes.length > 0 || balances.length > 0 || timers.length > 0 || centrifuges.length > 0 || temperatureDevices.length > 0) {
                 autoSave();
             }
         });
@@ -3269,8 +3287,16 @@
                 const sessionData = JSON.parse(savedSession);
                 currentSessionId = sessionData.id;
                 pipettes = sessionData.pipettes || [];
+                balances = sessionData.balances || [];
+                timers = sessionData.timers || [];
+                centrifuges = sessionData.centrifuges || [];
+                temperatureDevices = sessionData.temperatureDevices || [];
                 inventoryUsage = sessionData.inventoryUsage || [];
                 currentPipetteId = sessionData.currentPipetteId || 0;
+                currentBalanceId = sessionData.currentBalanceId || 0;
+                currentTimerId = sessionData.currentTimerId || 0;
+                currentCentrifugeId = sessionData.currentCentrifugeId || 0;
+                currentTemperatureDeviceId = sessionData.currentTemperatureDeviceId || 0;
 
                 // Restore session info
                 const sessionInfo = sessionData.sessionInfo || {};
@@ -3301,11 +3327,26 @@
                     updateOverallStatus(pipette.id);
                 });
 
+                // Render all equipment types
+                if (balances.length > 0) {
+                    renderBalances();
+                }
+                if (timers.length > 0) {
+                    renderTimers();
+                }
+                if (centrifuges.length > 0) {
+                    renderCentrifuges();
+                }
+                if (temperatureDevices.length > 0) {
+                    renderTemperatureDevices();
+                }
+
                 updateProgress();
                 updateAnalysis();
                 renderInventoryUsage();
                 updateInventoryStats();
                 updateSummaryTable();
+                updateManifest();
                 return true;
             } catch (e) {
                 console.error('Error loading session:', e);
@@ -3470,14 +3511,30 @@
 
                 // Clear current
                 document.getElementById('pipettesContainer').innerHTML = '';
+                document.getElementById('balancesList').innerHTML = '';
+                document.getElementById('timersList').innerHTML = '';
+                document.getElementById('centrifugesList').innerHTML = '';
+                document.getElementById('temperatureDevicesList').innerHTML = '';
                 pipettes = [];
+                balances = [];
+                timers = [];
+                centrifuges = [];
+                temperatureDevices = [];
                 inventoryUsage = [];
 
                 // Load selected session
                 currentSessionId = session.id;
                 pipettes = session.pipettes || [];
+                balances = session.balances || [];
+                timers = session.timers || [];
+                centrifuges = session.centrifuges || [];
+                temperatureDevices = session.temperatureDevices || [];
                 inventoryUsage = session.inventoryUsage || [];
                 currentPipetteId = session.currentPipetteId || 0;
+                currentBalanceId = session.currentBalanceId || 0;
+                currentTimerId = session.currentTimerId || 0;
+                currentCentrifugeId = session.currentCentrifugeId || 0;
+                currentTemperatureDeviceId = session.currentTemperatureDeviceId || 0;
 
                 // Restore session info
                 const sessionInfo = session.sessionInfo || {};
@@ -3503,11 +3560,26 @@
                     updateOverallStatus(pipette.id);
                 });
 
+                // Render all equipment types
+                if (balances.length > 0) {
+                    renderBalances();
+                }
+                if (timers.length > 0) {
+                    renderTimers();
+                }
+                if (centrifuges.length > 0) {
+                    renderCentrifuges();
+                }
+                if (temperatureDevices.length > 0) {
+                    renderTemperatureDevices();
+                }
+
                 updateProgress();
                 updateAnalysis();
                 renderInventoryUsage();
                 updateInventoryStats();
                 updateSummaryTable();
+                updateManifest();
 
                 // Save as current session
                 localStorage.setItem('currentSession', JSON.stringify(session));
@@ -6617,6 +6689,626 @@
         // ========== End Password Protection ==========
 
         // ========================================
+        // MULTI-EQUIPMENT CALIBRATION FUNCTIONS
+        // ========================================
+
+        // BALANCE FUNCTIONS
+        function addBalance() {
+            currentBalanceId++;
+            const balance = {
+                id: currentBalanceId,
+                equipmentType: 'balance',
+                number: '',
+                serial: '',
+                make: '',
+                model: '',
+                capacity: '',
+                readability: '',
+                asFoundTest: '',
+                asLeftTest: '',
+                weights: '',
+                passFail: 'PENDING',
+                comments: ''
+            };
+            balances.push(balance);
+            renderBalances();
+            debouncedAutoSave();
+        }
+
+        function renderBalances() {
+            const container = document.getElementById('balancesList');
+            if (!container) return;
+
+            if (balances.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">⚖️</div>
+                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Balances Added Yet</h3>
+                        <p>Click the "+ Add Balance" button above to start</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = balances.map(balance => `
+                <div class="pipette-card" style="margin-bottom: 20px;">
+                    <div class="pipette-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 style="margin: 0; font-size: 18px;">⚖️ Balance #${String(balance.id).padStart(2, '0')}</h3>
+                            <span class="status-badge status-${balance.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                ${balance.passFail === 'PASS' ? '✅' : balance.passFail === 'FAIL' ? '❌' : '⏳'} ${balance.passFail}
+                            </span>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeBalance(${balance.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Balance Number</label>
+                                <input type="text" value="${balance.number}" onchange="updateBalance(${balance.id}, 'number', this.value)" placeholder="e.g., BAL-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Serial Number</label>
+                                <input type="text" value="${balance.serial}" onchange="updateBalance(${balance.id}, 'serial', this.value)" placeholder="Serial number">
+                            </div>
+                            <div class="form-group">
+                                <label>Make</label>
+                                <input type="text" value="${balance.make}" onchange="updateBalance(${balance.id}, 'make', this.value)" placeholder="e.g., Mettler Toledo">
+                            </div>
+                            <div class="form-group">
+                                <label>Model</label>
+                                <input type="text" value="${balance.model}" onchange="updateBalance(${balance.id}, 'model', this.value)" placeholder="e.g., XS204">
+                            </div>
+                            <div class="form-group">
+                                <label>Capacity (g)</label>
+                                <input type="text" value="${balance.capacity}" onchange="updateBalance(${balance.id}, 'capacity', this.value)" placeholder="e.g., 220">
+                            </div>
+                            <div class="form-group">
+                                <label>Readability (g)</label>
+                                <input type="text" value="${balance.readability}" onchange="updateBalance(${balance.id}, 'readability', this.value)" placeholder="e.g., 0.0001">
+                            </div>
+                        </div>
+
+                        <h4 style="color: #28a745; margin: 20px 0 10px 0;">🔬 Calibration Test</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Test Weight(s) Used</label>
+                                <input type="text" value="${balance.weights}" onchange="updateBalance(${balance.id}, 'weights', this.value)" placeholder="e.g., 100g, 200g">
+                            </div>
+                            <div class="form-group">
+                                <label>As Found Test Result</label>
+                                <input type="text" value="${balance.asFoundTest}" onchange="updateBalance(${balance.id}, 'asFoundTest', this.value)" placeholder="PASS or reading">
+                            </div>
+                            <div class="form-group">
+                                <label>As Left Test Result</label>
+                                <input type="text" value="${balance.asLeftTest}" onchange="updateBalance(${balance.id}, 'asLeftTest', this.value)" placeholder="PASS or reading">
+                            </div>
+                            <div class="form-group">
+                                <label>Overall Status</label>
+                                <select value="${balance.passFail}" onchange="updateBalance(${balance.id}, 'passFail', this.value)">
+                                    <option value="PENDING" ${balance.passFail === 'PENDING' ? 'selected' : ''}>⏳ PENDING</option>
+                                    <option value="PASS" ${balance.passFail === 'PASS' ? 'selected' : ''}>✅ PASS</option>
+                                    <option value="FAIL" ${balance.passFail === 'FAIL' ? 'selected' : ''}>❌ FAIL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Comments</label>
+                            <textarea value="${balance.comments}" onchange="updateBalance(${balance.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${balance.comments}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateBalance(balanceId, field, value) {
+            const balance = balances.find(b => b.id === balanceId);
+            if (balance) {
+                balance[field] = value;
+                renderBalances();
+                debouncedAutoSave();
+            }
+        }
+
+        function removeBalance(balanceId) {
+            showConfirm('Remove this balance from the session?', 'Confirm Removal', () => {
+                balances = balances.filter(b => b.id !== balanceId);
+                renderBalances();
+                updateManifest();
+                debouncedAutoSave();
+            });
+        }
+
+        // TIMER FUNCTIONS
+        function addTimer() {
+            currentTimerId++;
+            const timer = {
+                id: currentTimerId,
+                equipmentType: 'timer',
+                number: '',
+                serial: '',
+                make: '',
+                model: '',
+                nominalTime: '',
+                asFoundReading: '',
+                asLeftReading: '',
+                accuracy: '',
+                passFail: 'PENDING',
+                comments: ''
+            };
+            timers.push(timer);
+            renderTimers();
+            debouncedAutoSave();
+        }
+
+        function renderTimers() {
+            const container = document.getElementById('timersList');
+            if (!container) return;
+
+            if (timers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">⏱️</div>
+                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Timers Added Yet</h3>
+                        <p>Click the "+ Add Timer" button above to start</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = timers.map(timer => `
+                <div class="pipette-card" style="margin-bottom: 20px;">
+                    <div class="pipette-header" style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 style="margin: 0; font-size: 18px;">⏱️ Timer #${String(timer.id).padStart(2, '0')}</h3>
+                            <span class="status-badge status-${timer.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                ${timer.passFail === 'PASS' ? '✅' : timer.passFail === 'FAIL' ? '❌' : '⏳'} ${timer.passFail}
+                            </span>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeTimer(${timer.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Timer Number</label>
+                                <input type="text" value="${timer.number}" onchange="updateTimer(${timer.id}, 'number', this.value)" placeholder="e.g., TIM-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Serial Number</label>
+                                <input type="text" value="${timer.serial}" onchange="updateTimer(${timer.id}, 'serial', this.value)" placeholder="Serial number">
+                            </div>
+                            <div class="form-group">
+                                <label>Make</label>
+                                <input type="text" value="${timer.make}" onchange="updateTimer(${timer.id}, 'make', this.value)" placeholder="e.g., VWR">
+                            </div>
+                            <div class="form-group">
+                                <label>Model</label>
+                                <input type="text" value="${timer.model}" onchange="updateTimer(${timer.id}, 'model', this.value)" placeholder="Model number">
+                            </div>
+                        </div>
+
+                        <h4 style="color: #17a2b8; margin: 20px 0 10px 0;">⏱️ Calibration Test</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nominal Time (min:sec)</label>
+                                <input type="text" value="${timer.nominalTime}" onchange="updateTimer(${timer.id}, 'nominalTime', this.value)" placeholder="e.g., 10:00">
+                            </div>
+                            <div class="form-group">
+                                <label>As Found Reading</label>
+                                <input type="text" value="${timer.asFoundReading}" onchange="updateTimer(${timer.id}, 'asFoundReading', this.value)" placeholder="Actual time">
+                            </div>
+                            <div class="form-group">
+                                <label>As Left Reading</label>
+                                <input type="text" value="${timer.asLeftReading}" onchange="updateTimer(${timer.id}, 'asLeftReading', this.value)" placeholder="Actual time">
+                            </div>
+                            <div class="form-group">
+                                <label>Accuracy / Deviation</label>
+                                <input type="text" value="${timer.accuracy}" onchange="updateTimer(${timer.id}, 'accuracy', this.value)" placeholder="e.g., ±0.5%">
+                            </div>
+                            <div class="form-group">
+                                <label>Overall Status</label>
+                                <select value="${timer.passFail}" onchange="updateTimer(${timer.id}, 'passFail', this.value)">
+                                    <option value="PENDING" ${timer.passFail === 'PENDING' ? 'selected' : ''}>⏳ PENDING</option>
+                                    <option value="PASS" ${timer.passFail === 'PASS' ? 'selected' : ''}>✅ PASS</option>
+                                    <option value="FAIL" ${timer.passFail === 'FAIL' ? 'selected' : ''}>❌ FAIL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Comments</label>
+                            <textarea value="${timer.comments}" onchange="updateTimer(${timer.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${timer.comments}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTimer(timerId, field, value) {
+            const timer = timers.find(t => t.id === timerId);
+            if (timer) {
+                timer[field] = value;
+                renderTimers();
+                debouncedAutoSave();
+            }
+        }
+
+        function removeTimer(timerId) {
+            showConfirm('Remove this timer from the session?', 'Confirm Removal', () => {
+                timers = timers.filter(t => t.id !== timerId);
+                renderTimers();
+                updateManifest();
+                debouncedAutoSave();
+            });
+        }
+
+        // CENTRIFUGE FUNCTIONS
+        function addCentrifuge() {
+            currentCentrifugeId++;
+            const centrifuge = {
+                id: currentCentrifugeId,
+                equipmentType: 'centrifuge',
+                number: '',
+                serial: '',
+                make: '',
+                model: '',
+                maxRPM: '',
+                testRPM: '',
+                asFoundRPM: '',
+                asLeftRPM: '',
+                accuracy: '',
+                passFail: 'PENDING',
+                comments: ''
+            };
+            centrifuges.push(centrifuge);
+            renderCentrifuges();
+            debouncedAutoSave();
+        }
+
+        function renderCentrifuges() {
+            const container = document.getElementById('centrifugesList');
+            if (!container) return;
+
+            if (centrifuges.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🌀</div>
+                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Centrifuges Added Yet</h3>
+                        <p>Click the "+ Add Centrifuge" button above to start</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = centrifuges.map(centrifuge => `
+                <div class="pipette-card" style="margin-bottom: 20px;">
+                    <div class="pipette-header" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 style="margin: 0; font-size: 18px;">🌀 Centrifuge #${String(centrifuge.id).padStart(2, '0')}</h3>
+                            <span class="status-badge status-${centrifuge.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                ${centrifuge.passFail === 'PASS' ? '✅' : centrifuge.passFail === 'FAIL' ? '❌' : '⏳'} ${centrifuge.passFail}
+                            </span>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeCentrifuge(${centrifuge.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Centrifuge Number</label>
+                                <input type="text" value="${centrifuge.number}" onchange="updateCentrifuge(${centrifuge.id}, 'number', this.value)" placeholder="e.g., CENT-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Serial Number</label>
+                                <input type="text" value="${centrifuge.serial}" onchange="updateCentrifuge(${centrifuge.id}, 'serial', this.value)" placeholder="Serial number">
+                            </div>
+                            <div class="form-group">
+                                <label>Make</label>
+                                <input type="text" value="${centrifuge.make}" onchange="updateCentrifuge(${centrifuge.id}, 'make', this.value)" placeholder="e.g., Eppendorf">
+                            </div>
+                            <div class="form-group">
+                                <label>Model</label>
+                                <input type="text" value="${centrifuge.model}" onchange="updateCentrifuge(${centrifuge.id}, 'model', this.value)" placeholder="Model number">
+                            </div>
+                            <div class="form-group">
+                                <label>Max RPM</label>
+                                <input type="text" value="${centrifuge.maxRPM}" onchange="updateCentrifuge(${centrifuge.id}, 'maxRPM', this.value)" placeholder="e.g., 15000">
+                            </div>
+                        </div>
+
+                        <h4 style="color: #6f42c1; margin: 20px 0 10px 0;">🌀 Calibration Test</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Test RPM</label>
+                                <input type="text" value="${centrifuge.testRPM}" onchange="updateCentrifuge(${centrifuge.id}, 'testRPM', this.value)" placeholder="e.g., 5000">
+                            </div>
+                            <div class="form-group">
+                                <label>As Found Actual RPM</label>
+                                <input type="text" value="${centrifuge.asFoundRPM}" onchange="updateCentrifuge(${centrifuge.id}, 'asFoundRPM', this.value)" placeholder="Measured RPM">
+                            </div>
+                            <div class="form-group">
+                                <label>As Left Actual RPM</label>
+                                <input type="text" value="${centrifuge.asLeftRPM}" onchange="updateCentrifuge(${centrifuge.id}, 'asLeftRPM', this.value)" placeholder="Measured RPM">
+                            </div>
+                            <div class="form-group">
+                                <label>Accuracy / Deviation</label>
+                                <input type="text" value="${centrifuge.accuracy}" onchange="updateCentrifuge(${centrifuge.id}, 'accuracy', this.value)" placeholder="e.g., ±50 RPM">
+                            </div>
+                            <div class="form-group">
+                                <label>Overall Status</label>
+                                <select value="${centrifuge.passFail}" onchange="updateCentrifuge(${centrifuge.id}, 'passFail', this.value)">
+                                    <option value="PENDING" ${centrifuge.passFail === 'PENDING' ? 'selected' : ''}>⏳ PENDING</option>
+                                    <option value="PASS" ${centrifuge.passFail === 'PASS' ? 'selected' : ''}>✅ PASS</option>
+                                    <option value="FAIL" ${centrifuge.passFail === 'FAIL' ? 'selected' : ''}>❌ FAIL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Comments</label>
+                            <textarea value="${centrifuge.comments}" onchange="updateCentrifuge(${centrifuge.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${centrifuge.comments}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateCentrifuge(centrifugeId, field, value) {
+            const centrifuge = centrifuges.find(c => c.id === centrifugeId);
+            if (centrifuge) {
+                centrifuge[field] = value;
+                renderCentrifuges();
+                debouncedAutoSave();
+            }
+        }
+
+        function removeCentrifuge(centrifugeId) {
+            showConfirm('Remove this centrifuge from the session?', 'Confirm Removal', () => {
+                centrifuges = centrifuges.filter(c => c.id !== centrifugeId);
+                renderCentrifuges();
+                updateManifest();
+                debouncedAutoSave();
+            });
+        }
+
+        // TEMPERATURE DEVICE FUNCTIONS
+        function addTemperatureDevice() {
+            currentTemperatureDeviceId++;
+            const device = {
+                id: currentTemperatureDeviceId,
+                equipmentType: 'temperature',
+                number: '',
+                serial: '',
+                make: '',
+                model: '',
+                range: '',
+                testPoint: '',
+                asFoundReading: '',
+                asLeftReading: '',
+                accuracy: '',
+                passFail: 'PENDING',
+                comments: ''
+            };
+            temperatureDevices.push(device);
+            renderTemperatureDevices();
+            debouncedAutoSave();
+        }
+
+        function renderTemperatureDevices() {
+            const container = document.getElementById('temperatureDevicesList');
+            if (!container) return;
+
+            if (temperatureDevices.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🌡️</div>
+                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Temperature Devices Added Yet</h3>
+                        <p>Click the "+ Add Temperature Device" button above to start</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = temperatureDevices.map(device => `
+                <div class="pipette-card" style="margin-bottom: 20px;">
+                    <div class="pipette-header" style="background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <h3 style="margin: 0; font-size: 18px;">🌡️ Temperature Device #${String(device.id).padStart(2, '0')}</h3>
+                            <span class="status-badge status-${device.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                ${device.passFail === 'PASS' ? '✅' : device.passFail === 'FAIL' ? '❌' : '⏳'} ${device.passFail}
+                            </span>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeTemperatureDevice(${device.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                            🗑️ Remove
+                        </button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Device Number</label>
+                                <input type="text" value="${device.number}" onchange="updateTemperatureDevice(${device.id}, 'number', this.value)" placeholder="e.g., TEMP-001">
+                            </div>
+                            <div class="form-group">
+                                <label>Serial Number</label>
+                                <input type="text" value="${device.serial}" onchange="updateTemperatureDevice(${device.id}, 'serial', this.value)" placeholder="Serial number">
+                            </div>
+                            <div class="form-group">
+                                <label>Make</label>
+                                <input type="text" value="${device.make}" onchange="updateTemperatureDevice(${device.id}, 'make', this.value)" placeholder="e.g., Fisher Scientific">
+                            </div>
+                            <div class="form-group">
+                                <label>Model</label>
+                                <input type="text" value="${device.model}" onchange="updateTemperatureDevice(${device.id}, 'model', this.value)" placeholder="Model number">
+                            </div>
+                            <div class="form-group">
+                                <label>Temperature Range</label>
+                                <input type="text" value="${device.range}" onchange="updateTemperatureDevice(${device.id}, 'range', this.value)" placeholder="e.g., -20 to 100°C">
+                            </div>
+                        </div>
+
+                        <h4 style="color: #fd7e14; margin: 20px 0 10px 0;">🌡️ Calibration Test</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Test Point (°C)</label>
+                                <input type="text" value="${device.testPoint}" onchange="updateTemperatureDevice(${device.id}, 'testPoint', this.value)" placeholder="e.g., 25.0">
+                            </div>
+                            <div class="form-group">
+                                <label>As Found Reading (°C)</label>
+                                <input type="text" value="${device.asFoundReading}" onchange="updateTemperatureDevice(${device.id}, 'asFoundReading', this.value)" placeholder="Measured temp">
+                            </div>
+                            <div class="form-group">
+                                <label>As Left Reading (°C)</label>
+                                <input type="text" value="${device.asLeftReading}" onchange="updateTemperatureDevice(${device.id}, 'asLeftReading', this.value)" placeholder="Measured temp">
+                            </div>
+                            <div class="form-group">
+                                <label>Accuracy / Deviation</label>
+                                <input type="text" value="${device.accuracy}" onchange="updateTemperatureDevice(${device.id}, 'accuracy', this.value)" placeholder="e.g., ±0.5°C">
+                            </div>
+                            <div class="form-group">
+                                <label>Overall Status</label>
+                                <select value="${device.passFail}" onchange="updateTemperatureDevice(${device.id}, 'passFail', this.value)">
+                                    <option value="PENDING" ${device.passFail === 'PENDING' ? 'selected' : ''}>⏳ PENDING</option>
+                                    <option value="PASS" ${device.passFail === 'PASS' ? 'selected' : ''}>✅ PASS</option>
+                                    <option value="FAIL" ${device.passFail === 'FAIL' ? 'selected' : ''}>❌ FAIL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label>Comments</label>
+                            <textarea value="${device.comments}" onchange="updateTemperatureDevice(${device.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${device.comments}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateTemperatureDevice(deviceId, field, value) {
+            const device = temperatureDevices.find(d => d.id === deviceId);
+            if (device) {
+                device[field] = value;
+                renderTemperatureDevices();
+                debouncedAutoSave();
+            }
+        }
+
+        function removeTemperatureDevice(deviceId) {
+            showConfirm('Remove this temperature device from the session?', 'Confirm Removal', () => {
+                temperatureDevices = temperatureDevices.filter(d => d.id !== deviceId);
+                renderTemperatureDevices();
+                updateManifest();
+                debouncedAutoSave();
+            });
+        }
+
+        // MANIFEST / SUMMARY FUNCTION
+        function updateManifest() {
+            const summaryContainer = document.getElementById('manifestSummary');
+            const tableContainer = document.getElementById('manifestTable');
+
+            if (!summaryContainer || !tableContainer) return;
+
+            // Calculate counts
+            const counts = {
+                pipettes: pipettes.length,
+                balances: balances.length,
+                timers: timers.length,
+                centrifuges: centrifuges.length,
+                temperature: temperatureDevices.length
+            };
+
+            const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+            // Render summary cards
+            summaryContainer.innerHTML = `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${total}</div>
+                    <div style="opacity: 0.9;">Total Equipment</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${counts.pipettes}</div>
+                    <div style="opacity: 0.9;">💧 Pipettes</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${counts.balances}</div>
+                    <div style="opacity: 0.9;">⚖️ Balances</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${counts.timers}</div>
+                    <div style="opacity: 0.9;">⏱️ Timers</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${counts.centrifuges}</div>
+                    <div style="opacity: 0.9;">🌀 Centrifuges</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%); padding: 20px; border-radius: 12px; color: white;">
+                    <div style="font-size: 32px; font-weight: bold;">${counts.temperature}</div>
+                    <div style="opacity: 0.9;">🌡️ Temperature</div>
+                </div>
+            `;
+
+            // Combine all equipment
+            const allEquipment = [
+                ...pipettes.map(p => ({...p, type: 'Pipette', icon: '💧'})),
+                ...balances.map(b => ({...b, type: 'Balance', icon: '⚖️'})),
+                ...timers.map(t => ({...t, type: 'Timer', icon: '⏱️'})),
+                ...centrifuges.map(c => ({...c, type: 'Centrifuge', icon: '🌀'})),
+                ...temperatureDevices.map(d => ({...d, type: 'Temperature', icon: '🌡️'}))
+            ];
+
+            if (allEquipment.length === 0) {
+                tableContainer.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">📋</div>
+                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Equipment Added Yet</h3>
+                        <p>Add equipment using the tabs above to see them here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render equipment table
+            tableContainer.innerHTML = `
+                <table class="pipette-table" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 15px; text-align: left;">Type</th>
+                            <th style="padding: 15px; text-align: left;">ID</th>
+                            <th style="padding: 15px; text-align: left;">Serial</th>
+                            <th style="padding: 15px; text-align: left;">Make</th>
+                            <th style="padding: 15px; text-align: left;">Model</th>
+                            <th style="padding: 15px; text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allEquipment.map((item, index) => `
+                            <tr style="border-bottom: 1px solid #dee2e6; ${index % 2 === 0 ? 'background: #f8f9fa;' : ''}">
+                                <td style="padding: 12px;">${item.icon} ${item.type}</td>
+                                <td style="padding: 12px;">#${String(item.id).padStart(2, '0')}</td>
+                                <td style="padding: 12px;">${item.serial || '-'}</td>
+                                <td style="padding: 12px;">${item.make || '-'}</td>
+                                <td style="padding: 12px;">${item.model || item.makeModel || '-'}</td>
+                                <td style="padding: 12px; text-align: center;">
+                                    <span class="status-badge status-${(item.passFail || item.statusAsLeft || 'PENDING').toLowerCase()}" style="padding: 4px 10px; border-radius: 12px; font-size: 12px;">
+                                        ${(item.passFail || item.statusAsLeft || 'PENDING') === 'PASS' || (item.passFail || item.statusAsLeft) === 'pass' ? '✅ PASS' :
+                                          (item.passFail || item.statusAsLeft || 'PENDING') === 'FAIL' || (item.passFail || item.statusAsLeft) === 'fail' ? '❌ FAIL' :
+                                          '⏳ PENDING'}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // ========================================
         // INVENTORY MANAGEMENT FUNCTIONS
         // ========================================
 
@@ -7379,9 +8071,14 @@
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showTab('session', this)">📋 Session Info</button>
-            <button class="nav-tab" onclick="showTab('calibration', this)">⚖️ Calibration</button>
+            <button class="nav-tab" onclick="showTab('calibration', this)">💧 Pipettes</button>
+            <button class="nav-tab" onclick="showTab('balances', this)">⚖️ Balances</button>
+            <button class="nav-tab" onclick="showTab('timers', this)">⏱️ Timers</button>
+            <button class="nav-tab" onclick="showTab('centrifuges', this)">🌀 Centrifuges</button>
+            <button class="nav-tab" onclick="showTab('temperature', this)">🌡️ Temperature</button>
             <button class="nav-tab" id="analysisTab" onclick="showTab('analysis', this)">📊 Analysis</button>
             <button class="nav-tab" id="summaryTab" onclick="showTab('summary', this)" style="display: none;">📊 Summary Table</button>
+            <button class="nav-tab" id="manifestTab" onclick="showTab('manifest', this)">📋 Manifest</button>
             <button class="nav-tab" onclick="showTab('report', this)">📄 Report</button>
             <button class="nav-tab" id="labelsTab" onclick="showTab('labels', this)">🏷️ Labels</button>
             <button class="nav-tab" id="inventoryTab" onclick="showTab('inventory', this)">📦 Inventory</button>
@@ -7803,6 +8500,56 @@
                 <button onclick="clearInventoryUsage()" class="btn btn-danger" style="margin-left: 10px;">
                     🗑️ Clear All Usage
                 </button>
+            </div>
+        </div>
+
+        <!-- Balances Tab -->
+        <div id="balances" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>⚖️ Balance Calibration</h2>
+                <button class="btn btn-primary" onclick="addBalance()">+ Add Balance</button>
+            </div>
+            <div id="balancesList"></div>
+        </div>
+
+        <!-- Timers Tab -->
+        <div id="timers" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>⏱️ Timer Calibration</h2>
+                <button class="btn btn-primary" onclick="addTimer()">+ Add Timer</button>
+            </div>
+            <div id="timersList"></div>
+        </div>
+
+        <!-- Centrifuges Tab -->
+        <div id="centrifuges" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>🌀 Centrifuge Calibration</h2>
+                <button class="btn btn-primary" onclick="addCentrifuge()">+ Add Centrifuge</button>
+            </div>
+            <div id="centrifugesList"></div>
+        </div>
+
+        <!-- Temperature Tab -->
+        <div id="temperature" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>🌡️ Temperature Device Calibration</h2>
+                <button class="btn btn-primary" onclick="addTemperatureDevice()">+ Add Temperature Device</button>
+            </div>
+            <div id="temperatureDevicesList"></div>
+        </div>
+
+        <!-- Manifest Tab (Summary of All Equipment) -->
+        <div id="manifest" class="tab-content">
+            <h2>📋 Session Manifest</h2>
+            <p style="color: #6c757d; margin-bottom: 20px;">Complete overview of all equipment in this calibration session</p>
+
+            <div id="manifestSummary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                <!-- Summary cards will be populated here -->
+            </div>
+
+            <div id="manifestTable">
+                <!-- Equipment table will be populated here -->
             </div>
         </div>
 
