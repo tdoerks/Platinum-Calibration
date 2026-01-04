@@ -6698,17 +6698,73 @@
             const balance = {
                 id: currentBalanceId,
                 equipmentType: 'balance',
+
+                // Equipment Information
                 number: '',
                 serial: '',
                 make: '',
                 model: '',
                 capacity: '',
                 readability: '',
-                asFoundTest: '',
-                asLeftTest: '',
-                weights: '',
-                passFail: 'PENDING',
-                comments: ''
+                customer: '',
+                location: '',
+                building: '',
+                calDate: '',
+                dueDate: '',
+                calInterval: '12',
+                weightsUsed: '',
+
+                // Eccentricity Test - Weight 1 (default 5g)
+                ecc1_nominal: '5',
+                ecc1_certified: '5.0000108',
+                ecc1_center_asFound: '',
+                ecc1_center_asLeft: '',
+                ecc1_leftFront_asFound: '',
+                ecc1_leftFront_asLeft: '',
+                ecc1_leftRear_asFound: '',
+                ecc1_leftRear_asLeft: '',
+                ecc1_rightRear_asFound: '',
+                ecc1_rightRear_asLeft: '',
+                ecc1_rightFront_asFound: '',
+                ecc1_rightFront_asLeft: '',
+
+                // Eccentricity Test - Weight 2 (default 20g)
+                ecc2_nominal: '20',
+                ecc2_certified: '20.0000097',
+                ecc2_center_asFound: '',
+                ecc2_center_asLeft: '',
+                ecc2_leftFront_asFound: '',
+                ecc2_leftFront_asLeft: '',
+                ecc2_leftRear_asFound: '',
+                ecc2_leftRear_asLeft: '',
+                ecc2_rightRear_asFound: '',
+                ecc2_rightRear_asLeft: '',
+                ecc2_rightFront_asFound: '',
+                ecc2_rightFront_asLeft: '',
+
+                // Sensitivity Test - Weight 1 (default 100mg)
+                sens1_nominal: '100mg',
+                sens1_certified: '0.1000007',
+                sens1_asFound_without: '',
+                sens1_asFound_with: '',
+                sens1_asLeft_without: '',
+                sens1_asLeft_with: '',
+
+                // Sensitivity Test - Weight 2 (default 100g)
+                sens2_nominal: '100g',
+                sens2_certified: '200.0',
+                sens2_asFound_without: '',
+                sens2_asFound_with: '',
+                sens2_asLeft_without: '',
+                sens2_asLeft_with: '',
+
+                // Results
+                comments: '',
+                piName: '',
+                piEmail: '',
+                contactName: '',
+                contactEmail: '',
+                passFail: 'PENDING'
             };
             balances.push(balance);
             renderBalances();
@@ -6731,7 +6787,8 @@
             }
 
             container.innerHTML = balances.map(balance => `
-                <div class="pipette-card" style="margin-bottom: 20px;">
+                <div class="pipette-card" style="margin-bottom: 30px;">
+                    <!-- Header -->
                     <div class="pipette-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 style="margin: 0; font-size: 18px;">⚖️ Balance #${String(balance.id).padStart(2, '0')}</h3>
@@ -6739,51 +6796,260 @@
                                 ${balance.passFail === 'PASS' ? '✅' : balance.passFail === 'FAIL' ? '❌' : '⏳'} ${balance.passFail}
                             </span>
                         </div>
-                        <button class="btn btn-danger" onclick="removeBalance(${balance.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
-                            🗑️ Remove
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="generateBalanceCertificate(${balance.id})" style="background: rgba(255,255,255,0.2); padding: 8px 16px; color: white; border: 1px solid rgba(255,255,255,0.5);">
+                                📄 View Certificate
+                            </button>
+                            <button class="btn btn-danger" onclick="removeBalance(${balance.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                                🗑️ Remove
+                            </button>
+                        </div>
                     </div>
+
                     <div style="padding: 20px;">
+                        <!-- Equipment Information -->
+                        <h4 style="color: #28a745; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📋 Equipment Information</h4>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>Balance Number</label>
-                                <input type="text" value="${balance.number}" onchange="updateBalance(${balance.id}, 'number', this.value)" placeholder="e.g., BAL-001">
+                                <label>Customer</label>
+                                <input type="text" value="${balance.customer}" onchange="updateBalance(${balance.id}, 'customer', this.value)" placeholder="Customer name">
                             </div>
                             <div class="form-group">
-                                <label>Serial Number</label>
-                                <input type="text" value="${balance.serial}" onchange="updateBalance(${balance.id}, 'serial', this.value)" placeholder="Serial number">
+                                <label>Location</label>
+                                <input type="text" value="${balance.location}" onchange="updateBalance(${balance.id}, 'location', this.value)" placeholder="Location">
                             </div>
                             <div class="form-group">
-                                <label>Make</label>
+                                <label>Manufacturer</label>
                                 <input type="text" value="${balance.make}" onchange="updateBalance(${balance.id}, 'make', this.value)" placeholder="e.g., Mettler Toledo">
+                            </div>
+                            <div class="form-group">
+                                <label>Bldg/Room</label>
+                                <input type="text" value="${balance.building}" onchange="updateBalance(${balance.id}, 'building', this.value)" placeholder="Building/Room">
                             </div>
                             <div class="form-group">
                                 <label>Model</label>
                                 <input type="text" value="${balance.model}" onchange="updateBalance(${balance.id}, 'model', this.value)" placeholder="e.g., XS204">
                             </div>
                             <div class="form-group">
-                                <label>Capacity (g)</label>
-                                <input type="text" value="${balance.capacity}" onchange="updateBalance(${balance.id}, 'capacity', this.value)" placeholder="e.g., 220">
+                                <label>Calibration Interval (months)</label>
+                                <input type="text" value="${balance.calInterval}" onchange="updateBalance(${balance.id}, 'calInterval', this.value)" placeholder="12">
                             </div>
                             <div class="form-group">
-                                <label>Readability (g)</label>
-                                <input type="text" value="${balance.readability}" onchange="updateBalance(${balance.id}, 'readability', this.value)" placeholder="e.g., 0.0001">
+                                <label>Weights Used</label>
+                                <input type="text" value="${balance.weightsUsed}" onchange="updateBalance(${balance.id}, 'weightsUsed', this.value)" placeholder="e.g., 5g, 20g, 100mg, 100g">
+                            </div>
+                            <div class="form-group">
+                                <label>Calibration Date</label>
+                                <input type="date" value="${balance.calDate}" onchange="updateBalance(${balance.id}, 'calDate', this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>Serial No.</label>
+                                <input type="text" value="${balance.serial}" onchange="updateBalance(${balance.id}, 'serial', this.value)" placeholder="Serial number">
+                            </div>
+                            <div class="form-group">
+                                <label>Calibration Due Date</label>
+                                <input type="date" value="${balance.dueDate}" onchange="updateBalance(${balance.id}, 'dueDate', this.value)">
                             </div>
                         </div>
 
-                        <h4 style="color: #28a745; margin: 20px 0 10px 0;">🔬 Calibration Test</h4>
+                        <!-- Eccentricity Test -->
+                        <h4 style="color: #28a745; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📍 Eccentricity Test</h4>
+
+                        <!-- Weight 1 -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h5 style="margin: 0 0 10px 0; color: #495057;">Test Weight 1</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                                <div class="form-group">
+                                    <label>Nominal Weight (g)</label>
+                                    <input type="text" value="${balance.ecc1_nominal}" onchange="updateBalance(${balance.id}, 'ecc1_nominal', this.value)" placeholder="5">
+                                </div>
+                                <div class="form-group">
+                                    <label>Certified Weight (g)</label>
+                                    <input type="text" value="${balance.ecc1_certified}" onchange="updateBalance(${balance.id}, 'ecc1_certified', this.value)" placeholder="5.0000108">
+                                </div>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: #28a745; color: white;">
+                                        <th style="padding: 8px; border: 1px solid #ddd;">Position</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">As Found</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">As Left</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Center</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_center_asFound}" onchange="updateBalance(${balance.id}, 'ecc1_center_asFound', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_center_asLeft}" onchange="updateBalance(${balance.id}, 'ecc1_center_asLeft', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Left Front</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_leftFront_asFound}" onchange="updateBalance(${balance.id}, 'ecc1_leftFront_asFound', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_leftFront_asLeft}" onchange="updateBalance(${balance.id}, 'ecc1_leftFront_asLeft', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Left Rear</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_leftRear_asFound}" onchange="updateBalance(${balance.id}, 'ecc1_leftRear_asFound', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_leftRear_asLeft}" onchange="updateBalance(${balance.id}, 'ecc1_leftRear_asLeft', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Right Rear</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_rightRear_asFound}" onchange="updateBalance(${balance.id}, 'ecc1_rightRear_asFound', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_rightRear_asLeft}" onchange="updateBalance(${balance.id}, 'ecc1_rightRear_asLeft', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Right Front</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_rightFront_asFound}" onchange="updateBalance(${balance.id}, 'ecc1_rightFront_asFound', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc1_rightFront_asLeft}" onchange="updateBalance(${balance.id}, 'ecc1_rightFront_asLeft', this.value)" placeholder="5.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Weight 2 -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h5 style="margin: 0 0 10px 0; color: #495057;">Test Weight 2</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                                <div class="form-group">
+                                    <label>Nominal Weight (g)</label>
+                                    <input type="text" value="${balance.ecc2_nominal}" onchange="updateBalance(${balance.id}, 'ecc2_nominal', this.value)" placeholder="20">
+                                </div>
+                                <div class="form-group">
+                                    <label>Certified Weight (g)</label>
+                                    <input type="text" value="${balance.ecc2_certified}" onchange="updateBalance(${balance.id}, 'ecc2_certified', this.value)" placeholder="20.0000097">
+                                </div>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: #28a745; color: white;">
+                                        <th style="padding: 8px; border: 1px solid #ddd;">Position</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">As Found</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">As Left</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Center</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_center_asFound}" onchange="updateBalance(${balance.id}, 'ecc2_center_asFound', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_center_asLeft}" onchange="updateBalance(${balance.id}, 'ecc2_center_asLeft', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Left Front</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_leftFront_asFound}" onchange="updateBalance(${balance.id}, 'ecc2_leftFront_asFound', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_leftFront_asLeft}" onchange="updateBalance(${balance.id}, 'ecc2_leftFront_asLeft', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Left Rear</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_leftRear_asFound}" onchange="updateBalance(${balance.id}, 'ecc2_leftRear_asFound', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_leftRear_asLeft}" onchange="updateBalance(${balance.id}, 'ecc2_leftRear_asLeft', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Right Rear</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_rightRear_asFound}" onchange="updateBalance(${balance.id}, 'ecc2_rightRear_asFound', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_rightRear_asLeft}" onchange="updateBalance(${balance.id}, 'ecc2_rightRear_asLeft', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">Right Front</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_rightFront_asFound}" onchange="updateBalance(${balance.id}, 'ecc2_rightFront_asFound', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.ecc2_rightFront_asLeft}" onchange="updateBalance(${balance.id}, 'ecc2_rightFront_asLeft', this.value)" placeholder="20.0000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sensitivity Test -->
+                        <h4 style="color: #28a745; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">⚖️ Sensitivity Test</h4>
+
+                        <!-- Sensitivity Weight 1 -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h5 style="margin: 0 0 10px 0; color: #495057;">Test Weight 1</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                                <div class="form-group">
+                                    <label>Nominal Weight</label>
+                                    <input type="text" value="${balance.sens1_nominal}" onchange="updateBalance(${balance.id}, 'sens1_nominal', this.value)" placeholder="100mg">
+                                </div>
+                                <div class="form-group">
+                                    <label>Certified Weight (g)</label>
+                                    <input type="text" value="${balance.sens1_certified}" onchange="updateBalance(${balance.id}, 'sens1_certified', this.value)" placeholder="0.1000007">
+                                </div>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: #28a745; color: white;">
+                                        <th style="padding: 8px; border: 1px solid #ddd;"></th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">Without Reference</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">With Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">As Found</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens1_asFound_without}" onchange="updateBalance(${balance.id}, 'sens1_asFound_without', this.value)" placeholder="0.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens1_asFound_with}" onchange="updateBalance(${balance.id}, 'sens1_asFound_with', this.value)" placeholder="0.1000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">As Left</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens1_asLeft_without}" onchange="updateBalance(${balance.id}, 'sens1_asLeft_without', this.value)" placeholder="0.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens1_asLeft_with}" onchange="updateBalance(${balance.id}, 'sens1_asLeft_with', this.value)" placeholder="0.1000" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sensitivity Weight 2 -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                            <h5 style="margin: 0 0 10px 0; color: #495057;">Test Weight 2</h5>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                                <div class="form-group">
+                                    <label>Nominal Weight</label>
+                                    <input type="text" value="${balance.sens2_nominal}" onchange="updateBalance(${balance.id}, 'sens2_nominal', this.value)" placeholder="100g">
+                                </div>
+                                <div class="form-group">
+                                    <label>Certified Weight (g)</label>
+                                    <input type="text" value="${balance.sens2_certified}" onchange="updateBalance(${balance.id}, 'sens2_certified', this.value)" placeholder="200.0">
+                                </div>
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: #28a745; color: white;">
+                                        <th style="padding: 8px; border: 1px solid #ddd;"></th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">Without Reference</th>
+                                        <th style="padding: 8px; border: 1px solid #ddd;">With Reference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">As Found</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens2_asFound_without}" onchange="updateBalance(${balance.id}, 'sens2_asFound_without', this.value)" placeholder="0.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens2_asFound_with}" onchange="updateBalance(${balance.id}, 'sens2_asFound_with', this.value)" placeholder="100.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: 600;">As Left</td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens2_asLeft_without}" onchange="updateBalance(${balance.id}, 'sens2_asLeft_without', this.value)" placeholder="0.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                        <td style="padding: 4px; border: 1px solid #ddd;"><input type="text" value="${balance.sens2_asLeft_with}" onchange="updateBalance(${balance.id}, 'sens2_asLeft_with', this.value)" placeholder="100.0" style="width: 100%; border: 1px solid #ccc; padding: 4px;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Results Section -->
+                        <h4 style="color: #28a745; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📝 Results & Contact Information</h4>
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>Test Weight(s) Used</label>
-                                <input type="text" value="${balance.weights}" onchange="updateBalance(${balance.id}, 'weights', this.value)" placeholder="e.g., 100g, 200g">
+                                <label>PI Name</label>
+                                <input type="text" value="${balance.piName}" onchange="updateBalance(${balance.id}, 'piName', this.value)" placeholder="Principal Investigator">
                             </div>
                             <div class="form-group">
-                                <label>As Found Test Result</label>
-                                <input type="text" value="${balance.asFoundTest}" onchange="updateBalance(${balance.id}, 'asFoundTest', this.value)" placeholder="PASS or reading">
+                                <label>PI Email</label>
+                                <input type="email" value="${balance.piEmail}" onchange="updateBalance(${balance.id}, 'piEmail', this.value)" placeholder="pi@example.com">
                             </div>
                             <div class="form-group">
-                                <label>As Left Test Result</label>
-                                <input type="text" value="${balance.asLeftTest}" onchange="updateBalance(${balance.id}, 'asLeftTest', this.value)" placeholder="PASS or reading">
+                                <label>Contact Name</label>
+                                <input type="text" value="${balance.contactName}" onchange="updateBalance(${balance.id}, 'contactName', this.value)" placeholder="Contact person">
+                            </div>
+                            <div class="form-group">
+                                <label>Contact Email</label>
+                                <input type="email" value="${balance.contactEmail}" onchange="updateBalance(${balance.id}, 'contactEmail', this.value)" placeholder="contact@example.com">
                             </div>
                             <div class="form-group">
                                 <label>Overall Status</label>
@@ -6794,10 +7060,9 @@
                                 </select>
                             </div>
                         </div>
-
-                        <div class="form-group" style="margin-top: 20px;">
+                        <div class="form-group" style="margin-top: 15px;">
                             <label>Comments</label>
-                            <textarea value="${balance.comments}" onchange="updateBalance(${balance.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${balance.comments}</textarea>
+                            <textarea onchange="updateBalance(${balance.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${balance.comments}</textarea>
                         </div>
                     </div>
                 </div>
@@ -6820,6 +7085,412 @@
                 updateManifest();
                 debouncedAutoSave();
             });
+        }
+
+        // BALANCE CERTIFICATE GENERATION
+        function generateBalanceCertificate(balanceId) {
+            const balance = balances.find(b => b.id === balanceId);
+            if (!balance) return;
+
+            const sessionInfo = getSessionInfo();
+
+            // Calculate deviations (helper function)
+            const calcDev = (displayed, certified) => {
+                if (!displayed || !certified) return '';
+                const dev = parseFloat(displayed) - parseFloat(certified);
+                return dev.toFixed(4);
+            };
+
+            // Open print window with certificate
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Balance Calibration Certificate - ${balance.serial || 'N/A'}</title>
+                    <style>
+                        @media print {
+                            @page { margin: 0.5in; size: letter; }
+                            body { margin: 0; }
+                            .no-print { display: none !important; }
+                        }
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.4;
+                            color: #333;
+                            max-width: 8.5in;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        h1 {
+                            text-align: center;
+                            color: #28a745;
+                            font-size: 24px;
+                            margin: 20px 0 10px 0;
+                            border-bottom: 3px solid #28a745;
+                            padding-bottom: 10px;
+                        }
+                        h2 {
+                            font-size: 14px;
+                            background: #f8f9fa;
+                            padding: 8px 12px;
+                            border-left: 4px solid #28a745;
+                            margin: 20px 0 10px 0;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 15px 0;
+                            font-size: 12px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 6px 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background: #28a745;
+                            color: white;
+                            font-weight: 600;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 10px;
+                            margin: 15px 0;
+                        }
+                        .info-item {
+                            font-size: 12px;
+                            padding: 5px 0;
+                        }
+                        .info-item strong {
+                            display: inline-block;
+                            width: 150px;
+                            color: #555;
+                        }
+                        .tech-line {
+                            text-align: right;
+                            font-size: 12px;
+                            margin: 10px 0;
+                        }
+                        .signature-section {
+                            margin-top: 40px;
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 30px;
+                        }
+                        .signature-block {
+                            border-top: 1px solid #333;
+                            padding-top: 8px;
+                            text-align: center;
+                            font-size: 12px;
+                        }
+                        .footer {
+                            margin-top: 40px;
+                            text-align: center;
+                            font-size: 11px;
+                            color: #666;
+                            border-top: 2px solid #28a745;
+                            padding-top: 15px;
+                        }
+                        .test-section {
+                            background: #f8f9fa;
+                            padding: 15px;
+                            margin: 15px 0;
+                            border-radius: 8px;
+                            border: 1px solid #ddd;
+                        }
+                        .test-header {
+                            font-weight: 600;
+                            color: #28a745;
+                            margin-bottom: 10px;
+                            font-size: 13px;
+                        }
+                        .weight-info {
+                            font-size: 11px;
+                            color: #666;
+                            margin-bottom: 8px;
+                        }
+                        .print-btn {
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            padding: 12px 24px;
+                            background: #28a745;
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 600;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                        }
+                        .print-btn:hover {
+                            background: #218838;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <button class="print-btn no-print" onclick="window.print()">🖨️ Print Certificate</button>
+
+                    <h1>⚖️ ANALYTICAL BALANCE</h1>
+                    <h1 style="font-size: 20px; margin-top: -10px; border: none;">CERTIFICATE</h1>
+
+                    <div class="tech-line">
+                        <strong>Tech:</strong> ${sessionInfo.technician || '_____________'}
+                    </div>
+
+                    <!-- Equipment Information -->
+                    <div class="info-grid">
+                        <div class="info-item"><strong>Customer:</strong> ${balance.customer || 'N/A'}</div>
+                        <div class="info-item"><strong>Location:</strong> ${balance.location || 'N/A'}</div>
+                        <div class="info-item"><strong>Manufacturer:</strong> ${balance.make || 'N/A'}</div>
+                        <div class="info-item"><strong>Bldg/Room:</strong> ${balance.building || 'N/A'}</div>
+                        <div class="info-item"><strong>Model:</strong> ${balance.model || 'N/A'}</div>
+                        <div class="info-item"><strong>Calibration Interval:</strong> ${balance.calInterval || '12'} Month</div>
+                        <div class="info-item"><strong>Weights:</strong> ${balance.weightsUsed || 'N/A'}</div>
+                        <div class="info-item"><strong>Calibration Date:</strong> ${balance.calDate || 'N/A'}</div>
+                        <div class="info-item"><strong>Serial No.:</strong> ${balance.serial || 'N/A'}</div>
+                        <div class="info-item"><strong>Calibration Due Date:</strong> ${balance.dueDate || 'N/A'}</div>
+                    </div>
+
+                    <!-- Eccentricity Test -->
+                    <h2>Eccentricity (g):</h2>
+
+                    <!-- Eccentricity Weight 1 -->
+                    <div class="test-section">
+                        <div class="test-header">Test Weight: ${balance.ecc1_nominal || '5'}g</div>
+                        <div class="weight-info">Cert Wt: ${balance.ecc1_certified || '5.0000108'}g</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Test Weight</th>
+                                    <th rowspan="2">Position</th>
+                                    <th colspan="2">As Found</th>
+                                    <th colspan="2">As Left</th>
+                                </tr>
+                                <tr>
+                                    <th>Displayed Value</th>
+                                    <th>Deviation</th>
+                                    <th>Displayed Value</th>
+                                    <th>Deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${balance.ecc1_nominal || '5.0'}</td>
+                                    <td>Center</td>
+                                    <td>${balance.ecc1_center_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc1_center_asFound, balance.ecc1_certified)}</td>
+                                    <td>${balance.ecc1_center_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc1_center_asLeft, balance.ecc1_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc1_nominal || '5.0'}</td>
+                                    <td>Left Front</td>
+                                    <td>${balance.ecc1_leftFront_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc1_leftFront_asFound, balance.ecc1_certified)}</td>
+                                    <td>${balance.ecc1_leftFront_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc1_leftFront_asLeft, balance.ecc1_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc1_nominal || '5.0'}</td>
+                                    <td>Left Rear</td>
+                                    <td>${balance.ecc1_leftRear_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc1_leftRear_asFound, balance.ecc1_certified)}</td>
+                                    <td>${balance.ecc1_leftRear_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc1_leftRear_asLeft, balance.ecc1_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc1_nominal || '5.0'}</td>
+                                    <td>Right Rear</td>
+                                    <td>${balance.ecc1_rightRear_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc1_rightRear_asFound, balance.ecc1_certified)}</td>
+                                    <td>${balance.ecc1_rightRear_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc1_rightRear_asLeft, balance.ecc1_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc1_nominal || '5.0'}</td>
+                                    <td>Right Front</td>
+                                    <td>${balance.ecc1_rightFront_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc1_rightFront_asFound, balance.ecc1_certified)}</td>
+                                    <td>${balance.ecc1_rightFront_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc1_rightFront_asLeft, balance.ecc1_certified)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Eccentricity Weight 2 -->
+                    <div class="test-section">
+                        <div class="test-header">Test Weight: ${balance.ecc2_nominal || '20'}g</div>
+                        <div class="weight-info">Cert Wt: ${balance.ecc2_certified || '20.0000097'}g</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Test Weight</th>
+                                    <th rowspan="2">Position</th>
+                                    <th colspan="2">As Found</th>
+                                    <th colspan="2">As Left</th>
+                                </tr>
+                                <tr>
+                                    <th>Displayed Value</th>
+                                    <th>Deviation</th>
+                                    <th>Displayed Value</th>
+                                    <th>Deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${balance.ecc2_nominal || '20.0'}</td>
+                                    <td>Center</td>
+                                    <td>${balance.ecc2_center_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc2_center_asFound, balance.ecc2_certified)}</td>
+                                    <td>${balance.ecc2_center_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc2_center_asLeft, balance.ecc2_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc2_nominal || '20.0'}</td>
+                                    <td>Left Front</td>
+                                    <td>${balance.ecc2_leftFront_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc2_leftFront_asFound, balance.ecc2_certified)}</td>
+                                    <td>${balance.ecc2_leftFront_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc2_leftFront_asLeft, balance.ecc2_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc2_nominal || '20.0'}</td>
+                                    <td>Left Rear</td>
+                                    <td>${balance.ecc2_leftRear_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc2_leftRear_asFound, balance.ecc2_certified)}</td>
+                                    <td>${balance.ecc2_leftRear_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc2_leftRear_asLeft, balance.ecc2_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc2_nominal || '20.0'}</td>
+                                    <td>Right Rear</td>
+                                    <td>${balance.ecc2_rightRear_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc2_rightRear_asFound, balance.ecc2_certified)}</td>
+                                    <td>${balance.ecc2_rightRear_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc2_rightRear_asLeft, balance.ecc2_certified)}</td>
+                                </tr>
+                                <tr>
+                                    <td>${balance.ecc2_nominal || '20.0'}</td>
+                                    <td>Right Front</td>
+                                    <td>${balance.ecc2_rightFront_asFound || ''}</td>
+                                    <td>${calcDev(balance.ecc2_rightFront_asFound, balance.ecc2_certified)}</td>
+                                    <td>${balance.ecc2_rightFront_asLeft || ''}</td>
+                                    <td>${calcDev(balance.ecc2_rightFront_asLeft, balance.ecc2_certified)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Sensitivity Test -->
+                    <h2>Sensitivity (g):</h2>
+
+                    <!-- Sensitivity Weight 1 -->
+                    <div class="test-section">
+                        <div class="test-header">Test Weight: ${balance.sens1_nominal || '100mg'}</div>
+                        <div class="weight-info">Cert Wt: ${balance.sens1_certified || '0.1000007'}g</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Wt</th>
+                                    <th colspan="3">As Found</th>
+                                    <th colspan="3">As Left</th>
+                                </tr>
+                                <tr>
+                                    <th>Without Reference Weight</th>
+                                    <th>With Reference Weight</th>
+                                    <th>Deviation</th>
+                                    <th>Without Reference Weight</th>
+                                    <th>With Reference Weight</th>
+                                    <th>Deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${balance.sens1_nominal || '100.0'}</td>
+                                    <td>${balance.sens1_asFound_without || ''}</td>
+                                    <td>${balance.sens1_asFound_with || ''}</td>
+                                    <td>${calcDev((parseFloat(balance.sens1_asFound_without || 0) + parseFloat(balance.sens1_asFound_with || 0)), balance.sens1_certified)}</td>
+                                    <td>${balance.sens1_asLeft_without || ''}</td>
+                                    <td>${balance.sens1_asLeft_with || ''}</td>
+                                    <td>${calcDev((parseFloat(balance.sens1_asLeft_without || 0) + parseFloat(balance.sens1_asLeft_with || 0)), balance.sens1_certified)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Sensitivity Weight 2 -->
+                    <div class="test-section">
+                        <div class="test-header">Test Weight: ${balance.sens2_nominal || '100g'}</div>
+                        <div class="weight-info">Cert Wt: ${balance.sens2_certified || '200.0'}g</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Wt</th>
+                                    <th colspan="3">As Found</th>
+                                    <th colspan="3">As Left</th>
+                                </tr>
+                                <tr>
+                                    <th>Without Reference Weight</th>
+                                    <th>With Reference Weight</th>
+                                    <th>Deviation</th>
+                                    <th>Without Reference Weight</th>
+                                    <th>With Reference Weight</th>
+                                    <th>Deviation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${balance.sens2_nominal || '100.0'}</td>
+                                    <td>${balance.sens2_asFound_without || ''}</td>
+                                    <td>${balance.sens2_asFound_with || ''}</td>
+                                    <td>${calcDev((parseFloat(balance.sens2_asFound_without || 0) + parseFloat(balance.sens2_asFound_with || 0)), balance.sens2_certified)}</td>
+                                    <td>${balance.sens2_asLeft_without || ''}</td>
+                                    <td>${balance.sens2_asLeft_with || ''}</td>
+                                    <td>${calcDev((parseFloat(balance.sens2_asLeft_without || 0) + parseFloat(balance.sens2_asLeft_with || 0)), balance.sens2_certified)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Comments -->
+                    ${balance.comments ? `
+                        <h2>Comments:</h2>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 12px;">
+                            ${balance.comments}
+                        </div>
+                    ` : ''}
+
+                    <!-- Contact Information -->
+                    <div class="info-grid" style="margin-top: 30px;">
+                        <div class="info-item"><strong>PI Name/Email:</strong> ${balance.piName || ''} ${balance.piEmail || ''}</div>
+                        <div class="info-item"><strong>Contact Name/Email:</strong> ${balance.contactName || ''} ${balance.contactEmail || ''}</div>
+                    </div>
+
+                    <!-- Signature Section -->
+                    <div class="signature-section">
+                        <div class="signature-block">
+                            Verified By: _________________________
+                        </div>
+                        <div class="signature-block">
+                            Date: ${balance.calDate || '______________'}
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="footer">
+                        <p style="margin: 5px 0; font-weight: 600; color: #28a745;">Calibrations International, Inc.</p>
+                        <p style="margin: 5px 0;">Bozeman, Montana 59718</p>
+                        <p style="margin: 5px 0;">1-877 CAL_INTL</p>
+                        <p style="margin: 5px 0;">theresa@calibrationsinternational.com</p>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         }
 
         // TIMER FUNCTIONS
