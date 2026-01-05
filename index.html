@@ -4127,9 +4127,14 @@
                             ${statusEmoji} ${pipette.statusAsLeft.toUpperCase()}
                         </span>
                     </div>
-                    <button class="btn btn-danger" onclick="removePipette(${pipette.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
-                        🗑️ Remove
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn" onclick="addPipette()" style="background: #69B135; color: white; padding: 8px 16px;" title="Add another pipette">
+                            ➕ Add Another
+                        </button>
+                        <button class="btn btn-danger" onclick="removePipette(${pipette.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                            🗑️ Remove
+                        </button>
+                    </div>
                 </div>
 
                 <div style="padding: 20px;">
@@ -6969,6 +6974,9 @@
                             </span>
                         </div>
                         <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="addBalance()" style="background: #69B135; color: white; padding: 8px 16px;" title="Add another balance">
+                                ➕ Add Another
+                            </button>
                             <button class="btn" onclick="generateBalanceCertificate(${balance.id})" style="background: rgba(255,255,255,0.2); padding: 8px 16px; color: white; border: 1px solid rgba(255,255,255,0.5);">
                                 📄 View Certificate
                             </button>
@@ -7699,9 +7707,14 @@
                                 ${timer.passFail === 'PASS' ? '✅' : timer.passFail === 'FAIL' ? '❌' : '⏳'} ${timer.passFail}
                             </span>
                         </div>
-                        <button class="btn btn-danger" onclick="removeTimer(${timer.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
-                            🗑️ Remove
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="addTimer()" style="background: #69B135; color: white; padding: 8px 16px;" title="Add another timer">
+                                ➕ Add Another
+                            </button>
+                            <button class="btn btn-danger" onclick="removeTimer(${timer.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                                🗑️ Remove
+                            </button>
+                        </div>
                     </div>
                     <div style="padding: 20px;">
                         <div class="form-grid">
@@ -7825,9 +7838,14 @@
                                 ${centrifuge.passFail === 'PASS' ? '✅' : centrifuge.passFail === 'FAIL' ? '❌' : '⏳'} ${centrifuge.passFail}
                             </span>
                         </div>
-                        <button class="btn btn-danger" onclick="removeCentrifuge(${centrifuge.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
-                            🗑️ Remove
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="addCentrifuge()" style="background: #69B135; color: white; padding: 8px 16px;" title="Add another centrifuge">
+                                ➕ Add Another
+                            </button>
+                            <button class="btn btn-danger" onclick="removeCentrifuge(${centrifuge.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                                🗑️ Remove
+                            </button>
+                        </div>
                     </div>
                     <div style="padding: 20px;">
                         <div class="form-grid">
@@ -7955,9 +7973,14 @@
                                 ${device.passFail === 'PASS' ? '✅' : device.passFail === 'FAIL' ? '❌' : '⏳'} ${device.passFail}
                             </span>
                         </div>
-                        <button class="btn btn-danger" onclick="removeTemperatureDevice(${device.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
-                            🗑️ Remove
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn" onclick="addTemperatureDevice()" style="background: #69B135; color: white; padding: 8px 16px;" title="Add another temperature device">
+                                ➕ Add Another
+                            </button>
+                            <button class="btn btn-danger" onclick="removeTemperatureDevice(${device.id})" style="background: rgba(220,53,69,0.9); padding: 8px 16px;">
+                                🗑️ Remove
+                            </button>
+                        </div>
                     </div>
                     <div style="padding: 20px;">
                         <div class="form-grid">
