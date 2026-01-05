@@ -2245,8 +2245,8 @@
                     return true;
                 }
                 if (lower.includes('calibration')) {
-                    showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'));
-                    showGlobalVoiceStatus('Switched to Calibration');
+                    showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'));
+                    showGlobalVoiceStatus('Switched to Calibrations');
                     return true;
                 }
                 if (lower.includes('analysis')) {
@@ -3584,7 +3584,7 @@
                 // Save as current session
                 localStorage.setItem('currentSession', JSON.stringify(session));
 
-                showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'));
+                showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'));
             });
         }
 
@@ -3707,10 +3707,10 @@
         function showTab(tabName, clickedTab) {
             const tabs = document.querySelectorAll('.tab-content');
             tabs.forEach(tab => tab.classList.remove('active'));
-            
+
             const navTabs = document.querySelectorAll('.nav-tab');
             navTabs.forEach(tab => tab.classList.remove('active'));
-            
+
             document.getElementById(tabName).classList.add('active');
             if (clickedTab) {
                 clickedTab.classList.add('active');
@@ -3718,6 +3718,41 @@
 
             if (tabName === 'analysis') {
                 updateAnalysis();
+            }
+        }
+
+        function switchCalibrationType(type) {
+            // Hide all calibration sections
+            const sections = document.querySelectorAll('.calibration-section');
+            sections.forEach(section => section.style.display = 'none');
+
+            // Show the selected section and update service level if pipette type
+            if (type === 'platinum-pipette') {
+                document.getElementById('pipetteSection').style.display = 'block';
+                document.getElementById('pipetteSectionTitle').textContent = '🏆 Platinum Pipette Calibration';
+                // Set service level to platinum
+                const serviceLevelSelect = document.getElementById('serviceLevel');
+                if (serviceLevelSelect && serviceLevelSelect.value !== 'platinum') {
+                    serviceLevelSelect.value = 'platinum';
+                    handleServiceLevelChange('platinum');
+                }
+            } else if (type === 'basic-pipette') {
+                document.getElementById('pipetteSection').style.display = 'block';
+                document.getElementById('pipetteSectionTitle').textContent = '⚡ Basic Pipette Calibration';
+                // Set service level to basic
+                const serviceLevelSelect = document.getElementById('serviceLevel');
+                if (serviceLevelSelect && serviceLevelSelect.value !== 'basic') {
+                    serviceLevelSelect.value = 'basic';
+                    handleServiceLevelChange('basic');
+                }
+            } else if (type === 'balance') {
+                document.getElementById('balanceSection').style.display = 'block';
+            } else if (type === 'timer') {
+                document.getElementById('timerSection').style.display = 'block';
+            } else if (type === 'centrifuge') {
+                document.getElementById('centrifugeSection').style.display = 'block';
+            } else if (type === 'temperature') {
+                document.getElementById('temperatureSection').style.display = 'block';
             }
         }
 
@@ -8742,11 +8777,7 @@
 
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showTab('session', this)">📋 Session Info</button>
-            <button class="nav-tab" onclick="showTab('calibration', this)">💧 Pipettes</button>
-            <button class="nav-tab" onclick="showTab('balances', this)">⚖️ Balances</button>
-            <button class="nav-tab" onclick="showTab('timers', this)">⏱️ Timers</button>
-            <button class="nav-tab" onclick="showTab('centrifuges', this)">🌀 Centrifuges</button>
-            <button class="nav-tab" onclick="showTab('temperature', this)">🌡️ Temperature</button>
+            <button class="nav-tab" onclick="showTab('calibrations', this)">🧪 Calibrations</button>
             <button class="nav-tab" id="analysisTab" onclick="showTab('analysis', this)">📊 Analysis</button>
             <button class="nav-tab" id="summaryTab" onclick="showTab('summary', this)" style="display: none;">📊 Summary Table</button>
             <button class="nav-tab" id="manifestTab" onclick="showTab('manifest', this)">📋 Manifest</button>
@@ -8892,19 +8923,37 @@
                 </div>
             </div>
 
-            <button class="btn btn-primary" onclick="showTab('calibration', document.querySelector('.nav-tab:nth-child(2)'))">Next: Start Calibration →</button>
+            <button class="btn btn-primary" onclick="showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'))">Next: Start Calibration →</button>
         </div>
 
-        <!-- Calibration Tab -->
-        <div id="calibration" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>⚖️ Pipette Calibration</h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
-                    <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtn" style="display: none;">📋 Copy from Previous</button>
-                    <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
-                </div>
+        <!-- Unified Calibrations Tab -->
+        <div id="calibrations" class="tab-content">
+            <!-- Calibration Type Selector -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <label style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px; display: block;">
+                    Select Calibration Type
+                </label>
+                <select id="calibrationType" onchange="switchCalibrationType(this.value)"
+                        style="width: 100%; padding: 12px 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; background: white; cursor: pointer;">
+                    <option value="platinum-pipette">🏆 Platinum Pipette (ISO 8655 Full Gravimetric)</option>
+                    <option value="basic-pipette">⚡ Basic Pipette (Quick Pass/Fail)</option>
+                    <option value="balance">⚖️ Balance Calibration</option>
+                    <option value="timer">⏱️ Timer Calibration</option>
+                    <option value="centrifuge">🌀 Centrifuge Calibration</option>
+                    <option value="temperature">🌡️ Temperature Device Calibration</option>
+                </select>
             </div>
+
+            <!-- Pipette Calibration Section -->
+            <div id="pipetteSection" class="calibration-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 id="pipetteSectionTitle">⚖️ Pipette Calibration</h2>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
+                        <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtn" style="display: none;">📋 Copy from Previous</button>
+                        <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
+                    </div>
+                </div>
 
             <!-- Search and Filter Bar -->
             <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
@@ -8961,6 +9010,43 @@
 
             <div id="pipettesContainer">
                 <!-- Pipettes will be added here dynamically -->
+            </div>
+            </div>
+
+            <!-- Balance Calibration Section -->
+            <div id="balanceSection" class="calibration-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>⚖️ Balance Calibration</h2>
+                    <button class="btn btn-primary" onclick="addBalance()">+ Add Balance</button>
+                </div>
+                <div id="balancesList"></div>
+            </div>
+
+            <!-- Timer Calibration Section -->
+            <div id="timerSection" class="calibration-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>⏱️ Timer Calibration</h2>
+                    <button class="btn btn-primary" onclick="addTimer()">+ Add Timer</button>
+                </div>
+                <div id="timersList"></div>
+            </div>
+
+            <!-- Centrifuge Calibration Section -->
+            <div id="centrifugeSection" class="calibration-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🌀 Centrifuge Calibration</h2>
+                    <button class="btn btn-primary" onclick="addCentrifuge()">+ Add Centrifuge</button>
+                </div>
+                <div id="centrifugesList"></div>
+            </div>
+
+            <!-- Temperature Device Calibration Section -->
+            <div id="temperatureSection" class="calibration-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>🌡️ Temperature Device Calibration</h2>
+                    <button class="btn btn-primary" onclick="addTemperatureDevice()">+ Add Temperature Device</button>
+                </div>
+                <div id="temperatureDevicesList"></div>
             </div>
         </div>
 
@@ -9172,42 +9258,6 @@
                     🗑️ Clear All Usage
                 </button>
             </div>
-        </div>
-
-        <!-- Balances Tab -->
-        <div id="balances" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>⚖️ Balance Calibration</h2>
-                <button class="btn btn-primary" onclick="addBalance()">+ Add Balance</button>
-            </div>
-            <div id="balancesList"></div>
-        </div>
-
-        <!-- Timers Tab -->
-        <div id="timers" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>⏱️ Timer Calibration</h2>
-                <button class="btn btn-primary" onclick="addTimer()">+ Add Timer</button>
-            </div>
-            <div id="timersList"></div>
-        </div>
-
-        <!-- Centrifuges Tab -->
-        <div id="centrifuges" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>🌀 Centrifuge Calibration</h2>
-                <button class="btn btn-primary" onclick="addCentrifuge()">+ Add Centrifuge</button>
-            </div>
-            <div id="centrifugesList"></div>
-        </div>
-
-        <!-- Temperature Tab -->
-        <div id="temperature" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>🌡️ Temperature Device Calibration</h2>
-                <button class="btn btn-primary" onclick="addTemperatureDevice()">+ Add Temperature Device</button>
-            </div>
-            <div id="temperatureDevicesList"></div>
         </div>
 
         <!-- Manifest Tab (Summary of All Equipment) -->
