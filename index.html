@@ -7068,24 +7068,8 @@
                         </div>
 
                         <!-- Results Section -->
-                        <h4 style="color: #28a745; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📝 Results & Contact Information</h4>
+                        <h4 style="color: #28a745; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📝 Results & Status</h4>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>PI Name</label>
-                                <input type="text" value="${balance.piName}" onchange="updateBalance(${balance.id}, 'piName', this.value)" placeholder="Principal Investigator">
-                            </div>
-                            <div class="form-group">
-                                <label>PI Email</label>
-                                <input type="email" value="${balance.piEmail}" onchange="updateBalance(${balance.id}, 'piEmail', this.value)" placeholder="pi@example.com">
-                            </div>
-                            <div class="form-group">
-                                <label>Contact Name</label>
-                                <input type="text" value="${balance.contactName}" onchange="updateBalance(${balance.id}, 'contactName', this.value)" placeholder="Contact person">
-                            </div>
-                            <div class="form-group">
-                                <label>Contact Email</label>
-                                <input type="email" value="${balance.contactEmail}" onchange="updateBalance(${balance.id}, 'contactEmail', this.value)" placeholder="contact@example.com">
-                            </div>
                             <div class="form-group">
                                 <label>Overall Status</label>
                                 <select value="${balance.passFail}" onchange="updateBalance(${balance.id}, 'passFail', this.value)">
@@ -7095,6 +7079,9 @@
                                 </select>
                             </div>
                         </div>
+                        <p style="color: #6c757d; font-size: 13px; margin-top: 8px;">
+                            <em>Note: PI contact info will be pulled from Session Info tab</em>
+                        </p>
                         <div class="form-group" style="margin-top: 15px;">
                             <label>Comments</label>
                             <textarea onchange="updateBalance(${balance.id}, 'comments', this.value)" rows="3" placeholder="Additional notes...">${balance.comments}</textarea>
@@ -7499,10 +7486,10 @@
                         </div>
                     ` : ''}
 
-                    <!-- Contact Information -->
+                    <!-- Contact Information (from Session Info) -->
                     <div class="info-grid" style="margin-top: 30px;">
-                        <div class="info-item"><strong>PI Name/Email:</strong> ${balance.piName || ''} ${balance.piEmail || ''}</div>
-                        <div class="info-item"><strong>Contact Name/Email:</strong> ${balance.contactName || ''} ${balance.contactEmail || ''}</div>
+                        <div class="info-item"><strong>PI Name:</strong> ${sessionInfo.pi || 'N/A'}</div>
+                        <div class="info-item"><strong>Technician:</strong> ${sessionInfo.technician || 'N/A'}</div>
                     </div>
 
                     <!-- Signature Section -->
@@ -8797,28 +8784,8 @@
                 </div>
             </div>
 
-            <!-- Service Level Selector -->
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <div style="flex: 1;">
-                        <label style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px; display: block;">
-                            Service Level
-                        </label>
-                        <select id="serviceLevel" onchange="handleServiceLevelChange(this.value)"
-                                style="width: 100%; padding: 12px 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; background: white; cursor: pointer;">
-                            <option value="platinum">🏆 Platinum Service (ISO 8655 Full Gravimetric Validation)</option>
-                            <option value="basic">⚡ Basic Service (Quick Pass/Fail Calibration)</option>
-                        </select>
-                    </div>
-                    <div id="serviceLevelBadge" style="padding: 15px 25px; background: rgba(255,255,255,0.2); border-radius: 8px; text-align: center; min-width: 120px;">
-                        <div style="color: white; font-size: 28px; margin-bottom: 5px;">🏆</div>
-                        <div style="color: white; font-weight: 600; font-size: 14px;">PLATINUM</div>
-                    </div>
-                </div>
-                <div id="serviceLevelDescription" style="color: rgba(255,255,255,0.9); margin-top: 12px; font-size: 13px;">
-                    Full gravimetric calibration with environmental corrections, multi-channel support, and ISO 8655 compliance
-                </div>
-            </div>
+            <!-- Hidden service level field for backwards compatibility - actual selection happens in Calibrations tab -->
+            <input type="hidden" id="serviceLevel" value="platinum">
 
             <div class="form-grid">
                 <div class="form-group">
