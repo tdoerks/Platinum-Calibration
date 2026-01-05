@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platinum Pipette Calibration</title>
+    <title>Calibrations International - Data Intake System</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
     <style>
         * {
@@ -90,7 +90,7 @@
         }
 
         body.dark-mode .btn-primary {
-            background: #667eea;
+            background: #69B135;
             color: white;
         }
 
@@ -124,7 +124,7 @@
 
         body.dark-mode .modal-header h2,
         body.dark-mode .modal-header h3 {
-            color: #667eea;
+            color: #69B135;
         }
 
         body.dark-mode .modal-footer {
@@ -228,16 +228,16 @@
         }
 
         body.dark-mode a {
-            color: #667eea;
+            color: #69B135;
         }
 
         body.dark-mode a:hover {
-            color: #764ba2;
+            color: #223077;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #69B135 0%, #223077 100%);
             min-height: 100vh;
             padding: 20px;
             transition: background 0.3s ease;
@@ -424,7 +424,7 @@
         }
 
         .measurement-table th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #69B135 0%, #223077 100%);
             color: white;
             padding: 15px 10px;
             text-align: center;
@@ -2710,7 +2710,7 @@
                 position: fixed;
                 top: 80px;
                 right: 20px;
-                background: #667eea;
+                background: #69B135;
                 color: white;
                 padding: 12px 20px;
                 border-radius: 8px;
@@ -3981,7 +3981,7 @@
             const statusEmoji = pipette.statusAsLeft === 'pass' ? '✅' : pipette.statusAsLeft === 'fail' ? '❌' : '⏳';
 
             pipetteDiv.innerHTML = `
-                <div class="pipette-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <div class="pipette-header" style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <h3 style="margin: 0; font-size: 18px;">Pipette #${String(pipette.id).padStart(2, '0')}</h3>
                         <span class="status-badge status-${pipette.statusAsLeft}" id="status-${pipette.id}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -3995,7 +3995,7 @@
 
                 <div style="padding: 20px;">
                     <!-- Pipette Information -->
-                    <h4 style="color: #667eea; margin: 0 0 15px 0;">🧪 Pipette Information</h4>
+                    <h4 style="color: #69B135; margin: 0 0 15px 0;">🧪 Pipette Information</h4>
                     <div class="form-grid">
                     <div class="form-group">
                         <label>Pipette Number</label>
@@ -4050,11 +4050,11 @@
                 </div>
 
                     <!-- Gravimetric Measurements -->
-                    <h4 style="color: #667eea; margin: 20px 0 15px 0;">⚖️ Gravimetric Measurements</h4>
+                    <h4 style="color: #69B135; margin: 20px 0 15px 0;">⚖️ Gravimetric Measurements</h4>
                     ${generateMeasurementTable(pipette, precision)}
 
                     <!-- Test Results -->
-                    <h4 style="color: #667eea; margin: 20px 0 15px 0;">📊 Test Results</h4>
+                    <h4 style="color: #69B135; margin: 20px 0 15px 0;">📊 Test Results</h4>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
                             <h5 style="margin: 0 0 10px 0; color: #2c5282;">As Found Results</h5>
@@ -5684,7 +5684,7 @@
 
             let html = `
                 <!-- Professional Header -->
-                <div style="border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px;">
+                <div style="border-bottom: 3px solid #69B135; padding-bottom: 20px; margin-bottom: 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
                             <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION CERTIFICATE</h1>
@@ -5754,7 +5754,7 @@
                     <h3 style="margin-top: 0;">Calibration Summary</h3>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
                         <div>
-                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${pipettes.length}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #69B135;">${pipettes.length}</div>
                             <div style="color: #6c757d; font-size: 14px;">Total Pipettes</div>
                         </div>
                         <div>
@@ -5766,14 +5766,14 @@
                             <div style="color: #6c757d; font-size: 14px;">Failed</div>
                         </div>
                         <div>
-                            <div style="font-size: 24px; font-weight: bold; color: #667eea;">${pipettes.length > 0 ? ((pipettes.filter(p => p.status === 'pass').length / pipettes.length) * 100).toFixed(1) : 0}%</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #69B135;">${pipettes.length > 0 ? ((pipettes.filter(p => p.status === 'pass').length / pipettes.length) * 100).toFixed(1) : 0}%</div>
                             <div style="color: #6c757d; font-size: 14px;">Pass Rate</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Individual Pipette Results -->
-                <h2 style="color: #2c5282; border-bottom: 2px solid #667eea; padding-bottom: 10px;">DETAILED CALIBRATION RESULTS</h2>
+                <h2 style="color: #2c5282; border-bottom: 2px solid #69B135; padding-bottom: 10px;">DETAILED CALIBRATION RESULTS</h2>
             `;
 
             // Generate detailed results for each pipette
@@ -6002,7 +6002,7 @@
             const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
 
             let html = `
-                <div style="border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px;">
+                <div style="border-bottom: 3px solid #69B135; padding-bottom: 20px; margin-bottom: 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
                             <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION REPORT</h1>
@@ -6022,7 +6022,7 @@
             `;
 
             if (platinumPipettes.length > 0) {
-                html += `<h2 style="color: #667eea; margin-top: 30px;">🏆 Platinum Service Pipettes (${platinumPipettes.length})</h2>`;
+                html += `<h2 style="color: #69B135; margin-top: 30px;">🏆 Platinum Service Pipettes (${platinumPipettes.length})</h2>`;
                 html += `<p style="color: #6c757d; margin-bottom: 20px;">ISO 8655 Compliant Full Gravimetric Validation</p>`;
                 // Add platinum pipettes summary table here (simplified)
             }
@@ -6053,7 +6053,7 @@
 
             let html = `
                 <div style="page-break-inside: avoid; margin-top: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                    <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
+                    <h3 style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
                         Pipette #${number} - ${pipette.number || 'N/A'}
                         <span style="float: right; font-size: 18px;">${pipette.status === 'pass' ? '✓ PASS' : pipette.status === 'fail' ? '✗ FAIL' : '⏳ PENDING'}</span>
                     </h3>
@@ -6100,7 +6100,7 @@
                 ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
                     <thead>
-                        <tr style="background: #667eea; color: white;">
+                        <tr style="background: #69B135; color: white;">
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Test Point</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Nominal (μL)</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">R1</th>
@@ -6154,7 +6154,7 @@
                 ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px;">
                     <thead>
-                        <tr style="background: #667eea; color: white;">
+                        <tr style="background: #69B135; color: white;">
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Test Point</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Nominal (μL)</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">R1</th>
@@ -6218,7 +6218,7 @@
                 ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
                     <thead>
-                        <tr style="background: #667eea; color: white;">
+                        <tr style="background: #69B135; color: white;">
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Test Point</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Nominal (μL)</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Mean</th>
@@ -6270,7 +6270,7 @@
                 ${env.hasAllData ? '<p style="color: #2196f3; font-size: 12px; margin: 5px 0;"><strong>Note:</strong> Environmentally corrected values shown (Z-factor applied per ISO 8655-6)</p>' : ''}
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px;">
                     <thead>
-                        <tr style="background: #667eea; color: white;">
+                        <tr style="background: #69B135; color: white;">
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Test Point</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Nominal (μL)</th>
                             <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Mean</th>
@@ -7920,11 +7920,11 @@
 
             // Render summary cards
             summaryContainer.innerHTML = `
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white;">
+                <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 20px; border-radius: 12px; color: white;">
                     <div style="font-size: 32px; font-weight: bold;">${total}</div>
                     <div style="opacity: 0.9;">Total Equipment</div>
                 </div>
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white;">
+                <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 20px; border-radius: 12px; color: white;">
                     <div style="font-size: 32px; font-weight: bold;">${counts.pipettes}</div>
                     <div style="opacity: 0.9;">💧 Pipettes</div>
                 </div>
@@ -8744,8 +8744,18 @@
 
     <div class="container">
         <div class="header">
-            <h1>🧪 Pipette Calibration System</h1>
-            <p>ISO 8655 Compliant | Real-time Analysis | Auto-Save Enabled</p>
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <h1 style="margin: 0; color: #223077;">Calibrations International Inc.</h1>
+                    <p style="margin: 5px 0 0 0; color: #69B135; font-weight: 600; font-size: 16px;">Quality Calibrations Across the Globe</p>
+                    <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">Data Intake System | ISO 8655 Compliant | Bozeman, MT</p>
+                </div>
+                <div style="text-align: right; color: #223077; font-size: 13px;">
+                    <div style="font-weight: 600;">1-877-CAL-INTL</div>
+                    <div>406-589-6025</div>
+                    <div style="color: #69B135;">theresa@calibrationsinternational.com</div>
+                </div>
+            </div>
             <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px;">
                 <!-- Row 1: Templates, Voice, Dark Mode -->
                 <div style="display: flex; gap: 8px;">
@@ -8790,23 +8800,23 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>Service Provider</label>
-                    <input type="text" id="serviceProvider" value="Platinum SC Data Intake Worksheets">
+                    <input type="text" id="serviceProvider" value="Calibrations International Inc.">
                 </div>
                 <div class="form-group">
                     <label>Location</label>
-                    <input type="text" id="location" value="Kansas State University Mosier F103">
+                    <input type="text" id="location" placeholder="Client facility location">
                 </div>
                 <div class="form-group">
                     <label>Address</label>
-                    <input type="text" id="address" value="1800 Denison Ave, Manhattan, Ks 66506">
+                    <input type="text" id="address" placeholder="Client facility address">
                 </div>
                 <div class="form-group">
                     <label>Client</label>
-                    <input type="text" id="client" value="Janice Muller - Cin Path">
+                    <input type="text" id="client" placeholder="Client name">
                 </div>
                 <div class="form-group">
                     <label>Technician</label>
-                    <input type="text" id="technician" value="TSD" onchange="generateWorkOrderAndInvoice()">
+                    <input type="text" id="technician" placeholder="Technician initials" onchange="generateWorkOrderAndInvoice()">
                 </div>
                 <div class="form-group">
                     <label>Calibration Date</label>
@@ -8896,7 +8906,7 @@
         <!-- Unified Calibrations Tab -->
         <div id="calibrations" class="tab-content">
             <!-- Calibration Type Selector -->
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                 <label style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px; display: block;">
                     Select Calibration Type
                 </label>
@@ -9103,7 +9113,7 @@
 
         <!-- Labels Tab -->
         <div id="labels" class="tab-content">
-            <h2 style="color: #667eea;">🏷️ Calibration Labels</h2>
+            <h2 style="color: #69B135;">🏷️ Calibration Labels</h2>
             <p style="color: #6c757d; margin-bottom: 20px;">Generate printable calibration labels for your pipettes</p>
 
             <!-- Dymo LabelWriter 450 Section -->
@@ -9140,8 +9150,8 @@
             </div>
 
             <!-- Browser Print Section (Standard/Fallback) -->
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
-                <h3 style="color: #667eea; margin-top: 0;">🖨️ Standard Browser Print</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; border-left: 4px solid #69B135;">
+                <h3 style="color: #69B135; margin-top: 0;">🖨️ Standard Browser Print</h3>
                 <p style="color: #6c757d; margin-bottom: 15px;">Generate HTML labels for standard printers</p>
 
                 <div style="margin-bottom: 20px;">
@@ -9160,7 +9170,7 @@
         <!-- Inventory Tab -->
         <div id="inventory" class="tab-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="color: #667eea;">📦 Inventory Used</h2>
+                <h2 style="color: #69B135;">📦 Inventory Used</h2>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="autoDetectAndAddInventory()" class="btn btn-secondary" title="Auto-detect inventory from calibration data">
                         🔄 Auto-Detect from Calibrations
@@ -9189,7 +9199,7 @@
 
             <!-- Usage Table -->
             <div style="background: white; border-radius: 15px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h3 style="color: #667eea; margin-bottom: 20px;">Items Used in Current Session</h3>
+                <h3 style="color: #69B135; margin-bottom: 20px;">Items Used in Current Session</h3>
                 <div style="overflow-x: auto;">
                     <table id="inventoryUsageTable" style="width: 100%; border-collapse: collapse;">
                         <thead>
