@@ -3244,6 +3244,7 @@
                 localStorage.setItem('calibrationSessions', JSON.stringify(sessions));
 
                 showSaveIndicator();
+                updateCalibrationTypeCounts();
             } catch (error) {
                 // Handle localStorage errors (quota exceeded, disabled, etc.)
                 if (error.name === 'QuotaExceededError') {
@@ -3347,6 +3348,7 @@
                 updateInventoryStats();
                 updateSummaryTable();
                 updateManifest();
+                updateCalibrationTypeCounts();
                 return true;
             } catch (e) {
                 console.error('Error loading session:', e);
@@ -3580,6 +3582,7 @@
                 updateInventoryStats();
                 updateSummaryTable();
                 updateManifest();
+                updateCalibrationTypeCounts();
 
                 // Save as current session
                 localStorage.setItem('currentSession', JSON.stringify(session));
@@ -3718,6 +3721,27 @@
 
             if (tabName === 'analysis') {
                 updateAnalysis();
+            }
+        }
+
+        function updateCalibrationTypeCounts() {
+            // Get counts for each equipment type
+            const platinumCount = pipettes.filter(p => p.serviceLevel === 'platinum').length;
+            const basicCount = pipettes.filter(p => p.serviceLevel === 'basic').length;
+            const balanceCount = balances.length;
+            const timerCount = timers.length;
+            const centrifugeCount = centrifuges.length;
+            const tempCount = temperatureDevices.length;
+
+            // Update dropdown options with counts
+            const select = document.getElementById('calibrationType');
+            if (select) {
+                select.options[0].text = `🏆 Platinum Pipette${platinumCount > 0 ? ` (${platinumCount})` : ''}`;
+                select.options[1].text = `⚡ Basic Pipette${basicCount > 0 ? ` (${basicCount})` : ''}`;
+                select.options[2].text = `⚖️ Balance${balanceCount > 0 ? ` (${balanceCount})` : ''}`;
+                select.options[3].text = `⏱️ Timer${timerCount > 0 ? ` (${timerCount})` : ''}`;
+                select.options[4].text = `🌀 Centrifuge${centrifugeCount > 0 ? ` (${centrifugeCount})` : ''}`;
+                select.options[5].text = `🌡️ Temperature Device${tempCount > 0 ? ` (${tempCount})` : ''}`;
             }
         }
 
