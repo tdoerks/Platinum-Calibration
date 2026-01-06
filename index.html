@@ -345,6 +345,57 @@
             box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
         }
 
+        /* Form Validation Styles */
+        .form-group input.error,
+        .form-group select.error,
+        .form-group textarea.error {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .form-group input.error:focus,
+        .form-group select.error:focus,
+        .form-group textarea.error:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+
+        .form-group input.success,
+        .form-group select.success,
+        .form-group textarea.success {
+            border-color: #69B135;
+            background-color: #f6faf4;
+        }
+
+        .form-group input.success:focus,
+        .form-group select.success:focus,
+        .form-group textarea.success:focus {
+            border-color: #69B135;
+            box-shadow: 0 0 0 3px rgba(105, 177, 53, 0.1);
+        }
+
+        .form-group .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .form-group .error-message.show {
+            display: block;
+        }
+
+        .form-group label.required::after {
+            content: ' *';
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .form-group input:invalid:not(:placeholder-shown),
+        .form-group select:invalid:not(:placeholder-shown) {
+            border-color: #ffc107;
+        }
+
         .pipette-card {
             background: #f8f9fa;
             border-radius: 15px;
@@ -9068,6 +9119,77 @@
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
                 overlay.classList.remove('show');
+            }
+        }
+
+        // ========================================
+        // FORM VALIDATION
+        // ========================================
+
+        function validateField(input, validationRules) {
+            // Remove previous validation classes
+            input.classList.remove('error', 'success');
+
+            // Get or create error message element
+            let errorMsg = input.parentElement.querySelector('.error-message');
+            if (!errorMsg) {
+                errorMsg = document.createElement('div');
+                errorMsg.className = 'error-message';
+                input.parentElement.appendChild(errorMsg);
+            }
+
+            let isValid = true;
+            let errorText = '';
+
+            // Check required
+            if (validationRules.required && !input.value.trim()) {
+                isValid = false;
+                errorText = 'This field is required';
+            }
+            // Check min length
+            else if (validationRules.minLength && input.value.length < validationRules.minLength) {
+                isValid = false;
+                errorText = `Minimum ${validationRules.minLength} characters required`;
+            }
+            // Check pattern (e.g., email, numbers)
+            else if (validationRules.pattern && !validationRules.pattern.test(input.value)) {
+                isValid = false;
+                errorText = validationRules.patternMessage || 'Invalid format';
+            }
+            // Check min/max for numbers
+            else if (input.type === 'number') {
+                const num = parseFloat(input.value);
+                if (validationRules.min !== undefined && num < validationRules.min) {
+                    isValid = false;
+                    errorText = `Minimum value is ${validationRules.min}`;
+                } else if (validationRules.max !== undefined && num > validationRules.max) {
+                    isValid = false;
+                    errorText = `Maximum value is ${validationRules.max}`;
+                }
+            }
+
+            // Apply validation state
+            if (isValid && input.value.trim()) {
+                input.classList.add('success');
+                errorMsg.classList.remove('show');
+            } else if (!isValid) {
+                input.classList.add('error');
+                errorMsg.textContent = errorText;
+                errorMsg.classList.add('show');
+            } else {
+                errorMsg.classList.remove('show');
+            }
+
+            return isValid;
+        }
+
+        function markFieldAsRequired(fieldId) {
+            const input = document.getElementById(fieldId);
+            if (input) {
+                const label = input.parentElement.querySelector('label');
+                if (label && !label.classList.contains('required')) {
+                    label.classList.add('required');
+                }
             }
         }
 
