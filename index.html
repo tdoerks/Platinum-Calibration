@@ -3690,8 +3690,7 @@
                 // Show Analysis tab, hide Summary Table tab
                 updateTabVisibility('platinum');
 
-                // Show environmental conditions (needed for Platinum)
-                if (envSection) envSection.style.display = 'block';
+                // Environmental conditions now permanently visible
             } else {
                 badge.innerHTML = `
                     <div style="color: white; font-size: 28px; margin-bottom: 5px;">⚡</div>
@@ -3702,8 +3701,7 @@
                 // Hide Analysis tab, show Summary Table tab
                 updateTabVisibility('basic');
 
-                // Hide environmental conditions (not needed for Basic)
-                if (envSection) envSection.style.display = 'none';
+                // Environmental conditions now permanently visible
             }
 
             // Warn if switching with existing pipettes
