@@ -23,7 +23,7 @@
         }
 
         body.dark-mode .header {
-            background: linear-gradient(135deg, #0a1929 0%, #16213e 100%);
+            background: #16213e;
         }
 
         body.dark-mode .nav-tab {
@@ -237,7 +237,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #69B135 0%, #223077 100%);
+            background: #69B135;
             min-height: 100vh;
             padding: 20px;
             transition: background 0.3s ease;
@@ -253,7 +253,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: #34495e;
             color: white;
             padding: 30px;
             text-align: center;
@@ -475,7 +475,7 @@
         }
 
         .measurement-table th {
-            background: linear-gradient(135deg, #69B135 0%, #223077 100%);
+            background: #69B135;
             color: white;
             padding: 15px 10px;
             text-align: center;
@@ -685,7 +685,7 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: #28a745;
             transition: width 0.5s ease;
         }
 
@@ -846,7 +846,7 @@
             bottom: 20px;
             right: 20px;
             padding: 12px 20px;
-            background: linear-gradient(135deg, #69B135 0%, #558a2a 100%);
+            background: #69B135;
             color: white;
             border-radius: 8px;
             font-size: 14px;
@@ -873,7 +873,7 @@
         }
 
         body.dark-mode .save-indicator {
-            background: linear-gradient(135deg, #69B135 0%, #558a2a 100%);
+            background: #69B135;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
@@ -4277,7 +4277,7 @@
             const statusEmoji = pipette.statusAsLeft === 'pass' ? '✅' : pipette.statusAsLeft === 'fail' ? '❌' : '⏳';
 
             pipetteDiv.innerHTML = `
-                <div class="pipette-header" style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <div class="pipette-header" style="background: #69B135; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <h3 style="margin: 0; font-size: 18px;">Pipette #${String(pipette.id).padStart(2, '0')}</h3>
                         <span class="status-badge status-${pipette.statusAsLeft}" id="status-${pipette.id}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -4463,7 +4463,7 @@
             const statusEmoji = pipette.passFail === 'PASS' ? '✅' : pipette.passFail === 'FAIL' ? '❌' : '⏳';
 
             pipetteDiv.innerHTML = `
-                <div class="pipette-header" style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <div class="pipette-header" style="background: #5a9a2d; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <label style="margin: 0; display: flex; align-items: center;">
                             <input type="checkbox" class="pipette-checkbox" data-pipette-id="${pipette.id}"
@@ -6282,7 +6282,7 @@
                 </table>
 
                 <!-- Summary Statistics -->
-                <div style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white;">
+                <div style="background: #5a9a2d; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white;">
                     <h3 style="margin-top: 0; color: white;">Calibration Summary</h3>
                     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
                         <div>
@@ -6308,7 +6308,7 @@
                 <h2 style="color: #2c5282; border-bottom: 2px solid #69B135; padding-bottom: 10px;">CALIBRATION RESULTS</h2>
                 <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px;">
                     <thead>
-                        <tr style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); color: white;">
+                        <tr style="background: #5a9a2d; color: white;">
                             <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">No.</th>
                             <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Manufacturer</th>
                             <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Model</th>
@@ -6460,7 +6460,7 @@
 
             let html = `
                 <div style="page-break-inside: avoid; margin-top: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                    <h3 style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
+                    <h3 style="background: #69B135; color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
                         Pipette #${number} - ${pipette.number || 'N/A'}
                         <span style="float: right; font-size: 18px;">${pipette.status === 'pass' ? '✓ PASS' : pipette.status === 'fail' ? '✗ FAIL' : '⏳ PENDING'}</span>
                     </h3>
@@ -7227,7 +7227,7 @@
             container.innerHTML = balances.map(balance => `
                 <div class="pipette-card" style="margin-bottom: 30px;">
                     <!-- Header -->
-                    <div class="pipette-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="pipette-header" style="background: #28a745; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 style="margin: 0; font-size: 18px;">⚖️ Balance #${String(balance.id).padStart(2, '0')}</h3>
                             <span class="status-badge status-${balance.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -7956,7 +7956,7 @@
 
             container.innerHTML = timers.map(timer => `
                 <div class="pipette-card" style="margin-bottom: 20px;">
-                    <div class="pipette-header" style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="pipette-header" style="background: #17a2b8; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 style="margin: 0; font-size: 18px;">⏱️ Timer #${String(timer.id).padStart(2, '0')}</h3>
                             <span class="status-badge status-${timer.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -8115,7 +8115,7 @@
 
             container.innerHTML = centrifuges.map(centrifuge => `
                 <div class="pipette-card" style="margin-bottom: 20px;">
-                    <div class="pipette-header" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="pipette-header" style="background: #6f42c1; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 style="margin: 0; font-size: 18px;">🌀 Centrifuge #${String(centrifuge.id).padStart(2, '0')}</h3>
                             <span class="status-badge status-${centrifuge.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -8253,7 +8253,7 @@
 
             container.innerHTML = temperatureDevices.map(device => `
                 <div class="pipette-card" style="margin-bottom: 20px;">
-                    <div class="pipette-header" style="background: linear-gradient(135deg, #fd7e14 0%, #dc3545 100%); color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="pipette-header" style="background: #fd7e14; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
                             <h3 style="margin: 0; font-size: 18px;">🌡️ Temperature Device #${String(device.id).padStart(2, '0')}</h3>
                             <span class="status-badge status-${device.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
@@ -8373,7 +8373,7 @@
 
             // Render summary cards with CI branding
             summaryContainer.innerHTML = `
-                <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                <div style="background: #69B135; padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                     <div style="font-size: 48px; font-weight: bold; margin-bottom: 5px;">${total}</div>
                     <div style="opacity: 0.95; font-size: 16px; font-weight: 600;">📊 Total Equipment</div>
                 </div>
@@ -9547,7 +9547,7 @@
         <!-- Unified Calibrations Tab -->
         <div id="calibrations" class="tab-content">
             <!-- Calibration Type Selector -->
-            <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+            <div style="background: #69B135; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
                 <label style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px; display: block;">
                     Select Calibration Type
                 </label>
@@ -9743,7 +9743,7 @@
             <div style="overflow-x: auto;">
                 <table class="pipette-table" id="summaryTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
                     <thead>
-                        <tr style="background: linear-gradient(135deg, #69B135 0%, #5a9a2d 100%); color: white;">
+                        <tr style="background: #5a9a2d; color: white;">
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">No.</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Manufacturer</th>
                             <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Model</th>
@@ -9839,15 +9839,15 @@
 
             <!-- Summary Stats -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 20px; border-radius: 12px; color: white;">
+                <div style="background: #3b82f6; padding: 20px; border-radius: 12px; color: white;">
                     <div style="font-size: 2rem; font-weight: bold;" id="invTotalItems">0</div>
                     <div style="opacity: 0.9;">Total Items Used</div>
                 </div>
-                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 12px; color: white;">
+                <div style="background: #10b981; padding: 20px; border-radius: 12px; color: white;">
                     <div style="font-size: 2rem; font-weight: bold;" id="invCurrentSession">0</div>
                     <div style="opacity: 0.9;">Current Session</div>
                 </div>
-                <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 20px; border-radius: 12px; color: white;">
+                <div style="background: #f59e0b; padding: 20px; border-radius: 12px; color: white;">
                     <div style="font-size: 2rem; font-weight: bold;" id="invUniqueItems">0</div>
                     <div style="opacity: 0.9;">Unique Items</div>
                 </div>
@@ -9895,7 +9895,7 @@
 
         <!-- Manifest Tab (Summary of All Equipment) -->
         <div id="manifest" class="tab-content">
-            <div style="background: linear-gradient(135deg, #69B135 0%, #223077 100%); padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white;">
+            <div style="background: #69B135; padding: 30px; border-radius: 12px; margin-bottom: 30px; color: white;">
                 <h2 style="margin: 0 0 10px 0; color: white;">📊 Session Dashboard</h2>
                 <p style="margin: 0; opacity: 0.9;">Complete overview of all equipment in this calibration session</p>
             </div>
