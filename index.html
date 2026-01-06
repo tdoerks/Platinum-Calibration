@@ -9608,10 +9608,10 @@
             </div>
 
             <!-- Pipette Calibration Section -->
-            <!-- Basic Pipette Section -->
+            <!-- Platinum Pipette Section (ID backwards for routing) -->
             <div id="platinumPipetteSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>⚡ Basic Pipette Calibration</h2>
+                    <h2>🏆 Platinum Pipette Calibration</h2>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
                         <button class="btn btn-danger" onclick="deleteAllPipettes()" id="deleteAllBasicPipettesBtn" style="display: none;">🗑️ Delete All</button>
@@ -9643,15 +9643,15 @@
                     </div>
                 </div>
 
-                <div id="basicPipettesContainer">
+                <div id="platinumPipettesContainer">
                     <!-- Basic pipettes will be added here dynamically -->
                 </div>
             </div>
 
-            <!-- Platinum Pipette Section -->
+            <!-- Basic Pipette Section (ID backwards for routing) -->
             <div id="basicPipetteSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>🏆 Platinum Pipette Calibration</h2>
+                    <h2>⚡ Basic Pipette Calibration</h2>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
                         <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtn" style="display: none;">📋 Copy from Previous</button>
@@ -9685,7 +9685,7 @@
                     <div class="progress-fill" id="progressFill" style="width: 0%"></div>
                 </div>
 
-                <div id="platinumPipettesContainer">
+                <div id="basicPipettesContainer">
                     <!-- Platinum pipettes will be added here dynamically -->
                 </div>
             </div>
