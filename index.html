@@ -3627,7 +3627,7 @@
         // ========================================
 
         function generateWorkOrderAndInvoice() {
-            const pi = document.getElementById('pi')?.value || '';
+            const client = document.getElementById('client')?.value || '';
             const technician = document.getElementById('technician')?.value || '';
             const serviceDateInput = document.getElementById('serviceDate')?.value;
             const frequency = document.getElementById('frequency')?.value || 'A';
@@ -3652,9 +3652,9 @@
             }
 
             // Generate Work Order Number: "Doerksen 12-22 1#A" (MM-DD format)
-            if (pi) {
-                const piLastName = pi.trim().split(' ').pop(); // Get last word as last name
-                const workOrderNo = `${piLastName} ${month}-${day} ${counter}#${frequency}`;
+            if (client) {
+                const clientLastName = client.trim().split(' ').pop(); // Get last word as last name
+                const workOrderNo = `${clientLastName} ${month}-${day} ${counter}#${frequency}`;
                 document.getElementById('workOrderNo').value = workOrderNo;
             }
 
@@ -6041,13 +6041,13 @@
                 location: document.getElementById('location')?.value || '',
                 address: document.getElementById('address')?.value || '',
                 client: document.getElementById('client')?.value || '',
+                clientEmail: document.getElementById('clientEmail')?.value || '',
                 contactName: document.getElementById('contactName')?.value || '',
                 contactEmail: document.getElementById('contactEmail')?.value || '',
                 technician: document.getElementById('technician')?.value || '',
                 calDate: document.getElementById('calDate')?.value || '',
                 dueDate: document.getElementById('dueDate')?.value || '',
                 frequency: document.getElementById('frequency')?.value || '',
-                pi: document.getElementById('pi')?.value || '',
                 serviceDate: document.getElementById('serviceDate')?.value || '',
                 invoiceCounter: document.getElementById('invoiceCounter')?.value || '1',
                 workOrderNo: document.getElementById('workOrderNo')?.value || '',
@@ -9420,8 +9420,12 @@
                     <input type="text" id="address" placeholder="Client facility address">
                 </div>
                 <div class="form-group">
-                    <label>Client</label>
-                    <input type="text" id="client" placeholder="Client name">
+                    <label>PI/Client</label>
+                    <input type="text" id="client" placeholder="Principal Investigator / Client name" onchange="generateWorkOrderAndInvoice()">
+                </div>
+                <div class="form-group">
+                    <label>PI/Client Email</label>
+                    <input type="email" id="clientEmail" placeholder="pi@example.com">
                 </div>
                 <div class="form-group">
                     <label>Contact Name</label>
@@ -9459,10 +9463,6 @@
                 <h3 style="color: #28a745; margin-bottom: 15px;">📝 Work Order & Invoice</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>PI Name (Principal Investigator)</label>
-                        <input type="text" id="pi" placeholder="e.g., John Doerksen" onchange="generateWorkOrderAndInvoice()">
-                    </div>
-                    <div class="form-group">
                         <label>Service Date</label>
                         <input type="date" id="serviceDate" onchange="generateWorkOrderAndInvoice()">
                     </div>
@@ -9474,7 +9474,7 @@
                     <div class="form-group">
                         <label>Work Order Number</label>
                         <input type="text" id="workOrderNo" readonly style="background: #e9ecef; cursor: not-allowed;"
-                               title="Auto-generated from PI + Date + Counter + Frequency">
+                               title="Auto-generated from PI/Client + Date + Counter + Frequency">
                     </div>
                     <div class="form-group">
                         <label>Invoice Number</label>
@@ -9483,7 +9483,7 @@
                     </div>
                 </div>
                 <p style="font-size: 12px; color: #6c757d; margin-top: 10px;">
-                    💡 Work Order and Invoice numbers are auto-generated when PI, Technician, Date, and Frequency are filled.
+                    💡 Work Order and Invoice numbers are auto-generated when PI/Client, Technician, Date, and Frequency are filled.
                 </p>
             </div>
 
