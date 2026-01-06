@@ -4060,6 +4060,22 @@
             }
         }
 
+        // ========================================
+        // EQUIPMENT DISPLAY LABEL HELPER
+        // ========================================
+
+        function getEquipmentDisplayLabel(equipment, equipmentArray, type) {
+            // If serial number exists, use it
+            if (equipment.serial && equipment.serial.trim() !== '') {
+                return `${type} SN: ${equipment.serial}`;
+            } else {
+                // Find position in array (1-indexed) for dynamic numbering
+                const index = equipmentArray.findIndex(e => e.id === equipment.id);
+                const position = index >= 0 ? index + 1 : 1;
+                return `${type} #${position}`;
+            }
+        }
+
         function addPipette() {
             saveStateForUndo('Add pipette');
             currentPipetteId++;
@@ -4283,11 +4299,12 @@
             const precision = getVolumePrecision(pipette.testVolume);
 
             const statusEmoji = pipette.statusAsLeft === 'pass' ? '✅' : pipette.statusAsLeft === 'fail' ? '❌' : '⏳';
+            const displayLabel = getEquipmentDisplayLabel(pipette, pipettes, 'Pipette');
 
             pipetteDiv.innerHTML = `
                 <div class="pipette-header" style="background: #69B135; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <h3 style="margin: 0; font-size: 18px;">Pipette #${String(pipette.id).padStart(2, '0')}</h3>
+                        <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                         <span class="status-badge status-${pipette.statusAsLeft}" id="status-${pipette.id}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                             ${statusEmoji} ${pipette.statusAsLeft.toUpperCase()}
                         </span>
@@ -4469,6 +4486,7 @@
 
             const statusClass = pipette.passFail === 'PASS' ? 'pass' : pipette.passFail === 'FAIL' ? 'fail' : 'pending';
             const statusEmoji = pipette.passFail === 'PASS' ? '✅' : pipette.passFail === 'FAIL' ? '❌' : '⏳';
+            const displayLabel = getEquipmentDisplayLabel(pipette, pipettes, 'Pipette');
 
             pipetteDiv.innerHTML = `
                 <div class="pipette-header" style="background: #5a9a2d; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
@@ -4478,7 +4496,7 @@
                                    onchange="togglePipetteSelect(${pipette.id}, this.checked)"
                                    style="width: 20px; height: 20px; cursor: pointer; margin-right: 10px;">
                         </label>
-                        <h3 style="margin: 0; font-size: 18px;">Pipette #${String(pipette.id).padStart(2, '0')}</h3>
+                        <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                         <span class="status-badge status-${statusClass}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                             ${statusEmoji} ${pipette.passFail || 'PENDING'}
                         </span>
@@ -4647,6 +4665,11 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
                 pipette[field] = value;
+                if (field === 'serial') {
+                    // Re-render to update header label when serial number changes
+                    document.getElementById(`pipette-${pipetteId}`).remove();
+                    renderPipette(pipette);
+                }
                 debouncedAutoSave();
             }
         }
@@ -5032,6 +5055,10 @@
                 if (field === 'volume') {
                     pipette.testVolume = value;
                     // Re-render to update test points when volume changes
+                    document.getElementById(`pipette-${pipetteId}`).remove();
+                    renderPipette(pipette);
+                } else if (field === 'serial') {
+                    // Re-render to update header label when serial number changes
                     document.getElementById(`pipette-${pipetteId}`).remove();
                     renderPipette(pipette);
                 }
@@ -7233,12 +7260,14 @@
                 return;
             }
 
-            container.innerHTML = balances.map(balance => `
+            container.innerHTML = balances.map(balance => {
+                const displayLabel = getEquipmentDisplayLabel(balance, balances, '⚖️ Balance');
+                return `
                 <div class="pipette-card" style="margin-bottom: 30px;">
                     <!-- Header -->
                     <div class="pipette-header" style="background: #28a745; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <h3 style="margin: 0; font-size: 18px;">⚖️ Balance #${String(balance.id).padStart(2, '0')}</h3>
+                            <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                             <span class="status-badge status-${balance.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                 ${balance.passFail === 'PASS' ? '✅' : balance.passFail === 'FAIL' ? '❌' : '⏳'} ${balance.passFail}
                             </span>
@@ -7495,7 +7524,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateBalance(balanceId, field, value) {
@@ -7963,11 +7992,13 @@
                 return;
             }
 
-            container.innerHTML = timers.map(timer => `
+            container.innerHTML = timers.map(timer => {
+                const displayLabel = getEquipmentDisplayLabel(timer, timers, '⏱️ Timer');
+                return `
                 <div class="pipette-card" style="margin-bottom: 20px;">
                     <div class="pipette-header" style="background: #17a2b8; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <h3 style="margin: 0; font-size: 18px;">⏱️ Timer #${String(timer.id).padStart(2, '0')}</h3>
+                            <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                             <span class="status-badge status-${timer.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                 ${timer.passFail === 'PASS' ? '✅' : timer.passFail === 'FAIL' ? '❌' : '⏳'} ${timer.passFail}
                             </span>
@@ -8061,7 +8092,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateTimer(timerId, field, value) {
@@ -8122,11 +8153,13 @@
                 return;
             }
 
-            container.innerHTML = centrifuges.map(centrifuge => `
+            container.innerHTML = centrifuges.map(centrifuge => {
+                const displayLabel = getEquipmentDisplayLabel(centrifuge, centrifuges, '🌀 Centrifuge');
+                return `
                 <div class="pipette-card" style="margin-bottom: 20px;">
                     <div class="pipette-header" style="background: #6f42c1; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <h3 style="margin: 0; font-size: 18px;">🌀 Centrifuge #${String(centrifuge.id).padStart(2, '0')}</h3>
+                            <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                             <span class="status-badge status-${centrifuge.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                 ${centrifuge.passFail === 'PASS' ? '✅' : centrifuge.passFail === 'FAIL' ? '❌' : '⏳'} ${centrifuge.passFail}
                             </span>
@@ -8198,7 +8231,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateCentrifuge(centrifugeId, field, value) {
@@ -8260,11 +8293,13 @@
                 return;
             }
 
-            container.innerHTML = temperatureDevices.map(device => `
+            container.innerHTML = temperatureDevices.map(device => {
+                const displayLabel = getEquipmentDisplayLabel(device, temperatureDevices, '🌡️ Temp Device');
+                return `
                 <div class="pipette-card" style="margin-bottom: 20px;">
                     <div class="pipette-header" style="background: #fd7e14; color: white; padding: 15px 20px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <h3 style="margin: 0; font-size: 18px;">🌡️ Temperature Device #${String(device.id).padStart(2, '0')}</h3>
+                            <h3 style="margin: 0; font-size: 18px;">${displayLabel}</h3>
                             <span class="status-badge status-${device.passFail.toLowerCase()}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                 ${device.passFail === 'PASS' ? '✅' : device.passFail === 'FAIL' ? '❌' : '⏳'} ${device.passFail}
                             </span>
@@ -8340,7 +8375,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function updateTemperatureDevice(deviceId, field, value) {
