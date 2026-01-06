@@ -792,22 +792,38 @@
 
         .save-indicator {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
-            padding: 10px 20px;
-            background: #28a745;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #69B135 0%, #558a2a 100%);
             color: white;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 9999;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .save-indicator.show {
             opacity: 1;
+            transform: translateY(0);
+        }
+
+        .save-indicator::before {
+            content: '✓';
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        body.dark-mode .save-indicator {
+            background: linear-gradient(135deg, #69B135 0%, #558a2a 100%);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
         /* Custom Modal Styles */
