@@ -4673,6 +4673,109 @@
             showAlert(`${checkboxes.length} pipette(s) marked as ${status}`, 'Bulk Action Complete');
         }
 
+        function bulkDeleteSelected() {
+            const checkboxes = document.querySelectorAll('.pipette-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('Please select at least one pipette', 'warning');
+                return;
+            }
+
+            showConfirm(`Delete ${checkboxes.length} selected pipette(s)? This cannot be undone.`, 'Confirm Bulk Delete', () => {
+                checkboxes.forEach(checkbox => {
+                    const pipetteId = parseInt(checkbox.getAttribute('data-pipette-id'));
+                    pipettes = pipettes.filter(p => p.id !== pipetteId);
+                    const element = document.getElementById(`pipette-${pipetteId}`);
+                    if (element) element.remove();
+                });
+
+                updateEmptyState();
+                updateProgress();
+                updateAnalysis();
+                updateSummaryTable();
+                updateBulkActionsBar();
+                updateCopyButton();
+                debouncedAutoSave();
+                showToast(`${checkboxes.length} pipette(s) deleted successfully`, 'success');
+            });
+        }
+
+        function deleteAllBalances() {
+            if (balances.length === 0) return;
+
+            showConfirm(`Delete all ${balances.length} balance(s)? This cannot be undone.`, 'Confirm Delete All', () => {
+                const count = balances.length;
+                balances = [];
+                renderBalances();
+                updateManifest();
+                debouncedAutoSave();
+                showToast(`${count} balance(s) deleted successfully`, 'success');
+                updateDeleteAllButtons();
+            });
+        }
+
+        function deleteAllTimers() {
+            if (timers.length === 0) return;
+
+            showConfirm(`Delete all ${timers.length} timer(s)? This cannot be undone.`, 'Confirm Delete All', () => {
+                const count = timers.length;
+                timers = [];
+                renderTimers();
+                updateManifest();
+                debouncedAutoSave();
+                showToast(`${count} timer(s) deleted successfully`, 'success');
+                updateDeleteAllButtons();
+            });
+        }
+
+        function deleteAllCentrifuges() {
+            if (centrifuges.length === 0) return;
+
+            showConfirm(`Delete all ${centrifuges.length} centrifuge(s)? This cannot be undone.`, 'Confirm Delete All', () => {
+                const count = centrifuges.length;
+                centrifuges = [];
+                renderCentrifuges();
+                updateManifest();
+                debouncedAutoSave();
+                showToast(`${count} centrifuge(s) deleted successfully`, 'success');
+                updateDeleteAllButtons();
+            });
+        }
+
+        function deleteAllTemperatureDevices() {
+            if (temperatureDevices.length === 0) return;
+
+            showConfirm(`Delete all ${temperatureDevices.length} temperature device(s)? This cannot be undone.`, 'Confirm Delete All', () => {
+                const count = temperatureDevices.length;
+                temperatureDevices = [];
+                renderTemperatureDevices();
+                updateManifest();
+                debouncedAutoSave();
+                showToast(`${count} temperature device(s) deleted successfully`, 'success');
+                updateDeleteAllButtons();
+            });
+        }
+
+        function updateDeleteAllButtons() {
+            // Show/hide delete all buttons based on equipment count
+            const deleteAllBalancesBtn = document.getElementById('deleteAllBalancesBtn');
+            const deleteAllTimersBtn = document.getElementById('deleteAllTimersBtn');
+            const deleteAllCentrifugesBtn = document.getElementById('deleteAllCentrifugesBtn');
+            const deleteAllTemperatureDevicesBtn = document.getElementById('deleteAllTemperatureDevicesBtn');
+
+            if (deleteAllBalancesBtn) {
+                deleteAllBalancesBtn.style.display = balances.length > 0 ? 'block' : 'none';
+            }
+            if (deleteAllTimersBtn) {
+                deleteAllTimersBtn.style.display = timers.length > 0 ? 'block' : 'none';
+            }
+            if (deleteAllCentrifugesBtn) {
+                deleteAllCentrifugesBtn.style.display = centrifuges.length > 0 ? 'block' : 'none';
+            }
+            if (deleteAllTemperatureDevicesBtn) {
+                deleteAllTemperatureDevicesBtn.style.display = temperatureDevices.length > 0 ? 'block' : 'none';
+            }
+        }
+
         // ========================================
         // COPY FROM PREVIOUS FUNCTION
         // ========================================
@@ -6945,6 +7048,7 @@
             balances.push(balance);
             renderBalances();
             debouncedAutoSave();
+            updateDeleteAllButtons();
             showToast('Balance added successfully', 'success');
         }
 
@@ -7251,6 +7355,7 @@
                 renderBalances();
                 updateManifest();
                 debouncedAutoSave();
+                updateDeleteAllButtons();
                 showToast('Balance removed successfully', 'success');
             });
         }
@@ -7681,6 +7786,7 @@
             timers.push(timer);
             renderTimers();
             debouncedAutoSave();
+            updateDeleteAllButtons();
         }
 
         function renderTimers() {
@@ -7788,6 +7894,7 @@
                 renderTimers();
                 updateManifest();
                 debouncedAutoSave();
+                updateDeleteAllButtons();
             });
         }
 
@@ -7812,6 +7919,7 @@
             centrifuges.push(centrifuge);
             renderCentrifuges();
             debouncedAutoSave();
+            updateDeleteAllButtons();
         }
 
         function renderCentrifuges() {
@@ -7923,6 +8031,7 @@
                 renderCentrifuges();
                 updateManifest();
                 debouncedAutoSave();
+                updateDeleteAllButtons();
             });
         }
 
@@ -7947,6 +8056,7 @@
             temperatureDevices.push(device);
             renderTemperatureDevices();
             debouncedAutoSave();
+            updateDeleteAllButtons();
         }
 
         function renderTemperatureDevices() {
@@ -8058,6 +8168,7 @@
                 renderTemperatureDevices();
                 updateManifest();
                 debouncedAutoSave();
+                updateDeleteAllButtons();
             });
         }
 
@@ -9188,6 +9299,9 @@
                         <button class="btn btn-danger" onclick="bulkMarkStatus('FAIL')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
                             ✗ Mark as FAIL
                         </button>
+                        <button class="btn" onclick="bulkDeleteSelected()" style="background: #dc3545; color: white; padding: 8px 18px; font-size: 14px; font-weight: 600;">
+                            🗑️ Delete Selected
+                        </button>
                     </div>
                 </div>
             </div>
@@ -9205,7 +9319,10 @@
             <div id="balanceSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>⚖️ Balance Calibration</h2>
-                    <button class="btn btn-primary" onclick="addBalance()">+ Add Balance</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addBalance()">+ Add Balance</button>
+                        <button class="btn btn-danger" onclick="deleteAllBalances()" id="deleteAllBalancesBtn" style="display: none;">🗑️ Delete All</button>
+                    </div>
                 </div>
                 <div id="balancesList"></div>
             </div>
@@ -9214,7 +9331,10 @@
             <div id="timerSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>⏱️ Timer Calibration</h2>
-                    <button class="btn btn-primary" onclick="addTimer()">+ Add Timer</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addTimer()">+ Add Timer</button>
+                        <button class="btn btn-danger" onclick="deleteAllTimers()" id="deleteAllTimersBtn" style="display: none;">🗑️ Delete All</button>
+                    </div>
                 </div>
                 <div id="timersList"></div>
             </div>
@@ -9223,7 +9343,10 @@
             <div id="centrifugeSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>🌀 Centrifuge Calibration</h2>
-                    <button class="btn btn-primary" onclick="addCentrifuge()">+ Add Centrifuge</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addCentrifuge()">+ Add Centrifuge</button>
+                        <button class="btn btn-danger" onclick="deleteAllCentrifuges()" id="deleteAllCentrifugesBtn" style="display: none;">🗑️ Delete All</button>
+                    </div>
                 </div>
                 <div id="centrifugesList"></div>
             </div>
@@ -9232,7 +9355,10 @@
             <div id="temperatureSection" class="calibration-section" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>🌡️ Temperature Device Calibration</h2>
-                    <button class="btn btn-primary" onclick="addTemperatureDevice()">+ Add Temperature Device</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="addTemperatureDevice()">+ Add Temperature Device</button>
+                        <button class="btn btn-danger" onclick="deleteAllTemperatureDevices()" id="deleteAllTemperatureDevicesBtn" style="display: none;">🗑️ Delete All</button>
+                    </div>
                 </div>
                 <div id="temperatureDevicesList"></div>
             </div>
