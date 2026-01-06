@@ -6041,6 +6041,8 @@
                 location: document.getElementById('location')?.value || '',
                 address: document.getElementById('address')?.value || '',
                 client: document.getElementById('client')?.value || '',
+                contactName: document.getElementById('contactName')?.value || '',
+                contactEmail: document.getElementById('contactEmail')?.value || '',
                 technician: document.getElementById('technician')?.value || '',
                 calDate: document.getElementById('calDate')?.value || '',
                 dueDate: document.getElementById('dueDate')?.value || '',
@@ -7146,8 +7148,6 @@
                 model: '',
                 capacity: '',
                 readability: '',
-                customer: '',
-                location: '',
                 building: '',
                 calDate: '',
                 dueDate: '',
@@ -7251,14 +7251,6 @@
                         <!-- Equipment Information -->
                         <h4 style="color: #28a745; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #28a745;">📋 Equipment Information</h4>
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Customer</label>
-                                <input type="text" value="${balance.customer}" onchange="updateBalance(${balance.id}, 'customer', this.value)" placeholder="Customer name">
-                            </div>
-                            <div class="form-group">
-                                <label>Location</label>
-                                <input type="text" value="${balance.location}" onchange="updateBalance(${balance.id}, 'location', this.value)" placeholder="Location">
-                            </div>
                             <div class="form-group">
                                 <label>Manufacturer</label>
                                 <input type="text" value="${balance.make}" onchange="updateBalance(${balance.id}, 'make', this.value)" placeholder="e.g., Mettler Toledo">
@@ -7672,8 +7664,6 @@
 
                     <!-- Equipment Information -->
                     <div class="info-grid">
-                        <div class="info-item"><strong>Customer:</strong> ${balance.customer || 'N/A'}</div>
-                        <div class="info-item"><strong>Location:</strong> ${balance.location || 'N/A'}</div>
                         <div class="info-item"><strong>Manufacturer:</strong> ${balance.make || 'N/A'}</div>
                         <div class="info-item"><strong>Bldg/Room:</strong> ${balance.building || 'N/A'}</div>
                         <div class="info-item"><strong>Model:</strong> ${balance.model || 'N/A'}</div>
@@ -7933,6 +7923,7 @@
                 serial: '',
                 make: '',
                 model: '',
+                building: '',
                 nominalTime: '',
                 asFoundReading: '',
                 asLeftReading: '',
@@ -7996,6 +7987,10 @@
                             <div class="form-group">
                                 <label>Model</label>
                                 <input type="text" value="${timer.model}" onchange="updateTimer(${timer.id}, 'model', this.value)" placeholder="Model number">
+                            </div>
+                            <div class="form-group">
+                                <label>Bldg/Room</label>
+                                <input type="text" value="${timer.building}" onchange="updateTimer(${timer.id}, 'building', this.value)" placeholder="Building/Room">
                             </div>
                         </div>
 
@@ -8202,6 +8197,7 @@
                 serial: '',
                 make: '',
                 model: '',
+                building: '',
                 range: '',
                 testPoint: '',
                 asFoundReading: '',
@@ -8266,6 +8262,10 @@
                             <div class="form-group">
                                 <label>Model</label>
                                 <input type="text" value="${device.model}" onchange="updateTemperatureDevice(${device.id}, 'model', this.value)" placeholder="Model number">
+                            </div>
+                            <div class="form-group">
+                                <label>Bldg/Room</label>
+                                <input type="text" value="${device.building}" onchange="updateTemperatureDevice(${device.id}, 'building', this.value)" placeholder="Building/Room">
                             </div>
                             <div class="form-group">
                                 <label>Temperature Range</label>
@@ -9355,7 +9355,7 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
                 <div style="flex: 1;">
-                    <h1 style="margin: 0; color: #223077;">Calibrations International Inc.</h1>
+                    <h1 style="margin: 0; color: #34495e;">Calibrations International Inc.</h1>
                     <p style="margin: 5px 0 0 0; color: #69B135; font-weight: 600; font-size: 16px;">Quality Calibrations Across the Globe</p>
                     <p style="margin: 8px 0 0 0; color: #666; font-size: 14px;">Data Intake System | ISO 8655 Compliant | Bozeman, MT</p>
                 </div>
@@ -9364,19 +9364,19 @@
                     <div>406-589-6025</div>
                     <div style="color: #69B135;">theresa@calibrationsinternational.com</div>
                 </div>
-            </div>
-            <div style="position: absolute; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px;">
-                <!-- Row 1: Templates, Voice, Dark Mode -->
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 6px 12px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">📝 Templates</button>
-                    <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation" style="padding: 6px 12px; font-size: 13px;">🎙️ Voice Control</button>
-                    <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 6px 12px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🌙</button>
-                </div>
-                <!-- Row 2: Undo, Redo, Logout -->
-                <div style="display: flex; gap: 8px;">
-                    <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↶ Undo</button>
-                    <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↷ Redo</button>
-                    <button onclick="logout()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🔒 Logout</button>
+                <div style="margin-left: auto; display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Row 1: Templates, Voice, Dark Mode -->
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="openTemplatesModal()" title="Manage pipette templates" style="padding: 6px 12px; background: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">📝 Templates</button>
+                        <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation" style="padding: 6px 12px; font-size: 13px;">🎙️ Voice Control</button>
+                        <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 6px 12px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🌙</button>
+                    </div>
+                    <!-- Row 2: Undo, Redo, Logout -->
+                    <div style="display: flex; gap: 8px;">
+                        <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↶ Undo</button>
+                        <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↷ Redo</button>
+                        <button onclick="logout()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🔒 Logout</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -9422,6 +9422,14 @@
                 <div class="form-group">
                     <label>Client</label>
                     <input type="text" id="client" placeholder="Client name">
+                </div>
+                <div class="form-group">
+                    <label>Contact Name</label>
+                    <input type="text" id="contactName" placeholder="Primary contact name">
+                </div>
+                <div class="form-group">
+                    <label>Contact Email</label>
+                    <input type="email" id="contactEmail" placeholder="contact@example.com">
                 </div>
                 <div class="form-group">
                     <label>Technician</label>
@@ -9521,8 +9529,8 @@
                 </label>
                 <select id="calibrationType" onchange="switchCalibrationType(this.value)"
                         style="width: 100%; padding: 12px 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; background: white; cursor: pointer;">
-                    <option value="platinum-pipette">🏆 Platinum Pipette (ISO 8655 Full Gravimetric)</option>
                     <option value="basic-pipette">⚡ Basic Pipette (Quick Pass/Fail)</option>
+                    <option value="platinum-pipette">🏆 Platinum Pipette (ISO 8655 Full Gravimetric)</option>
                     <option value="balance">⚖️ Balance Calibration</option>
                     <option value="timer">⏱️ Timer Calibration</option>
                     <option value="centrifuge">🌀 Centrifuge Calibration</option>
