@@ -7924,10 +7924,12 @@
                 make: '',
                 model: '',
                 building: '',
-                nominalTime: '',
-                asFoundReading: '',
-                asLeftReading: '',
-                accuracy: '',
+                // Time Point 1 (30 seconds)
+                timePoint1_nominal: '30',
+                timePoint1_reading: '',
+                // Time Point 2 (2 minutes / 120 seconds)
+                timePoint2_nominal: '120',
+                timePoint2_reading: '',
                 passFail: 'PENDING',
                 comments: ''
             };
@@ -7994,24 +7996,46 @@
                             </div>
                         </div>
 
-                        <h4 style="color: #17a2b8; margin: 20px 0 10px 0;">⏱️ Calibration Test</h4>
+                        <h4 style="color: #17a2b8; margin: 20px 0 10px 0;">⏱️ Timer Verification</h4>
+                        <div style="background: #e7f3f8; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid #17a2b8;">
+                            <div style="font-size: 13px; color: #0c5460;">
+                                <strong>Reference:</strong> <a href="https://time.gov" target="_blank" rel="noopener noreferrer" style="color: #17a2b8; text-decoration: none; font-weight: 600;">🌐 time.gov</a>
+                                <span style="margin-left: 10px; color: #666;">| Official U.S. Time Reference</span>
+                            </div>
+                        </div>
+
+                        <!-- Time Point 1: 30 Seconds -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6;">
+                            <h5 style="color: #17a2b8; margin: 0 0 10px 0;">Time Point 1: 30 Seconds</h5>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Nominal Time (seconds)</label>
+                                    <input type="number" value="${timer.timePoint1_nominal || '30'}" onchange="updateTimer(${timer.id}, 'timePoint1_nominal', this.value)" placeholder="30">
+                                </div>
+                                <div class="form-group">
+                                    <label>Actual Reading (seconds)</label>
+                                    <input type="text" value="${timer.timePoint1_reading || ''}" onchange="updateTimer(${timer.id}, 'timePoint1_reading', this.value)" placeholder="Enter reading">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Time Point 2: 2 Minutes (120 Seconds) -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6;">
+                            <h5 style="color: #17a2b8; margin: 0 0 10px 0;">Time Point 2: 2 Minutes (120 Seconds)</h5>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Nominal Time (seconds)</label>
+                                    <input type="number" value="${timer.timePoint2_nominal || '120'}" onchange="updateTimer(${timer.id}, 'timePoint2_nominal', this.value)" placeholder="120">
+                                </div>
+                                <div class="form-group">
+                                    <label>Actual Reading (seconds)</label>
+                                    <input type="text" value="${timer.timePoint2_reading || ''}" onchange="updateTimer(${timer.id}, 'timePoint2_reading', this.value)" placeholder="Enter reading">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>Nominal Time (min:sec)</label>
-                                <input type="text" value="${timer.nominalTime}" onchange="updateTimer(${timer.id}, 'nominalTime', this.value)" placeholder="e.g., 10:00">
-                            </div>
-                            <div class="form-group">
-                                <label>As Found Reading</label>
-                                <input type="text" value="${timer.asFoundReading}" onchange="updateTimer(${timer.id}, 'asFoundReading', this.value)" placeholder="Actual time">
-                            </div>
-                            <div class="form-group">
-                                <label>As Left Reading</label>
-                                <input type="text" value="${timer.asLeftReading}" onchange="updateTimer(${timer.id}, 'asLeftReading', this.value)" placeholder="Actual time">
-                            </div>
-                            <div class="form-group">
-                                <label>Accuracy / Deviation</label>
-                                <input type="text" value="${timer.accuracy}" onchange="updateTimer(${timer.id}, 'accuracy', this.value)" placeholder="e.g., ±0.5%">
-                            </div>
                             <div class="form-group">
                                 <label>Overall Status</label>
                                 <select value="${timer.passFail}" onchange="updateTimer(${timer.id}, 'passFail', this.value)">
