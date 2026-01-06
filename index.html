@@ -1342,6 +1342,90 @@
             color: #e6e6e6;
         }
 
+        /* Loading Spinner Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(3px);
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 20px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #69B135;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        body.dark-mode .loading-spinner {
+            background: #16213e;
+        }
+
+        body.dark-mode .loading-text {
+            color: #e6e6e6;
+        }
+
+        body.dark-mode .spinner {
+            border-color: #2c3e50;
+            border-top-color: #69B135;
+        }
+
+        /* Inline loading spinner for buttons */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid transparent;
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
         /* Print Optimization */
         @media print {
             body {
@@ -3638,17 +3722,21 @@
             }
 
             showConfirm('Load this session? Current work will be saved.', 'Load Session', () => {
-                if (currentSessionId) {
-                    autoSave();
-                }
+                showLoading('Loading session...');
 
-                // Clear current
-                document.getElementById('pipettesContainer').innerHTML = '';
-                document.getElementById('balancesList').innerHTML = '';
-                document.getElementById('timersList').innerHTML = '';
-                document.getElementById('centrifugesList').innerHTML = '';
-                document.getElementById('temperatureDevicesList').innerHTML = '';
-                pipettes = [];
+                // Use setTimeout to allow the loading spinner to render
+                setTimeout(() => {
+                    if (currentSessionId) {
+                        autoSave();
+                    }
+
+                    // Clear current
+                    document.getElementById('pipettesContainer').innerHTML = '';
+                    document.getElementById('balancesList').innerHTML = '';
+                    document.getElementById('timersList').innerHTML = '';
+                    document.getElementById('centrifugesList').innerHTML = '';
+                    document.getElementById('temperatureDevicesList').innerHTML = '';
+                    pipettes = [];
                 balances = [];
                 timers = [];
                 centrifuges = [];
@@ -3707,18 +3795,20 @@
                     renderTemperatureDevices();
                 }
 
-                updateProgress();
-                updateAnalysis();
-                renderInventoryUsage();
-                updateInventoryStats();
-                updateSummaryTable();
-                updateManifest();
-                updateCalibrationTypeCounts();
+                    updateProgress();
+                    updateAnalysis();
+                    renderInventoryUsage();
+                    updateInventoryStats();
+                    updateSummaryTable();
+                    updateManifest();
+                    updateCalibrationTypeCounts();
 
-                // Save as current session
-                localStorage.setItem('currentSession', JSON.stringify(session));
+                    // Save as current session
+                    localStorage.setItem('currentSession', JSON.stringify(session));
 
-                showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'));
+                    hideLoading();
+                    showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'));
+                }, 100);
             });
         }
 
@@ -8961,6 +9051,26 @@
             }, 3000);
         }
 
+        // ========================================
+        // LOADING SPINNER
+        // ========================================
+
+        function showLoading(message = 'Loading...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = document.getElementById('loadingText');
+            if (overlay && text) {
+                text.textContent = message;
+                overlay.classList.add('show');
+            }
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
+        }
+
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             // Check password first
@@ -9079,6 +9189,14 @@
 
     <!-- Toast Notification Container -->
     <div id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text" id="loadingText">Loading...</p>
+        </div>
+    </div>
 
     <div class="container">
         <div class="header">
