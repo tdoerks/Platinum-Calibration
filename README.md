@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.3.1-blue)
+![Version](https://img.shields.io/badge/version-2.3.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,10 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.3.2** (January 20, 2026)
+- 🔧 Fixed service level display not updating immediately when switching calibration types
+- 🎯 Improved UX - pipettes now re-render instantly when switching between Platinum and Basic
 
 **v2.3.1** (January 20, 2026)
 - 🔧 Fixed service level filtering on page load (sessions now load correctly filtered)

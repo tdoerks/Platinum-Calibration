@@ -1,5 +1,16 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.2 (January 2026)
+
+### 🔧 Bug Fixes
+- **Fixed service level display not updating on calibration type switch** - Pipettes now immediately re-render when switching between Platinum and Basic calibration types
+- **Improved UX** - No longer need to add a pipette to trigger display update after switching service levels
+
+**What's Fixed:**
+- **Issue:** When switching from Platinum to Basic (or vice versa) using the calibration type dropdown, pipettes stayed on the previous service level display until adding a new pipette
+- **Fix:** Added explicit `renderAllPipettes()` call at end of `switchCalibrationType()` function (line 3896)
+- **Result:** Display immediately updates to show only matching service level pipettes when switching
+
 ## Version 2.3.1 (January 2026)
 
 ### 🔧 Bug Fixes

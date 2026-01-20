@@ -3889,6 +3889,12 @@
             } else if (type === 'temperature') {
                 document.getElementById('temperatureSection').style.display = 'block';
             }
+
+            // Always re-render pipettes when switching calibration type
+            // This ensures the display updates immediately when switching between Platinum and Basic
+            if (type === 'platinum-pipette' || type === 'basic-pipette') {
+                renderAllPipettes();
+            }
         }
 
         function addPipette() {
