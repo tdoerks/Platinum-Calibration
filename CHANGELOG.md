@@ -1,5 +1,18 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.1 (January 2026)
+
+### 🔧 Bug Fixes
+- **Fixed service level filtering on page load** - Loaded sessions now correctly filter pipettes by service level
+- **Fixed environmental section always visible** - Environmental conditions (temperature, humidity, pressure, balance info) now remain visible for all calibration types
+
+**What's Fixed:**
+- **Issue:** When loading a saved session with mixed Platinum/Basic pipettes, ALL pipettes displayed regardless of selected service level
+- **Fix:** Added `renderAllPipettes()` call after `loadCurrentSession()` to apply filtering (line 8899)
+- **Issue:** Environmental section disappeared when switching to Basic calibration
+- **Fix:** Removed all show/hide logic for environmental section (lines 3522-3547, 8935)
+- **Result:** Environmental data always visible, filtering works on page load
+
 ## Version 2.3.0 (January 2026)
 
 ### 🔀 Separate Platinum and Basic Pipette Views

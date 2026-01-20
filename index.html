@@ -3519,7 +3519,6 @@
         function handleServiceLevelChange(newLevel) {
             const badge = document.getElementById('serviceLevelBadge');
             const description = document.getElementById('serviceLevelDescription');
-            const envSection = document.getElementById('environmentalSection');
 
             if (newLevel === 'platinum') {
                 badge.innerHTML = `
@@ -3530,9 +3529,6 @@
 
                 // Show Analysis tab, hide Summary Table tab
                 updateTabVisibility('platinum');
-
-                // Show environmental conditions (needed for Platinum)
-                if (envSection) envSection.style.display = 'block';
             } else {
                 badge.innerHTML = `
                     <div style="color: white; font-size: 28px; margin-bottom: 5px;">⚡</div>
@@ -3542,9 +3538,6 @@
 
                 // Hide Analysis tab, show Summary Table tab
                 updateTabVisibility('basic');
-
-                // Hide environmental conditions (not needed for Basic)
-                if (envSection) envSection.style.display = 'none';
             }
 
             // Re-render pipettes to show only matching service level
@@ -8901,6 +8894,11 @@
             // Try to load saved session first
             const sessionLoaded = loadCurrentSession();
 
+            // If session was loaded with pipettes, apply service level filter
+            if (sessionLoaded && pipettes.length > 0) {
+                renderAllPipettes(); // Filter pipettes by current service level
+            }
+
             // Show empty state if no pipettes
             updateEmptyState();
 
@@ -8939,12 +8937,7 @@
             // Initialize dark mode
             initDarkMode();
 
-            // Initialize environmental section visibility based on service level
-            const serviceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
-            const envSection = document.getElementById('environmentalSection');
-            if (envSection) {
-                envSection.style.display = serviceLevel === 'platinum' ? 'block' : 'none';
-            }
+            // Environmental section is now always visible (no hiding)
 
             // Add listeners to session form fields for auto-save
             document.querySelectorAll('#session input, #session select').forEach(input => {
