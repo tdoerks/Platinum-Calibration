@@ -1,5 +1,23 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.2.1 (January 2026)
+
+### 🔧 Bug Fixes & UI Improvements
+- **Removed empty state display** - Disabled "Add Your First Pipette" box that wasn't updating properly
+- **Fixed Platinum/Basic data mixing** - Added "platinum" prefix to all localStorage keys to prevent data conflicts between Platinum and Basic calibration systems
+- **Separated localStorage** - Platinum and Basic calibration data now completely isolated
+
+**Important:** This update will clear existing Platinum session data (fresh start). Basic calibration data is unaffected.
+
+**localStorage Keys Updated:**
+- `currentSession` → `platinumCurrentSession`
+- `calibrationSessions` → `platinumCalibrationSessions`
+- `recentValues` → `platinumRecentValues`
+- `lastBackupDate` → `platinumLastBackupDate`
+- `backupReminderDismissedUntil` → `platinumBackupReminderDismissedUntil`
+- `darkMode` → `platinumDarkMode`
+- `pipetteTemplates` → `platinumPipetteTemplates`
+
 ## Version 2.2 (January 2026)
 
 ### 🏷️ Brand & Model Autocomplete

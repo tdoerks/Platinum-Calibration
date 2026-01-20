@@ -2869,8 +2869,8 @@
             const BACKUP_REMINDER_DAYS = 7;
             const DISMISS_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-            const lastBackup = localStorage.getItem('lastBackupDate');
-            const dismissedUntil = localStorage.getItem('backupReminderDismissedUntil');
+            const lastBackup = localStorage.getItem('platinumLastBackupDate');
+            const dismissedUntil = localStorage.getItem('platinumBackupReminderDismissedUntil');
 
             // Check if reminder is currently dismissed
             if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
@@ -2935,13 +2935,13 @@
 
         function downloadBackupAndDismiss() {
             saveJSON(); // Trigger download
-            localStorage.setItem('lastBackupDate', Date.now().toString());
+            localStorage.setItem('platinumLastBackupDate', Date.now().toString());
             closeBackupReminder();
         }
 
         function dismissBackupReminder() {
             const dismissUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
-            localStorage.setItem('backupReminderDismissedUntil', dismissUntil.toString());
+            localStorage.setItem('platinumBackupReminderDismissedUntil', dismissUntil.toString());
             closeBackupReminder();
         }
 
@@ -2960,7 +2960,7 @@
         function saveRecentValue(fieldName, value) {
             if (!value || value.trim() === '') return;
 
-            const recentValues = JSON.parse(localStorage.getItem('recentValues') || '{}');
+            const recentValues = JSON.parse(localStorage.getItem('platinumRecentValues') || '{}');
 
             if (!recentValues[fieldName]) {
                 recentValues[fieldName] = [];
@@ -2976,11 +2976,11 @@
             const maxValues = fieldName === 'brand' ? 10 : 5;
             recentValues[fieldName] = recentValues[fieldName].slice(0, maxValues);
 
-            localStorage.setItem('recentValues', JSON.stringify(recentValues));
+            localStorage.setItem('platinumRecentValues', JSON.stringify(recentValues));
         }
 
         function getRecentValues(fieldName) {
-            const recentValues = JSON.parse(localStorage.getItem('recentValues') || '{}');
+            const recentValues = JSON.parse(localStorage.getItem('platinumRecentValues') || '{}');
             return recentValues[fieldName] || [];
         }
 
@@ -3340,10 +3340,10 @@
 
             try {
                 // Save current session
-                localStorage.setItem('currentSession', JSON.stringify(sessionData));
+                localStorage.setItem('platinumCurrentSession', JSON.stringify(sessionData));
 
                 // Update sessions list
-                let sessions = JSON.parse(localStorage.getItem('calibrationSessions') || '[]');
+                let sessions = JSON.parse(localStorage.getItem('platinumCalibrationSessions') || '[]');
                 const existingIndex = sessions.findIndex(s => s.id === currentSessionId);
 
                 if (existingIndex >= 0) {
@@ -3357,7 +3357,7 @@
                     sessions = sessions.slice(0, 50);
                 }
 
-                localStorage.setItem('calibrationSessions', JSON.stringify(sessions));
+                localStorage.setItem('platinumCalibrationSessions', JSON.stringify(sessions));
 
                 showSaveIndicator();
             } catch (error) {
@@ -3396,7 +3396,7 @@
         }
 
         function loadCurrentSession() {
-            const savedSession = localStorage.getItem('currentSession');
+            const savedSession = localStorage.getItem('platinumCurrentSession');
             if (!savedSession) return false;
 
             try {
@@ -3604,7 +3604,7 @@
                 }
             });
 
-            localStorage.removeItem('currentSession');
+            localStorage.removeItem('platinumCurrentSession');
             updateProgress();
             updateAnalysis();
 
@@ -3612,7 +3612,7 @@
         }
 
         function loadSessionFromHistory(sessionId) {
-            const sessions = JSON.parse(localStorage.getItem('calibrationSessions') || '[]');
+            const sessions = JSON.parse(localStorage.getItem('platinumCalibrationSessions') || '[]');
             const session = sessions.find(s => s.id === sessionId);
 
             if (!session) {
@@ -3698,7 +3698,7 @@
                 updateManifest();
 
                 // Save as current session
-                localStorage.setItem('currentSession', JSON.stringify(session));
+                localStorage.setItem('platinumCurrentSession', JSON.stringify(session));
 
                 showTab('calibrations', document.querySelector('.nav-tab:nth-child(2)'));
             });
@@ -3714,12 +3714,12 @@
 
         function executeDeleteSession(sessionId) {
 
-            let sessions = JSON.parse(localStorage.getItem('calibrationSessions') || '[]');
+            let sessions = JSON.parse(localStorage.getItem('platinumCalibrationSessions') || '[]');
             sessions = sessions.filter(s => s.id !== sessionId);
-            localStorage.setItem('calibrationSessions', JSON.stringify(sessions));
+            localStorage.setItem('platinumCalibrationSessions', JSON.stringify(sessions));
 
             if (currentSessionId === sessionId) {
-                localStorage.removeItem('currentSession');
+                localStorage.removeItem('platinumCurrentSession');
                 currentSessionId = null;
             }
 
@@ -3805,19 +3805,8 @@
         // ========== End LocalStorage Functions ==========
 
         function updateEmptyState() {
-            const container = document.getElementById('pipettesContainer');
-            if (pipettes.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 12px; border: 2px dashed #dee2e6;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">📋</div>
-                        <h3 style="color: #6c757d; margin-bottom: 10px;">No Pipettes Added Yet</h3>
-                        <p style="color: #adb5bd; margin-bottom: 30px;">Click the "+ Add Pipette" button above to start your calibration</p>
-                        <button class="btn btn-primary" onclick="addPipette()" style="font-size: 16px; padding: 12px 24px;">
-                            ➕ Add Your First Pipette
-                        </button>
-                    </div>
-                `;
-            }
+            // Disabled empty state display - users use top "Add Pipette" button
+            // TODO: Re-implement with proper visibility toggling when pipettes are added/removed
         }
 
         function showTab(tabName, clickedTab) {
@@ -6464,13 +6453,13 @@
             URL.revokeObjectURL(url);
 
             // Record backup timestamp
-            localStorage.setItem('lastBackupDate', Date.now().toString());
+            localStorage.setItem('platinumLastBackupDate', Date.now().toString());
 
             showAlert('Session saved successfully!', 'Success');
         }
 
         function loadHistory() {
-            const sessions = JSON.parse(localStorage.getItem('calibrationSessions') || '[]');
+            const sessions = JSON.parse(localStorage.getItem('platinumCalibrationSessions') || '[]');
             const historyContainer = document.getElementById('historyContainer');
 
             if (!historyContainer) return;
@@ -8544,7 +8533,7 @@
         // TEMPLATES SYSTEM
         // ========================================
 
-        let pipetteTemplates = JSON.parse(localStorage.getItem('pipetteTemplates') || '[]');
+        let pipetteTemplates = JSON.parse(localStorage.getItem('platinumPipetteTemplates') || '[]');
 
         function openTemplatesModal() {
             document.getElementById('templatesModal').style.display = 'flex';
@@ -8647,7 +8636,7 @@
             };
 
             pipetteTemplates.push(template);
-            localStorage.setItem('pipetteTemplates', JSON.stringify(pipetteTemplates));
+            localStorage.setItem('platinumPipetteTemplates', JSON.stringify(pipetteTemplates));
 
             document.getElementById('templateName').value = '';
             renderTemplatesList();
@@ -8715,7 +8704,7 @@
             const template = pipetteTemplates[index];
             showConfirm(`Delete template "${template.name}"?`, 'Confirm Delete', () => {
                 pipetteTemplates.splice(index, 1);
-                localStorage.setItem('pipetteTemplates', JSON.stringify(pipetteTemplates));
+                localStorage.setItem('platinumPipetteTemplates', JSON.stringify(pipetteTemplates));
                 renderTemplatesList();
             });
         }
@@ -8727,7 +8716,7 @@
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+            localStorage.setItem('platinumDarkMode', isDark ? 'enabled' : 'disabled');
 
             // Update button
             const btn = document.getElementById('darkModeToggle');
@@ -8738,7 +8727,7 @@
         }
 
         function initDarkMode() {
-            const darkMode = localStorage.getItem('darkMode');
+            const darkMode = localStorage.getItem('platinumDarkMode');
             if (darkMode === 'enabled') {
                 document.body.classList.add('dark-mode');
                 const btn = document.getElementById('darkModeToggle');

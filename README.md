@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.2-blue)
+![Version](https://img.shields.io/badge/version-2.2.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,11 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.2.1** (January 20, 2026)
+- 🔧 Fixed Platinum/Basic data mixing by adding "platinum" prefix to localStorage keys
+- 🗑️ Removed empty state display (will re-implement later)
+- 🔒 Completely isolated Platinum and Basic calibration data
 
 **v2.2** (January 20, 2026)
 - 🏷️ Brand & Model autocomplete with 100+ pre-loaded options
