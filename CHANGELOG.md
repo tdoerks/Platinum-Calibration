@@ -1,5 +1,26 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.3 (January 2026)
+
+### ✨ New Features
+- **Added Adjustments Made section to Platinum calibration** - Platinum pipettes now have same adjustment tracking as Basic (Seal, Corrosion, Grease, Shaft, Friction Ring, O-Ring, Other)
+- **Inventory auto-detection now includes Platinum pipettes** - Auto-detect button in Inventory tab now tracks parts used from both Platinum and Basic calibrations
+
+### 🔧 Bug Fixes
+- **Fixed service level switching not working consistently** - Removed conditional checks that prevented re-rendering when switching between Platinum and Basic calibration types
+- **Improved UX** - Switching between service levels now ALWAYS updates the display immediately, even when clicking the same service level twice
+
+**What's Fixed:**
+- **Issue 1 (Switching):** When on Platinum and selecting Platinum again from dropdown, pipettes wouldn't update. Now always calls `handleServiceLevelChange()` to ensure display updates.
+- **Issue 2 (Adjustments):** Platinum pipettes had no way to track adjustments (seals, shafts, etc.). Now have identical adjustment fields as Basic.
+- **Issue 3 (Inventory):** Inventory auto-detection only worked for Basic pipettes. Now works for both Platinum and Basic.
+
+**Technical Changes:**
+- Removed `value !== 'platinum'` and `value !== 'basic'` conditional checks in `switchCalibrationType()` (lines 3870, 3879)
+- Added full adjustments section to `renderPlatinumPipette()` function (lines 4272-4329)
+- Updated `autoDetectInventory()` to filter for both service levels (line 8273)
+- Updated error message to be service-level agnostic (line 8301)
+
 ## Version 2.3.2 (January 2026)
 
 ### 🔧 Bug Fixes

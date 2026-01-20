@@ -3867,7 +3867,7 @@
                 document.getElementById('pipetteSectionTitle').textContent = '🏆 Platinum Pipette Calibration';
                 // Set service level to platinum
                 const serviceLevelSelect = document.getElementById('serviceLevel');
-                if (serviceLevelSelect && serviceLevelSelect.value !== 'platinum') {
+                if (serviceLevelSelect) {
                     serviceLevelSelect.value = 'platinum';
                     handleServiceLevelChange('platinum');
                 }
@@ -3876,7 +3876,7 @@
                 document.getElementById('pipetteSectionTitle').textContent = '⚡ Basic Pipette Calibration';
                 // Set service level to basic
                 const serviceLevelSelect = document.getElementById('serviceLevel');
-                if (serviceLevelSelect && serviceLevelSelect.value !== 'basic') {
+                if (serviceLevelSelect) {
                     serviceLevelSelect.value = 'basic';
                     handleServiceLevelChange('basic');
                 }
@@ -3888,12 +3888,6 @@
                 document.getElementById('centrifugeSection').style.display = 'block';
             } else if (type === 'temperature') {
                 document.getElementById('temperatureSection').style.display = 'block';
-            }
-
-            // Always re-render pipettes when switching calibration type
-            // This ensures the display updates immediately when switching between Platinum and Basic
-            if (type === 'platinum-pipette' || type === 'basic-pipette') {
-                renderAllPipettes();
             }
         }
 
@@ -4273,6 +4267,65 @@
                                 <!-- As Left calculations will appear here -->
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Adjustments -->
+                    <h4 style="color: #667eea; margin: 20px 0 10px 0;">🔧 Adjustments Made</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>SE (Seal)</label>
+                            <select onchange="updateAdjustment(${pipette.id}, 'SE', this.value)">
+                                <option value="">None</option>
+                                <option value="X" ${pipette.adjustments?.SE === 'X' ? 'selected' : ''}>X (Replaced)</option>
+                                <option value="*" ${pipette.adjustments?.SE === '*' ? 'selected' : ''}>* (Inspected)</option>
+                                <option value="Silicone" ${pipette.adjustments?.SE === 'Silicone' ? 'selected' : ''}>Silicone</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>COR (Corrosion)</label>
+                            <select onchange="updateAdjustment(${pipette.id}, 'COR', this.value)">
+                                <option value="">None</option>
+                                <option value="Cleaned" ${pipette.adjustments?.COR === 'Cleaned' ? 'selected' : ''}>Cleaned</option>
+                                <option value="Minor" ${pipette.adjustments?.COR === 'Minor' ? 'selected' : ''}>Minor</option>
+                                <option value="Severe" ${pipette.adjustments?.COR === 'Severe' ? 'selected' : ''}>Severe</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>G (Grease)</label>
+                            <select onchange="updateAdjustment(${pipette.id}, 'G', this.value)">
+                                <option value="">None</option>
+                                <option value="D" ${pipette.adjustments?.G === 'D' ? 'selected' : ''}>D (Type D)</option>
+                                <option value="K" ${pipette.adjustments?.G === 'K' ? 'selected' : ''}>K (Type K)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>SH (Shaft)</label>
+                            <select onchange="updateAdjustment(${pipette.id}, 'SH', this.value)">
+                                <option value="">None</option>
+                                <option value="X" ${pipette.adjustments?.SH === 'X' ? 'selected' : ''}>X (Replaced)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>FR (Friction Ring)</label>
+                            <input type="text" value="${pipette.adjustments?.FR || ''}"
+                                   onchange="updateAdjustment(${pipette.id}, 'FR', this.value)"
+                                   placeholder="Details">
+                        </div>
+                        <div class="form-group">
+                            <label>O (O-Ring)</label>
+                            <select onchange="updateAdjustment(${pipette.id}, 'O', this.value)">
+                                <option value="">None</option>
+                                <option value="X" ${pipette.adjustments?.O === 'X' ? 'selected' : ''}>X (Replaced)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Other Adjustments -->
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>OTHER (Additional Notes)</label>
+                        <input type="text" value="${pipette.adjustments?.OTHER || ''}"
+                               onchange="updateAdjustment(${pipette.id}, 'OTHER', this.value)"
+                               placeholder="Any other adjustments or notes">
                     </div>
                 </div>
             `;
@@ -8216,11 +8269,11 @@
         // ========================================
 
         function autoDetectInventory() {
-            // Auto-detect inventory items from Basic mode pipettes
-            const basicPipettes = pipettes.filter(p => p.serviceLevel === 'basic');
+            // Auto-detect inventory items from both Platinum and Basic mode pipettes
+            const allPipettes = pipettes.filter(p => p.serviceLevel === 'basic' || p.serviceLevel === 'platinum');
             const detected = [];
 
-            basicPipettes.forEach(pipette => {
+            allPipettes.forEach(pipette => {
                 const adjustments = pipette.adjustments || {};
                 const pipetteNo = String(pipette.id).padStart(2, '0');
 
@@ -8245,7 +8298,7 @@
             const detected = autoDetectInventory();
 
             if (detected.length === 0) {
-                showAlert('No adjustments found in Basic mode pipettes. Complete calibrations first.', 'No Items Detected');
+                showAlert('No adjustments found in pipettes. Complete calibrations and add adjustments first.', 'No Items Detected');
                 return;
             }
 

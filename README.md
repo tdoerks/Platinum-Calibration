@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.3.2-blue)
+![Version](https://img.shields.io/badge/version-2.3.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,11 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.3.3** (January 20, 2026)
+- ✨ Added Adjustments Made section to Platinum calibration (seal, shaft, grease, etc.)
+- ✨ Inventory auto-detection now includes Platinum pipettes
+- 🔧 Fixed service level switching to always update display immediately
 
 **v2.3.2** (January 20, 2026)
 - 🔧 Fixed service level display not updating immediately when switching calibration types
