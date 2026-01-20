@@ -1,5 +1,20 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.2.2 (January 2026)
+
+### 🔧 Bug Fix: Session Deletion
+- **Fixed session deletion not clearing UI** - Deleting current session now properly clears all pipettes, session info, and manifest display
+- **Fixed manifest showing old data** - Equipment manifest now updates correctly when session is deleted
+- **Improved UX** - Deleting current session now gives you a clean slate, just like "New Session"
+
+**What's Fixed:**
+- When you delete the currently active session, it now:
+  - Clears all in-memory data (pipettes, balances, timers, etc.)
+  - Clears all UI containers (no more ghost pipettes)
+  - Clears session form fields (technician, location, client, etc.)
+  - Updates progress, analysis, and manifest displays
+  - Shows "Session deleted. Starting fresh with new session." message
+
 ## Version 2.2.1 (January 2026)
 
 ### 🔧 Bug Fixes & UI Improvements

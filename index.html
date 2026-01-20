@@ -3718,9 +3718,53 @@
             sessions = sessions.filter(s => s.id !== sessionId);
             localStorage.setItem('platinumCalibrationSessions', JSON.stringify(sessions));
 
+            // If deleting current session, clear everything
             if (currentSessionId === sessionId) {
                 localStorage.removeItem('platinumCurrentSession');
                 currentSessionId = null;
+
+                // Clear all in-memory data
+                pipettes = [];
+                balances = [];
+                timers = [];
+                centrifuges = [];
+                temperatureDevices = [];
+                inventoryUsage = [];
+                currentPipetteId = 0;
+                currentBalanceId = 0;
+                currentTimerId = 0;
+                currentCentrifugeId = 0;
+                currentTemperatureDeviceId = 0;
+
+                // Clear all UI containers
+                document.getElementById('pipettesContainer').innerHTML = '';
+                const balancesList = document.getElementById('balancesList');
+                const timersList = document.getElementById('timersList');
+                const centrifugesList = document.getElementById('centrifugesList');
+                const temperatureDevicesList = document.getElementById('temperatureDevicesList');
+                if (balancesList) balancesList.innerHTML = '';
+                if (timersList) timersList.innerHTML = '';
+                if (centrifugesList) centrifugesList.innerHTML = '';
+                if (temperatureDevicesList) temperatureDevicesList.innerHTML = '';
+
+                // Clear session form fields
+                document.querySelectorAll('#session input, #session select, #session textarea').forEach(input => {
+                    if (input.type === 'date') {
+                        // Keep default dates
+                    } else if (input.type === 'checkbox') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+
+                // Update all displays
+                updateProgress();
+                updateAnalysis();
+                updateManifest();
+                updateEmptyState();
+
+                showAlert('Session deleted. Starting fresh with new session.', 'Session Deleted');
             }
 
             loadHistory();
