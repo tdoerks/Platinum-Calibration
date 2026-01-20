@@ -3423,7 +3423,7 @@
                     }
                 });
 
-                // Render all pipettes (add backward compatibility for old sessions)
+                // Add backward compatibility for old sessions
                 pipettes.forEach(pipette => {
                     // Add default channelType for old sessions
                     if (!pipette.channelType) {
@@ -3434,14 +3434,10 @@
                     if (!pipette.serviceLevel) {
                         pipette.serviceLevel = 'platinum';
                     }
-                    renderPipette(pipette);
-                    ['asFound', 'asLeft'].forEach(condition => {
-                        ['low', 'mid', 'high'].forEach(point => {
-                            validateMeasurement(pipette.id, condition, point);
-                        });
-                    });
-                    updateOverallStatus(pipette.id);
                 });
+
+                // Render all pipettes (filtered by service level)
+                renderAllPipettes();
 
                 // Render all equipment types
                 if (balances.length > 0) {
@@ -3551,10 +3547,12 @@
                 if (envSection) envSection.style.display = 'none';
             }
 
-            // Warn if switching with existing pipettes
-            if (pipettes.length > 0) {
-                showAlert(`⚠️ Changing service level with ${pipettes.length} pipette(s) already added. Existing data may not be compatible. Consider starting a new session.`, 'Warning');
-            }
+            // Re-render pipettes to show only matching service level
+            renderAllPipettes();
+
+            // Update progress and analysis
+            updateProgress();
+            updateAnalysis();
 
             // Save choice
             debouncedAutoSave();
@@ -3661,20 +3659,15 @@
                     }
                 });
 
-                // Render pipettes
+                // Add backward compatibility for pipettes
                 pipettes.forEach(pipette => {
-                    // Add backward compatibility
                     if (!pipette.serviceLevel) {
                         pipette.serviceLevel = 'platinum';
                     }
-                    renderPipette(pipette);
-                    ['asFound', 'asLeft'].forEach(condition => {
-                        ['low', 'mid', 'high'].forEach(point => {
-                            validateMeasurement(pipette.id, condition, point);
-                        });
-                    });
-                    updateOverallStatus(pipette.id);
                 });
+
+                // Render pipettes (filtered by service level)
+                renderAllPipettes();
 
                 // Render all equipment types
                 if (balances.length > 0) {
@@ -3955,7 +3948,7 @@
             };
 
             pipettes.push(pipette);
-            renderPipette(pipette);
+            renderAllPipettes(); // Render all filtered pipettes
             updateProgress();
             updateSummaryTable(); // Update summary table
             updateBulkActionsBar(); // Update bulk actions
@@ -4107,6 +4100,69 @@
                     </tbody>
                 </table>
             `;
+        }
+
+        function renderAllPipettes() {
+            // Clear container
+            document.getElementById('pipettesContainer').innerHTML = '';
+
+            // Get current service level
+            const currentServiceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
+
+            // Filter and render only pipettes matching current service level
+            const filteredPipettes = pipettes.filter(p => p.serviceLevel === currentServiceLevel);
+
+            filteredPipettes.forEach(pipette => {
+                renderPipette(pipette);
+                // Validate measurements for each pipette
+                if (pipette.serviceLevel === 'platinum') {
+                    ['asFound', 'asLeft'].forEach(condition => {
+                        ['low', 'mid', 'high'].forEach(point => {
+                            validateMeasurement(pipette.id, condition, point);
+                        });
+                    });
+                    updateOverallStatus(pipette.id);
+                }
+            });
+
+            // Update status message to show hidden pipettes
+            updateServiceLevelStatus();
+        }
+
+        function updateServiceLevelStatus() {
+            const currentServiceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
+            const visibleCount = pipettes.filter(p => p.serviceLevel === currentServiceLevel).length;
+            const hiddenCount = pipettes.filter(p => p.serviceLevel !== currentServiceLevel).length;
+
+            // Find or create status message element
+            let statusMsg = document.getElementById('serviceLevelStatusMsg');
+            if (!statusMsg) {
+                statusMsg = document.createElement('div');
+                statusMsg.id = 'serviceLevelStatusMsg';
+                statusMsg.style.cssText = 'padding: 10px; margin-bottom: 15px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; font-size: 14px;';
+                const container = document.getElementById('pipettesContainer');
+                if (container && container.parentNode) {
+                    container.parentNode.insertBefore(statusMsg, container);
+                }
+            }
+
+            if (hiddenCount > 0) {
+                const otherLevel = currentServiceLevel === 'platinum' ? 'Basic' : 'Platinum';
+                statusMsg.innerHTML = `
+                    <strong>Viewing ${currentServiceLevel === 'platinum' ? '🏆 Platinum' : '⚡ Basic'} Pipettes:</strong>
+                    Showing ${visibleCount} ${currentServiceLevel === 'platinum' ? 'Platinum' : 'Basic'} pipette(s).
+                    ${hiddenCount} ${otherLevel} pipette(s) hidden.
+                    <span style="color: #1976d2; cursor: pointer; text-decoration: underline;" onclick="document.getElementById('serviceLevel').value='${currentServiceLevel === 'platinum' ? 'basic' : 'platinum'}'; handleServiceLevelChange('${currentServiceLevel === 'platinum' ? 'basic' : 'platinum'}');">
+                        Switch to ${otherLevel}
+                    </span>
+                `;
+                statusMsg.style.display = 'block';
+            } else if (visibleCount > 0) {
+                statusMsg.innerHTML = `<strong>${currentServiceLevel === 'platinum' ? '🏆 Platinum' : '⚡ Basic'} Mode:</strong> Showing ${visibleCount} pipette(s).`;
+                statusMsg.style.display = 'block';
+            } else {
+                statusMsg.style.display = 'none';
+            }
         }
 
         function renderPipette(pipette) {
@@ -5342,8 +5398,7 @@
         function removePipette(pipetteId) {
             saveStateForUndo('Remove pipette');
             pipettes = pipettes.filter(p => p.id !== pipetteId);
-            const element = document.getElementById(`pipette-${pipetteId}`);
-            if (element) element.remove();
+            renderAllPipettes(); // Re-render filtered pipettes
             updateEmptyState(); // Show empty state if no pipettes left
             updateProgress();
             updateAnalysis();

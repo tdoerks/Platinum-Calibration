@@ -1,5 +1,26 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.0 (January 2026)
+
+### 🔀 Separate Platinum and Basic Pipette Views
+- **Fixed Platinum/Basic mixing** - Platinum and Basic pipettes now display on separate screens
+- **Service level filtering** - Switching between Platinum and Basic shows only matching pipettes
+- **Smart status bar** - Shows count of visible/hidden pipettes with quick switch link
+- **Improved UX** - Clear separation between Platinum (full gravimetric) and Basic (quick pass/fail) workflows
+
+**How it works:**
+- Select "Platinum" service level → See only Platinum pipettes
+- Select "Basic" service level → See only Basic pipettes
+- Status bar shows: "Viewing 🏆 Platinum Pipettes: Showing 3 Platinum pipette(s). 2 Basic pipette(s) hidden. Switch to Basic"
+- All pipettes saved together (easier session management)
+- Click underlined "Switch to Basic/Platinum" link to toggle views
+
+**Technical Changes:**
+- Added `renderAllPipettes()` function to filter pipettes by service level
+- Added `updateServiceLevelStatus()` to show visible/hidden counts
+- Modified `handleServiceLevelChange()` to re-render filtered pipettes
+- Updated `addPipette()`, `removePipette()`, `loadCurrentSession()`, `loadSessionFromHistory()` to use filtered rendering
+
 ## Version 2.2.2 (January 2026)
 
 ### 🔧 Bug Fix: Session Deletion

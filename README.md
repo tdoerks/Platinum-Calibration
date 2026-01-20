@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.2.2-blue)
+![Version](https://img.shields.io/badge/version-2.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,11 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.3.0** (January 20, 2026)
+- 🔀 Separate Platinum and Basic pipette views with smart filtering
+- 📊 Status bar shows visible/hidden pipette counts
+- 🔄 Quick switch link to toggle between Platinum and Basic views
 
 **v2.2.2** (January 20, 2026)
 - 🔧 Fixed session deletion not clearing UI and manifest display
