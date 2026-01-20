@@ -2,10 +2,16 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.1-blue)
+![Version](https://img.shields.io/badge/version-2.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
+
+### 🏷️ Brand & Model Autocomplete (NEW!)
+- **100+ Pre-loaded Brands** - Eppendorf, Gilson, Rainin, Finnpipette, VWR, and more
+- **Smart History** - Automatically saves custom brands to localStorage
+- **Type to Filter** - Quick search through autocomplete dropdown
+- **Combined Field** - Cleaner UI with merged Brand & Model input
 
 ### Core Capabilities
 - ✅ **ISO 8655 Compliant** - Follows international pipette calibration standards
@@ -203,6 +209,11 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.2** (January 20, 2026)
+- 🏷️ Brand & Model autocomplete with 100+ pre-loaded options
+- 📝 Smart history saves custom brand entries to localStorage
+- 🎨 Cleaner UI with combined Brand & Model field
 
 **v2.1** (December 22, 2024)
 - 🎤 Voice input for hands-free data entry

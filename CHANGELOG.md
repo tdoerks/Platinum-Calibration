@@ -1,4 +1,16 @@
-# Pipette Calibration System - Persistent Version
+# Pipette Calibration System - Changelog
+
+## Version 2.2 (January 2026)
+
+### 🏷️ Brand & Model Autocomplete
+- **Combined Brand & Model field** - Merged separate Brand and Model fields into single "Brand & Model" input
+- **Pre-loaded common brands** - 100+ pipette brands/models available in autocomplete dropdown
+- **Smart history** - Automatically saves custom brand entries to localStorage (keeps last 10)
+- **Type to filter** - Quick search through 100+ options as you type
+- **Includes brands**: Eppendorf, Gilson, Rainin, Finnpipette, VWR, Thermo Fisher, and many more
+- **Cleaner UI** - Reduced form clutter by removing redundant Model field
+
+## Version 2.1 (December 2024) - Persistent Version
 
 ## Overview
 This is an enhanced version of the Pipette Calibration System with **automatic browser persistence** using localStorage. All your work is automatically saved as you type!

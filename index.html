@@ -1340,6 +1340,121 @@
         let saveTimeout = null;
         let inventoryUsage = [];
 
+        // Default Brand & Model options for autocomplete
+        const DEFAULT_BRANDS = [
+            'Accupet',
+            'Accupette',
+            'Accu-jet pro',
+            'Accumax',
+            'Alphapette',
+            'Alphalite',
+            'Benchmate',
+            'Benchmate II',
+            'Betapet',
+            'Bio Rad',
+            'Biohit eline',
+            'Biohit mline',
+            'Biohit Picus',
+            'Biohit Proline Plus',
+            'Biotix Xpipette',
+            'Cole Palmer',
+            'Costar',
+            'Denville 3000',
+            'Denville 3000i',
+            'Denville Ultra',
+            'Dispensette Organice Bottle Filler',
+            'Epp Handy Step',
+            'Epp Repeater',
+            'Epp Research',
+            'Epp Research Plus',
+            'Epp Xplorer plus',
+            'Eppendorf 4700',
+            'Eppendorf 4710',
+            'Eppendorf Black',
+            'Eppendorf brown',
+            'Eppendorf Reference',
+            'Eppendorf Reference 2',
+            'Eppendorf Repeater E3',
+            'Eppendorf Repeater M4',
+            'Eppendorf Xplorer',
+            'ErgoOne',
+            'Finn',
+            'Finn Clip tip',
+            'Finn Colours',
+            'Finn Digital',
+            'Finn F1',
+            'Finn Focus',
+            'Finn II',
+            'Finn Labsystem Repeater',
+            'Finnpipette',
+            'Finnpipette II',
+            'Fisher elite Finn F1',
+            'Fisher elite Finn F2',
+            'Fisher Finn',
+            'Fisherbrand',
+            'Fisherbrand HandyStep S',
+            'Fisherbrand Repeater',
+            'Genemate',
+            'Gilson',
+            'Gilson Microman',
+            'Gilson Neo',
+            'Gilson Pipetman',
+            'Gilson Ultra',
+            'HandyStep Touch',
+            'IKA Pette',
+            'Integra',
+            'Integra Electronic',
+            'Integrapette',
+            'Jencons',
+            'Labnet',
+            'Lambda',
+            'Lambda eliteTouch',
+            'Lambda Plus',
+            'megaZen Seriological',
+            'Mettler VoluMate',
+            'MidSci',
+            'Nichipet',
+            'Nichipet EX',
+            'Nichipet EX II',
+            'Nichipet Premium',
+            'NO ID',
+            'OniLab',
+            'Pipet-aid',
+            'Proline',
+            'Rainin AutoRep E',
+            'Rainin Classic',
+            'Rainin EDP3',
+            'Rainin NanoRep',
+            'Rainin Pipete Plus SL',
+            'Rainin Pipete XLS SL',
+            'Rainin Pipette Lite',
+            'Rainin Pipette Lite E4',
+            'Rainin Pipette Lite SL',
+            'Rainin Pipette Lite XLS',
+            'Rainin Pipette Lite XLS E4',
+            'Rainin Pipette Plus',
+            'SciLogex',
+            'Sealpette',
+            'Socorex',
+            'Surepette',
+            'Thermo Scientific Matrix',
+            'Thermo Scientific S1',
+            'Transferpet',
+            'Transferpet S',
+            'United',
+            'Viaflo',
+            'VWR',
+            'VWR Blue',
+            'VWR Electronic',
+            'VWR Ergonomic',
+            'VWR Ergonomic HP',
+            'VWR Labpette',
+            'VWR LTS Comp',
+            'VWR Sealpette',
+            'VWR Ultra',
+            'Watson Nexty'
+        ];
+
         // Multi-Equipment Support
         let balances = [];
         let currentBalanceId = 0;
@@ -2857,8 +2972,9 @@
             // Add to front
             recentValues[fieldName].unshift(value);
 
-            // Keep only last 5 unique values
-            recentValues[fieldName] = recentValues[fieldName].slice(0, 5);
+            // Keep more history for brand field (10), fewer for others (5)
+            const maxValues = fieldName === 'brand' ? 10 : 5;
+            recentValues[fieldName] = recentValues[fieldName].slice(0, maxValues);
 
             localStorage.setItem('recentValues', JSON.stringify(recentValues));
         }
@@ -4002,8 +4118,13 @@
                         <input type="text" value="${pipette.number}" onchange="updatePipetteInfo(${pipette.id}, 'number', this.value)">
                     </div>
                     <div class="form-group">
-                        <label>Brand</label>
-                        <input type="text" value="${pipette.brand}" onchange="updatePipetteInfo(${pipette.id}, 'brand', this.value)">
+                        <label>Brand & Model</label>
+                        <input type="text" id="brand-${pipette.id}" list="brandList-${pipette.id}" value="${pipette.brand}" onchange="updatePipetteInfo(${pipette.id}, 'brand', this.value)">
+                        <datalist id="brandList-${pipette.id}">
+                            ${DEFAULT_BRANDS.concat(getRecentValues('brand')).filter((v, i, a) => a.indexOf(v) === i).sort().map(brand =>
+                                `<option value="${brand}">`
+                            ).join('')}
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label>Channel Type</label>
@@ -4012,10 +4133,6 @@
                             <option value="multi-8ch" ${pipette.channelType === 'multi-8ch' ? 'selected' : ''}>Multi-Channel (8ch)</option>
                             <option value="multi-12ch" ${pipette.channelType === 'multi-12ch' ? 'selected' : ''}>Multi-Channel (12ch)</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Model</label>
-                        <input type="text" value="${pipette.pipetteModel || ''}" onchange="updatePipetteInfo(${pipette.id}, 'pipetteModel', this.value)">
                     </div>
                     <div class="form-group">
                         <label>Serial Number</label>
@@ -4617,6 +4734,12 @@
             const pipette = pipettes.find(p => p.id === pipetteId);
             if (pipette) {
                 pipette[field] = value;
+
+                // Save brand to localStorage history for autocomplete
+                if (field === 'brand' && value && value.trim() !== '') {
+                    saveRecentValue('brand', value);
+                }
+
                 if (field === 'volume') {
                     pipette.testVolume = value;
                     // Re-render to update test points when volume changes
