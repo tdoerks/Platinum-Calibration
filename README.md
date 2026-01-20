@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.3.3-blue)
+![Version](https://img.shields.io/badge/version-2.3.4-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,10 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.3.4** (January 20, 2026)
+- 🔧 Fixed service level switching DOM timing issue for reliable filtering
+- 🎯 Eliminates race condition by passing service level as parameter
 
 **v2.3.3** (January 20, 2026)
 - ✨ Added Adjustments Made section to Platinum calibration (seal, shaft, grease, etc.)

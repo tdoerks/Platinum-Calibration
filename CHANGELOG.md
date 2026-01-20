@@ -1,5 +1,23 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.4 (January 2026)
+
+### 🔧 Bug Fixes
+- **Fixed service level switching DOM timing issue** - Modified `renderAllPipettes()` to accept service level as parameter instead of reading from DOM
+- **Improved reliability** - Eliminates race condition where pipettes might not filter immediately when switching service levels
+
+**What's Fixed:**
+- **Issue:** Service level switching still had timing problems where `renderAllPipettes()` would read the hidden field value before it was updated
+- **Root Cause:** DOM updates aren't always synchronous, causing `renderAllPipettes()` to sometimes read the old value
+- **Fix:** Pass service level directly as parameter to `renderAllPipettes(newLevel)` from `handleServiceLevelChange()`, avoiding DOM dependency
+- **Result:** Immediate, reliable filtering when switching between Platinum and Basic
+
+**Technical Changes:**
+- Modified `renderAllPipettes()` signature to accept optional `serviceLevel` parameter (line 4098)
+- Uses parameter if provided, otherwise reads from DOM (line 4103)
+- Updated `handleServiceLevelChange()` to call `renderAllPipettes(newLevel)` (line 3545)
+- All other callers unchanged (they don't pass parameter, so DOM read still works)
+
 ## Version 2.3.3 (January 2026)
 
 ### ✨ New Features

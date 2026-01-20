@@ -3541,7 +3541,8 @@
             }
 
             // Re-render pipettes to show only matching service level
-            renderAllPipettes();
+            // Pass newLevel directly to avoid any DOM timing issues
+            renderAllPipettes(newLevel);
 
             // Update progress and analysis
             updateProgress();
@@ -4095,12 +4096,12 @@
             `;
         }
 
-        function renderAllPipettes() {
+        function renderAllPipettes(serviceLevel = null) {
             // Clear container
             document.getElementById('pipettesContainer').innerHTML = '';
 
-            // Get current service level
-            const currentServiceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
+            // Get current service level - use parameter if provided, otherwise read from DOM
+            const currentServiceLevel = serviceLevel || document.getElementById('serviceLevel')?.value || 'platinum';
 
             // Filter and render only pipettes matching current service level
             const filteredPipettes = pipettes.filter(p => p.serviceLevel === currentServiceLevel);
