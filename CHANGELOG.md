@@ -1,5 +1,45 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.3.5 (January 2026)
+
+### 🏗️ Major Architectural Change
+- **Separated Platinum and Basic into distinct sections** - Platinum and Basic now work exactly like Balance/Timer/Centrifuge with completely separate containers
+- **Eliminated filter conflicts** - No more competing filter systems causing display issues
+- **Guaranteed reliable switching** - Show/hide sections just like other calibration types (Balance, Timer, etc.)
+
+### ✨ What's Changed
+- **Two separate HTML sections:**
+  - `platinumPipetteSection` with `platinumPipettesContainer`
+  - `basicPipetteSection` with `basicPipettesContainer`
+- **Simplified switching logic:**
+  - `switchCalibrationType()` now just shows/hides sections (no filtering needed)
+  - No more calls to `handleServiceLevelChange()` or `renderAllPipettes(serviceLevel)`
+- **Independent search/filter bars:**
+  - Each section has its own search and filter controls
+  - Platinum: `searchPipettesPlatinum`, `filterStatusPlatinum`
+  - Basic: `searchPipettesBasic`, `filterStatusBasic`
+- **Automatic routing:**
+  - `renderPipette()` automatically routes each pipette to correct container
+  - `renderAllPipettes()` renders all pipettes to both containers
+  - `addPipette()` creates pipettes with correct service level
+
+### 🔧 Technical Changes
+- Duplicated pipette section HTML (lines 9178-9280)
+- Removed service level filtering from `renderAllPipettes()` (line 4095)
+- Updated `filterPipettes(section)` to accept section parameter (line 4633)
+- Updated `clearFilters(section)` to work with separate sections (line 4686)
+- Simplified `updateServiceLevelStatus()` to stub (no longer needed)
+- Updated all `pipettesContainer` references to use section-specific containers
+- Updated `renderPlatinumPipette()` → `platinumPipettesContainer` (line 4168)
+- Updated `renderBasicPipette()` → `basicPipettesContainer` (line 4410)
+
+### 🎯 Benefits
+- ✅ Simple, reliable switching (same as Balance/Timer)
+- ✅ No DOM timing issues
+- ✅ No filter conflicts
+- ✅ Each section completely independent
+- ✅ Easier to maintain and debug
+
 ## Version 2.3.4 (January 2026)
 
 ### 🔧 Bug Fixes

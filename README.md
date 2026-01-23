@@ -2,7 +2,7 @@
 
 Professional web-based pipette calibration management tool with ISO 8655 compliance.
 
-![Version](https://img.shields.io/badge/version-2.3.4-blue)
+![Version](https://img.shields.io/badge/version-2.3.5-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🎯 Features
@@ -209,6 +209,11 @@ For issues or questions:
 - Review the [Improvements Roadmap](IMPROVEMENTS_ROADMAP.md)
 
 ## 🔄 Version History
+
+**v2.3.5** (January 20, 2026)
+- 🏗️ Major architectural change: Separated Platinum and Basic into distinct sections
+- ✅ Guaranteed reliable switching (works exactly like Balance/Timer/Centrifuge)
+- 🔧 Eliminated filter conflicts and DOM timing issues
 
 **v2.3.4** (January 20, 2026)
 - 🔧 Fixed service level switching DOM timing issue for reliable filtering

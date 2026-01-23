@@ -3585,7 +3585,8 @@
             currentSessionId = null;
             pipettes = [];
             currentPipetteId = 0;
-            document.getElementById('pipettesContainer').innerHTML = '';
+            document.getElementById('platinumPipettesContainer').innerHTML = '';
+            document.getElementById('basicPipettesContainer').innerHTML = '';
 
             // Clear session form
             document.querySelectorAll('#session input, #session select').forEach(input => {
@@ -3618,7 +3619,8 @@
                 }
 
                 // Clear current
-                document.getElementById('pipettesContainer').innerHTML = '';
+                document.getElementById('platinumPipettesContainer').innerHTML = '';
+                document.getElementById('basicPipettesContainer').innerHTML = '';
                 document.getElementById('balancesList').innerHTML = '';
                 document.getElementById('timersList').innerHTML = '';
                 document.getElementById('centrifugesList').innerHTML = '';
@@ -3724,7 +3726,8 @@
                 currentTemperatureDeviceId = 0;
 
                 // Clear all UI containers
-                document.getElementById('pipettesContainer').innerHTML = '';
+                document.getElementById('platinumPipettesContainer').innerHTML = '';
+                document.getElementById('basicPipettesContainer').innerHTML = '';
                 const balancesList = document.getElementById('balancesList');
                 const timersList = document.getElementById('timersList');
                 const centrifugesList = document.getElementById('centrifugesList');
@@ -3794,7 +3797,8 @@
                             sessionData.lastModified = new Date().toISOString();
 
                             // Clear and load
-                            document.getElementById('pipettesContainer').innerHTML = '';
+                            document.getElementById('platinumPipettesContainer').innerHTML = '';
+                            document.getElementById('basicPipettesContainer').innerHTML = '';
                             pipettes = sessionData.pipettes || [];
                             currentPipetteId = sessionData.currentPipetteId || (pipettes.length > 0 ? Math.max(...pipettes.map(p => p.id)) : 0);
                             currentSessionId = sessionData.id;
@@ -3862,24 +3866,20 @@
             const sections = document.querySelectorAll('.calibration-section');
             sections.forEach(section => section.style.display = 'none');
 
-            // Show the selected section and update service level if pipette type
+            // Show the selected section
             if (type === 'platinum-pipette') {
-                document.getElementById('pipetteSection').style.display = 'block';
-                document.getElementById('pipetteSectionTitle').textContent = '🏆 Platinum Pipette Calibration';
+                document.getElementById('platinumPipetteSection').style.display = 'block';
                 // Set service level to platinum
                 const serviceLevelSelect = document.getElementById('serviceLevel');
                 if (serviceLevelSelect) {
                     serviceLevelSelect.value = 'platinum';
-                    handleServiceLevelChange('platinum');
                 }
             } else if (type === 'basic-pipette') {
-                document.getElementById('pipetteSection').style.display = 'block';
-                document.getElementById('pipetteSectionTitle').textContent = '⚡ Basic Pipette Calibration';
+                document.getElementById('basicPipetteSection').style.display = 'block';
                 // Set service level to basic
                 const serviceLevelSelect = document.getElementById('serviceLevel');
                 if (serviceLevelSelect) {
                     serviceLevelSelect.value = 'basic';
-                    handleServiceLevelChange('basic');
                 }
             } else if (type === 'balance') {
                 document.getElementById('balanceSection').style.display = 'block';
@@ -4096,19 +4096,15 @@
             `;
         }
 
-        function renderAllPipettes(serviceLevel = null) {
-            // Clear container
-            document.getElementById('pipettesContainer').innerHTML = '';
+        function renderAllPipettes() {
+            // Clear both containers
+            document.getElementById('platinumPipettesContainer').innerHTML = '';
+            document.getElementById('basicPipettesContainer').innerHTML = '';
 
-            // Get current service level - use parameter if provided, otherwise read from DOM
-            const currentServiceLevel = serviceLevel || document.getElementById('serviceLevel')?.value || 'platinum';
-
-            // Filter and render only pipettes matching current service level
-            const filteredPipettes = pipettes.filter(p => p.serviceLevel === currentServiceLevel);
-
-            filteredPipettes.forEach(pipette => {
+            // Render all pipettes - each will automatically go to the correct container
+            pipettes.forEach(pipette => {
                 renderPipette(pipette);
-                // Validate measurements for each pipette
+                // Validate measurements for Platinum pipettes
                 if (pipette.serviceLevel === 'platinum') {
                     ['asFound', 'asLeft'].forEach(condition => {
                         ['low', 'mid', 'high'].forEach(point => {
@@ -4118,45 +4114,11 @@
                     updateOverallStatus(pipette.id);
                 }
             });
-
-            // Update status message to show hidden pipettes
-            updateServiceLevelStatus();
         }
 
         function updateServiceLevelStatus() {
-            const currentServiceLevel = document.getElementById('serviceLevel')?.value || 'platinum';
-            const visibleCount = pipettes.filter(p => p.serviceLevel === currentServiceLevel).length;
-            const hiddenCount = pipettes.filter(p => p.serviceLevel !== currentServiceLevel).length;
-
-            // Find or create status message element
-            let statusMsg = document.getElementById('serviceLevelStatusMsg');
-            if (!statusMsg) {
-                statusMsg = document.createElement('div');
-                statusMsg.id = 'serviceLevelStatusMsg';
-                statusMsg.style.cssText = 'padding: 10px; margin-bottom: 15px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px; font-size: 14px;';
-                const container = document.getElementById('pipettesContainer');
-                if (container && container.parentNode) {
-                    container.parentNode.insertBefore(statusMsg, container);
-                }
-            }
-
-            if (hiddenCount > 0) {
-                const otherLevel = currentServiceLevel === 'platinum' ? 'Basic' : 'Platinum';
-                statusMsg.innerHTML = `
-                    <strong>Viewing ${currentServiceLevel === 'platinum' ? '🏆 Platinum' : '⚡ Basic'} Pipettes:</strong>
-                    Showing ${visibleCount} ${currentServiceLevel === 'platinum' ? 'Platinum' : 'Basic'} pipette(s).
-                    ${hiddenCount} ${otherLevel} pipette(s) hidden.
-                    <span style="color: #1976d2; cursor: pointer; text-decoration: underline;" onclick="document.getElementById('serviceLevel').value='${currentServiceLevel === 'platinum' ? 'basic' : 'platinum'}'; handleServiceLevelChange('${currentServiceLevel === 'platinum' ? 'basic' : 'platinum'}');">
-                        Switch to ${otherLevel}
-                    </span>
-                `;
-                statusMsg.style.display = 'block';
-            } else if (visibleCount > 0) {
-                statusMsg.innerHTML = `<strong>${currentServiceLevel === 'platinum' ? '🏆 Platinum' : '⚡ Basic'} Mode:</strong> Showing ${visibleCount} pipette(s).`;
-                statusMsg.style.display = 'block';
-            } else {
-                statusMsg.style.display = 'none';
-            }
+            // No longer needed - Platinum and Basic are now separate sections
+            // Keeping function stub for compatibility with existing code that calls it
         }
 
         function renderPipette(pipette) {
@@ -4169,7 +4131,7 @@
         }
 
         function renderPlatinumPipette(pipette) {
-            const container = document.getElementById('pipettesContainer');
+            const container = document.getElementById('platinumPipettesContainer');
             const pipetteDiv = document.createElement('div');
             pipetteDiv.className = 'pipette-card';
             pipetteDiv.id = `pipette-${pipette.id}`;
@@ -4411,7 +4373,7 @@
         // ========================================
 
         function renderBasicPipette(pipette) {
-            const container = document.getElementById('pipettesContainer');
+            const container = document.getElementById('basicPipettesContainer');
             const pipetteDiv = document.createElement('div');
             pipetteDiv.className = 'pipette-card';
             pipetteDiv.id = `pipette-${pipette.id}`;
@@ -4641,12 +4603,24 @@
         // SEARCH AND FILTER FUNCTIONS
         // ========================================
 
-        function filterPipettes() {
-            const searchTerm = document.getElementById('searchPipettes')?.value.toLowerCase() || '';
-            const statusFilter = document.getElementById('filterStatus')?.value || '';
-            const serviceLevelFilter = document.getElementById('filterServiceLevel')?.value || '';
+        function filterPipettes(section = null) {
+            // Determine which section to filter
+            let searchTerm, statusFilter, pipetteCards;
 
-            const pipetteCards = document.querySelectorAll('.pipette-card');
+            if (section === 'platinum') {
+                searchTerm = document.getElementById('searchPipettesPlatinum')?.value.toLowerCase() || '';
+                statusFilter = document.getElementById('filterStatusPlatinum')?.value || '';
+                pipetteCards = document.querySelectorAll('#platinumPipettesContainer .pipette-card');
+            } else if (section === 'basic') {
+                searchTerm = document.getElementById('searchPipettesBasic')?.value.toLowerCase() || '';
+                statusFilter = document.getElementById('filterStatusBasic')?.value || '';
+                pipetteCards = document.querySelectorAll('#basicPipettesContainer .pipette-card');
+            } else {
+                // Legacy fallback - filter all cards
+                searchTerm = document.getElementById('searchPipettes')?.value.toLowerCase() || '';
+                statusFilter = document.getElementById('filterStatus')?.value || '';
+                pipetteCards = document.querySelectorAll('.pipette-card');
+            }
 
             pipetteCards.forEach(card => {
                 const pipetteId = parseInt(card.getAttribute('data-pipette-id'));
@@ -4673,11 +4647,8 @@
                 // Status filter
                 const matchesStatus = !statusFilter || pipette.status === statusFilter || pipette.passFail === statusFilter.toUpperCase();
 
-                // Service level filter
-                const matchesServiceLevel = !serviceLevelFilter || pipette.serviceLevel === serviceLevelFilter;
-
-                // Show/hide based on all filters
-                if (matchesSearch && matchesStatus && matchesServiceLevel) {
+                // Show/hide based on all filters (no service level filter needed - we're already in separate sections)
+                if (matchesSearch && matchesStatus) {
                     card.style.display = 'block';
                 } else {
                     card.style.display = 'none';
@@ -4685,11 +4656,25 @@
             });
         }
 
-        function clearFilters() {
-            document.getElementById('searchPipettes').value = '';
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterServiceLevel').value = '';
-            filterPipettes();
+        function clearFilters(section = null) {
+            if (section === 'platinum') {
+                document.getElementById('searchPipettesPlatinum').value = '';
+                document.getElementById('filterStatusPlatinum').value = '';
+                filterPipettes('platinum');
+            } else if (section === 'basic') {
+                document.getElementById('searchPipettesBasic').value = '';
+                document.getElementById('filterStatusBasic').value = '';
+                filterPipettes('basic');
+            } else {
+                // Legacy fallback
+                const searchEl = document.getElementById('searchPipettes');
+                const statusEl = document.getElementById('filterStatus');
+                const serviceLevelEl = document.getElementById('filterServiceLevel');
+                if (searchEl) searchEl.value = '';
+                if (statusEl) statusEl.value = '';
+                if (serviceLevelEl) serviceLevelEl.value = '';
+                filterPipettes();
+            }
         }
 
         // ========================================
@@ -5508,7 +5493,8 @@
 
         function autoFillSampleData() {
             pipettes = [];
-            document.getElementById('pipettesContainer').innerHTML = '';
+            document.getElementById('platinumPipettesContainer').innerHTML = '';
+            document.getElementById('basicPipettesContainer').innerHTML = '';
             currentPipetteId = 0;
 
             const sampleData = [
@@ -9175,73 +9161,108 @@
                 </select>
             </div>
 
-            <!-- Pipette Calibration Section -->
-            <div id="pipetteSection" class="calibration-section">
+            <!-- Platinum Pipette Calibration Section -->
+            <div id="platinumPipetteSection" class="calibration-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 id="pipetteSectionTitle">⚖️ Pipette Calibration</h2>
+                    <h2>🏆 Platinum Pipette Calibration</h2>
                     <div style="display: flex; gap: 10px;">
                         <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
-                        <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtn" style="display: none;">📋 Copy from Previous</button>
+                        <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtnPlatinum" style="display: none;">📋 Copy from Previous</button>
                         <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
                     </div>
                 </div>
 
-            <!-- Search and Filter Bar -->
-            <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div style="flex: 1;">
-                        <input type="text" id="searchPipettes" placeholder="🔍 Search by serial, brand, model, or pipette number..."
-                               oninput="filterPipettes()"
-                               style="width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                <!-- Search and Filter Bar -->
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <div style="flex: 1;">
+                            <input type="text" id="searchPipettesPlatinum" placeholder="🔍 Search by serial, brand, model, or pipette number..."
+                                   oninput="filterPipettes('platinum')"
+                                   style="width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <select id="filterStatusPlatinum" onchange="filterPipettes('platinum')"
+                                style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="pass">✅ Pass</option>
+                            <option value="fail">❌ Fail</option>
+                            <option value="pending">⏳ Pending</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="clearFilters('platinum')" style="padding: 10px 16px; white-space: nowrap;">
+                            Clear Filters
+                        </button>
                     </div>
-                    <select id="filterStatus" onchange="filterPipettes()"
-                            style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
-                        <option value="">All Status</option>
-                        <option value="pass">✅ Pass</option>
-                        <option value="fail">❌ Fail</option>
-                        <option value="pending">⏳ Pending</option>
-                    </select>
-                    <select id="filterServiceLevel" onchange="filterPipettes()"
-                            style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
-                        <option value="">All Service Levels</option>
-                        <option value="platinum">🏆 Platinum</option>
-                        <option value="basic">⚡ Basic</option>
-                    </select>
-                    <button class="btn btn-secondary" onclick="clearFilters()" style="padding: 10px 16px; white-space: nowrap;">
-                        Clear Filters
-                    </button>
+                </div>
+
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFillPlatinum" style="width: 0%"></div>
+                </div>
+
+                <div id="platinumPipettesContainer">
+                    <!-- Platinum Pipettes will be added here dynamically -->
                 </div>
             </div>
 
-            <!-- Bulk Actions Bar (for Basic mode) -->
-            <div id="bulkActionsBar" style="display: none; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #69B135; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <label style="margin: 0; font-weight: 600; display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"
-                                   style="width: 20px; height: 20px; cursor: pointer; margin-right: 8px;">
-                            Select All
-                        </label>
-                        <span id="selectedCount" style="color: #6c757d; font-weight: 600;">0 selected</span>
-                    </div>
+            <!-- Basic Pipette Calibration Section -->
+            <div id="basicPipetteSection" class="calibration-section" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>⚡ Basic Pipette Calibration</h2>
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-success" onclick="bulkMarkStatus('PASS')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
-                            ✓ Mark as PASS
-                        </button>
-                        <button class="btn btn-danger" onclick="bulkMarkStatus('FAIL')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
-                            ✗ Mark as FAIL
+                        <button class="btn btn-primary" onclick="addPipette()">+ Add Pipette</button>
+                        <button class="btn btn-secondary" onclick="copyFromPrevious()" id="copyPrevBtnBasic" style="display: none;">📋 Copy from Previous</button>
+                        <button class="btn btn-success" onclick="autoFillSampleData()">📊 Load Sample Data</button>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <div style="flex: 1;">
+                            <input type="text" id="searchPipettesBasic" placeholder="🔍 Search by serial, brand, model, or pipette number..."
+                                   oninput="filterPipettes('basic')"
+                                   style="width: 100%; padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                        </div>
+                        <select id="filterStatusBasic" onchange="filterPipettes('basic')"
+                                style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-width: 150px;">
+                            <option value="">All Status</option>
+                            <option value="pass">✅ Pass</option>
+                            <option value="fail">❌ Fail</option>
+                            <option value="pending">⏳ Pending</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="clearFilters('basic')" style="padding: 10px 16px; white-space: nowrap;">
+                            Clear Filters
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-            </div>
+                <!-- Bulk Actions Bar (for Basic mode) -->
+                <div id="bulkActionsBar" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #69B135; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <label style="margin: 0; font-weight: 600; display: flex; align-items: center; cursor: pointer;">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()"
+                                       style="width: 20px; height: 20px; cursor: pointer; margin-right: 8px;">
+                                Select All
+                            </label>
+                            <span id="selectedCount" style="color: #6c757d; font-weight: 600;">0 selected</span>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-success" onclick="bulkMarkStatus('PASS')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
+                                ✓ Mark as PASS
+                            </button>
+                            <button class="btn btn-danger" onclick="bulkMarkStatus('FAIL')" style="padding: 8px 18px; font-size: 14px; font-weight: 600;">
+                                ✗ Mark as FAIL
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-            <div id="pipettesContainer">
-                <!-- Pipettes will be added here dynamically -->
-            </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFillBasic" style="width: 0%"></div>
+                </div>
+
+                <div id="basicPipettesContainer">
+                    <!-- Basic Pipettes will be added here dynamically -->
+                </div>
             </div>
 
             <!-- Balance Calibration Section -->
