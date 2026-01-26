@@ -6351,7 +6351,7 @@
             ];
 
             let html = `
-                <div style="page-break-inside: avoid; margin-top: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                <div style="page-break-inside: avoid; page-break-after: always; margin-top: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
                         ${pipette.number ? `ID: ${pipette.number}` : `Pipette #${number}`} ${pipette.serial ? `| S/N: ${pipette.serial}` : ''}
                         <span style="float: right; font-size: 18px;">${pipette.status === 'pass' ? '✓ PASS' : pipette.status === 'fail' ? '✗ FAIL' : '⏳ PENDING'}</span>
