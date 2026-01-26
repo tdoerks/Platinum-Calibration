@@ -1289,7 +1289,7 @@
 
         <div class="voice-help-category">
             <h3>📝 Field Navigation</h3>
-            <div class="voice-help-command">"Service provider" - Jump to service provider field</div>
+            <div class="voice-help-command">"Client" - Jump to client field</div>
             <div class="voice-help-command">"Location" - Jump to location field</div>
             <div class="voice-help-command">"Technician" - Jump to technician field</div>
             <div class="voice-help-command">"Temperature" - Jump to temperature field</div>
@@ -2397,12 +2397,6 @@
             }
 
             // Field navigation - Session Info fields
-            if (lower.includes('service provider')) {
-                const field = document.getElementById('serviceProvider');
-                focusAndHighlight(field);
-                showGlobalVoiceStatus('Service Provider field');
-                return true;
-            }
             if (lower.includes('location')) {
                 const field = document.getElementById('location');
                 focusAndHighlight(field);
@@ -3080,7 +3074,27 @@
 
         function validateMeasurementInput(input) {
             // Measurements should be 0-10000 μL
-            return validateInput(input, 0, 10000);
+            const valid = validateInput(input, 0, 10000);
+
+            // Enforce decimal place restrictions based on volume
+            if (input.value && !isNaN(input.value)) {
+                const value = parseFloat(input.value);
+                if (value > 25) {
+                    // For volumes >25 μL, restrict to 1 decimal place
+                    const rounded = Math.round(value * 10) / 10;
+                    if (value !== rounded) {
+                        input.value = rounded.toFixed(1);
+                    }
+                } else {
+                    // For volumes ≤25 μL, restrict to 2 decimal places
+                    const rounded = Math.round(value * 100) / 100;
+                    if (value !== rounded) {
+                        input.value = rounded.toFixed(2);
+                    }
+                }
+            }
+
+            return valid;
         }
 
         function validateTemperature(input) {
@@ -4206,6 +4220,22 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label>Service Level</label>
+                        <select id="serviceLevel-${pipette.id}" onchange="updatePipetteInfo(${pipette.id}, 'complianceLevel', this.value); toggleOtherServiceLevel(${pipette.id})">
+                            <option value="GLP" ${(pipette.complianceLevel === 'GLP') ? 'selected' : ''}>GLP (Good Laboratory Practice)</option>
+                            <option value="CLIA" ${(pipette.complianceLevel === 'CLIA') ? 'selected' : ''}>CLIA (Clinical Lab Improvement)</option>
+                            <option value="GMP" ${(pipette.complianceLevel === 'GMP') ? 'selected' : ''}>GMP (Good Manufacturing Practice)</option>
+                            <option value="CAP" ${(pipette.complianceLevel === 'CAP') ? 'selected' : ''}>CAP (College of American Pathologists)</option>
+                            <option value="FDA" ${(pipette.complianceLevel === 'FDA') ? 'selected' : ''}>FDA (Food and Drug Administration)</option>
+                            <option value="CLSI" ${(pipette.complianceLevel === 'CLSI') ? 'selected' : ''}>CLSI (Clinical and Laboratory Standards)</option>
+                            <option value="Other" ${(pipette.complianceLevel && !['GLP','CLIA','GMP','CAP','FDA','CLSI'].includes(pipette.complianceLevel)) ? 'selected' : ''}>Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="otherServiceLevel-${pipette.id}" style="display: ${(pipette.complianceLevel && !['GLP','CLIA','GMP','CAP','FDA','CLSI'].includes(pipette.complianceLevel)) ? 'block' : 'none'};">
+                        <label>Specify Other Service Level</label>
+                        <input type="text" value="${(pipette.complianceLevel && !['GLP','CLIA','GMP','CAP','FDA','CLSI'].includes(pipette.complianceLevel)) ? pipette.complianceLevel : ''}" onchange="updatePipetteInfo(${pipette.id}, 'complianceLevel', this.value)">
+                    </div>
+                    <div class="form-group">
                         <label>Comments</label>
                         <textarea rows="2" onchange="updatePipetteInfo(${pipette.id}, 'comments', this.value)">${pipette.comments}</textarea>
                     </div>
@@ -4874,6 +4904,19 @@
                     renderPipette(pipette);
                 }
                 debouncedAutoSave();
+            }
+        }
+
+        function toggleOtherServiceLevel(pipetteId) {
+            const select = document.getElementById(`serviceLevel-${pipetteId}`);
+            const otherField = document.getElementById(`otherServiceLevel-${pipetteId}`);
+            if (select && otherField) {
+                if (select.value === 'Other') {
+                    otherField.style.display = 'block';
+                    otherField.querySelector('input').focus();
+                } else {
+                    otherField.style.display = 'none';
+                }
             }
         }
 
@@ -5882,7 +5925,6 @@
         function getSessionInfo() {
             return {
                 serviceLevel: document.getElementById('serviceLevel')?.value || 'platinum',
-                serviceProvider: document.getElementById('serviceProvider')?.value || '',
                 location: document.getElementById('location')?.value || '',
                 address: document.getElementById('address')?.value || '',
                 client: document.getElementById('client')?.value || '',
@@ -5930,13 +5972,21 @@
             if (!reportContent) return;
 
             const sessionInfo = getSessionInfo();
-            const certNumber = `CERT-${new Date(sessionInfo.calDate).getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
+            // Generate certificate number: Client-YY-MMDD format
+            const calDate = sessionInfo.calDate ? new Date(sessionInfo.calDate) : new Date();
+            const clientName = (sessionInfo.client || 'CLIENT').replace(/\s+/g, '').toUpperCase().substring(0, 10);
+            const yy = String(calDate.getFullYear()).slice(-2);
+            const mm = String(calDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(calDate.getDate()).padStart(2, '0');
+            const certNumber = `${clientName}-${yy}-${mm}${dd}`;
 
             let html = `
                 <!-- Professional Header -->
                 <div style="border-bottom: 3px solid #667eea; padding-bottom: 20px; margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <!-- TODO: Add company logo here - convert CalibrationsInternationalLogoFinal.tif to base64 PNG -->
+                        <!-- <img src="data:image/png;base64,YOUR_BASE64_HERE" alt="Company Logo" style="max-width: 200px; height: auto;"> -->
+                        <div style="flex: 1;">
                             <h1 style="margin: 0; color: #2c5282; font-size: 28px;">PIPETTE CALIBRATION CERTIFICATE</h1>
                             <p style="color: #6c757d; margin: 5px 0;">🏆 Platinum Service | ISO 8655 Compliant | Service Level 3</p>
                         </div>
@@ -5953,10 +6003,8 @@
                         <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">SERVICE INFORMATION</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Service Provider:</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.serviceProvider || 'N/A'}</td>
                         <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Client:</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.client || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 75%;" colspan="3">${sessionInfo.client || 'N/A'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong>Location:</strong></td>
@@ -6105,10 +6153,8 @@
                         <td colspan="4" style="padding: 10px; font-weight: bold; border: 1px solid #ddd;">SERVICE INFORMATION</td>
                     </tr>
                     <tr>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Service Provider:</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.serviceProvider || 'N/A'}</td>
                         <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><strong>Client:</strong></td>
-                        <td style="padding: 8px; border: 1px solid #ddd; width: 25%;">${sessionInfo.client || 'N/A'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd; width: 75%;" colspan="3">${sessionInfo.client || 'N/A'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong>PI Name:</strong></td>
@@ -6304,7 +6350,7 @@
             let html = `
                 <div style="page-break-inside: avoid; margin-top: 30px; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <h3 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; margin: -20px -20px 20px -20px; border-radius: 8px 8px 0 0;">
-                        Pipette #${number} - ${pipette.number || 'N/A'}
+                        ${pipette.number ? `ID: ${pipette.number}` : `Pipette #${number}`} ${pipette.serial ? `| S/N: ${pipette.serial}` : ''}
                         <span style="float: right; font-size: 18px;">${pipette.status === 'pass' ? '✓ PASS' : pipette.status === 'fail' ? '✗ FAIL' : '⏳ PENDING'}</span>
                     </h3>
 
@@ -6325,8 +6371,12 @@
                         <tr>
                             <td style="padding: 6px; border: 1px solid #ddd; background: #f8f9fa;"><strong>Type:</strong></td>
                             <td style="padding: 6px; border: 1px solid #ddd;">${pipette.channelType === 'single' ? 'Single Channel' : `Multi-Channel (${pipette.channelCount}ch)`}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd; background: #f8f9fa;"><strong>Service Level:</strong></td>
+                            <td style="padding: 6px; border: 1px solid #ddd;">${pipette.complianceLevel || 'N/A'}</td>
+                        </tr>
+                        <tr>
                             <td style="padding: 6px; border: 1px solid #ddd; background: #f8f9fa;"><strong>Comments:</strong></td>
-                            <td style="padding: 6px; border: 1px solid #ddd;">${pipette.comments || 'None'}</td>
+                            <td style="padding: 6px; border: 1px solid #ddd;" colspan="3">${pipette.comments || 'None'}</td>
                         </tr>
                     </table>
             `;
@@ -9039,8 +9089,8 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Service Provider</label>
-                    <input type="text" id="serviceProvider" value="Platinum SC Data Intake Worksheets">
+                    <label>Client</label>
+                    <input type="text" id="client" value="Janice Muller - Cin Path">
                 </div>
                 <div class="form-group">
                     <label>Location</label>
@@ -9049,10 +9099,6 @@
                 <div class="form-group">
                     <label>Address</label>
                     <input type="text" id="address" value="1800 Denison Ave, Manhattan, Ks 66506">
-                </div>
-                <div class="form-group">
-                    <label>Client</label>
-                    <input type="text" id="client" value="Janice Muller - Cin Path">
                 </div>
                 <div class="form-group">
                     <label>Technician</label>
