@@ -2144,6 +2144,214 @@
         }
 
         // ========================================
+        // TEXT-BASED CALIBRATION PARSER
+        // ========================================
+
+        function showPasteTextDialog() {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background: white; padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow: auto;';
+
+            dialog.innerHTML = `
+                <h2 style="margin-top: 0;">📋 Paste Calibration Report Text</h2>
+                <p style="color: #666; margin-bottom: 20px;">Copy the entire calibration work order text (including headers and table) and paste it below.</p>
+                <textarea id="pastedCalText"
+                    style="width: 100%; height: 300px; font-family: monospace; padding: 10px; border: 2px solid #007bff; border-radius: 8px; font-size: 12px;"
+                    placeholder="Paste your calibration report text here..."></textarea>
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="this.closest('[style*=fixed]').remove()">Cancel</button>
+                    <button class="btn btn-primary" onclick="processPastedText()">Parse & Preview</button>
+                </div>
+            `;
+
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+
+            // Focus the textarea
+            setTimeout(() => document.getElementById('pastedCalText').focus(), 100);
+        }
+
+        function processPastedText() {
+            const textarea = document.getElementById('pastedCalText');
+            const text = textarea.value.trim();
+
+            if (!text) {
+                showAlert('Please paste some text first', 'No Text');
+                return;
+            }
+
+            try {
+                const parsed = parseCalibrationText(text);
+
+                // Close the paste dialog
+                document.querySelector('[style*="position: fixed"]').remove();
+
+                // Display preview using the same function as Word import
+                displayWordImportPreview([parsed], []);
+
+            } catch (error) {
+                showAlert('Error parsing text: ' + error.message, 'Parse Error');
+                console.error('Parse error:', error);
+            }
+        }
+
+        function parseCalibrationText(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+
+            const extracted = {
+                filename: 'Pasted Text - ' + new Date().toISOString().split('T')[0],
+                sessionInfo: {},
+                pipettes: [],
+                parseDate: new Date().toISOString()
+            };
+
+            // Extract header information
+            const fullText = text.toUpperCase();
+
+            // Extract PI
+            const piMatch = text.match(/PI\s*:\s*([^\n\r]+)/i);
+            if (piMatch) extracted.sessionInfo.pi = piMatch[1].trim();
+
+            // Extract service date
+            const dateMatch = text.match(/(?:Date\s*of\s*Service|Service\s*Date)\s*:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i);
+            if (dateMatch) extracted.sessionInfo.serviceDate = dateMatch[1].trim();
+
+            // Extract invoice/work order
+            const invoiceMatch = text.match(/(?:Invoice|Work\s*Order)\s*(?:No\.?|#)\s*:?\s*([A-Z0-9]+)/i);
+            if (invoiceMatch) extracted.sessionInfo.workOrderNo = invoiceMatch[1].trim();
+
+            // Extract balance info
+            const balanceMatch = text.match(/Model\s*:\s*([^\s]+)\s+Serial\s*No\.?\s*:\s*([^\s]+)/i);
+            if (balanceMatch) {
+                extracted.sessionInfo.balanceModel = balanceMatch[1].trim();
+                extracted.sessionInfo.balanceSerial = balanceMatch[2].trim();
+            }
+
+            // Find the start of the calibration table
+            // Look for lines that contain pipette data patterns
+            let tableStartIndex = -1;
+            const tableHeaderPattern = /PIPET\s*NO\.?|MANUFACTURER|MAX\s*VOL|IN\s*SPEC|OUT\s*SPEC/i;
+
+            for (let i = 0; i < lines.length; i++) {
+                if (tableHeaderPattern.test(lines[i])) {
+                    tableStartIndex = i + 1; // Start after header row
+                    break;
+                }
+            }
+
+            if (tableStartIndex === -1) {
+                throw new Error('Could not find calibration table in text');
+            }
+
+            // Parse pipette rows
+            // Pattern: starts with 01, 02, etc. or just numbers, followed by serial/model info
+            const rowPattern = /^(\d{1,2})\s+([A-Z0-9]+)\s+(.+)/i;
+
+            for (let i = tableStartIndex; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Skip empty lines and footer notes
+                if (!line || line.includes('*SE(Replace Seal)') || line.includes('Internal Q.C.') ||
+                    line.includes('Verified By') || line.includes('CALINTL') || line.includes('Group:')) {
+                    continue;
+                }
+
+                // Try to parse as a pipette row
+                const match = line.match(rowPattern);
+                if (!match) continue;
+
+                const pipetNo = match[1];
+                const serial = match[2];
+                const restOfLine = match[3];
+
+                // Parse the rest of the line - it contains: Brand Model Volume [markers] [adjustments] [volumes] P/F
+                const parts = restOfLine.split(/\s+/).filter(p => p);
+
+                if (parts.length < 2) continue; // Need at least brand and volume
+
+                const pipette = {
+                    number: pipetNo,
+                    serial: serial,
+                    serviceLevel: 'basic'
+                };
+
+                // Extract brand and model (first 2-3 parts before volume)
+                let brandModel = [];
+                let volumeIndex = -1;
+
+                for (let j = 0; j < parts.length; j++) {
+                    // Look for volume (number possibly with decimal)
+                    if (/^\d+(\.\d+)?$/.test(parts[j]) && parseInt(parts[j]) >= 10) {
+                        volumeIndex = j;
+                        break;
+                    }
+                    brandModel.push(parts[j]);
+                }
+
+                if (brandModel.length > 0) {
+                    pipette.brand = brandModel[0];
+                    pipette.pipetteModel = brandModel.slice(1).join(' ');
+                    pipette.makeModel = brandModel.join(' ');
+                }
+
+                if (volumeIndex >= 0) {
+                    pipette.maxVolume = parts[volumeIndex];
+                }
+
+                // Look for spec markers (* or X) and adjustments in the remaining text
+                const remainingText = parts.slice(volumeIndex + 1).join(' ');
+
+                // Detect In Spec / Out Spec from markers
+                // Pattern: * marks in spec, X marks out of spec, or text like "high"
+                pipette.inSpec = line.includes('*') && !line.toLowerCase().includes('high') && !line.toLowerCase().includes('out');
+                pipette.outSpec = line.toLowerCase().includes('high') || line.toLowerCase().includes('out') ||
+                                  (line.includes('X') && !line.includes('Xpipette'));
+
+                // Extract adjustments
+                pipette.adjustments = {
+                    SE: /no seal/i.test(line),
+                    COR: false,
+                    G: false,
+                    SH: false,
+                    FR: false,
+                    O: false,
+                    OTHER: ''
+                };
+
+                // Check for common adjustment markers
+                if (/\bK\b/i.test(remainingText)) pipette.adjustments.OTHER = 'K';
+
+                // Extract final volumes - look for decimal numbers at the end
+                const volumeMatches = line.match(/(\d+\.\d+)/g);
+                if (volumeMatches && volumeMatches.length >= 4) {
+                    // Take the last 4 decimal numbers as final volumes
+                    pipette.finalVolumes = volumeMatches.slice(-4);
+                } else {
+                    pipette.finalVolumes = ['', '', '', ''];
+                }
+
+                // Extract P/F status - look for single P or F at the end
+                const pfMatch = line.match(/\b([PF])\s*$/i);
+                if (pfMatch) {
+                    pipette.passFail = pfMatch[1].toUpperCase();
+                } else {
+                    pipette.passFail = 'P'; // Default to pass if not specified
+                }
+
+                extracted.pipettes.push(pipette);
+            }
+
+            if (extracted.pipettes.length === 0) {
+                throw new Error('No pipette data found in pasted text');
+            }
+
+            console.log('Parsed pipettes from text:', extracted.pipettes);
+            return extracted;
+        }
+
+        // ========================================
         // EQUIPMENT HISTORY UI FUNCTIONS
         // ========================================
 
@@ -10502,10 +10710,15 @@
 
             <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #28a745;">
                 <h3 style="margin-top: 0; color: #2e7d32;">📄 Import Legacy Work Orders</h3>
-                <p style="margin-bottom: 15px;">Upload old calibration work orders (Word .docx format) to add them to equipment history.</p>
-                <button class="btn btn-primary" onclick="document.getElementById('wordImportFile').click()">
-                    📤 Upload Word Documents (.docx)
-                </button>
+                <p style="margin-bottom: 15px;">Upload Word documents (.docx) or paste copied text from calibration work orders.</p>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="document.getElementById('wordImportFile').click()">
+                        📤 Upload Word Documents (.docx)
+                    </button>
+                    <button class="btn btn-secondary" onclick="showPasteTextDialog()">
+                        📋 Paste Text from Document
+                    </button>
+                </div>
                 <input type="file" id="wordImportFile" accept=".docx,.doc" multiple style="display: none;" onchange="handleWordImport(event)">
                 <div id="wordImportPreview" style="margin-top: 20px;">
                     <!-- Preview will appear here -->
