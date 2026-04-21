@@ -1882,6 +1882,25 @@
                 const pipetteTable = tables[1];
                 const rows = pipetteTable.querySelectorAll('tr');
 
+                // Auto-detect format: some documents have an extra Serial Number column
+                // Check first data row (row 2) to determine column layout
+                let columnOffset = 0;
+                if (rows.length > 2) {
+                    const firstDataRow = rows[2].querySelectorAll('td');
+                    const cell1 = firstDataRow[1]?.textContent.trim();
+                    const cell2 = firstDataRow[2]?.textContent.trim();
+
+                    // If cell 2 contains brand names and cell 1 doesn't, we have the serial number format
+                    const commonBrands = ['Eppendorf', 'Gilson', 'Rainin', 'Finn', 'VWR', 'Biotix', 'Fisher', 'Thermo'];
+                    const cell2HasBrand = commonBrands.some(brand => cell2?.includes(brand));
+                    const cell1HasBrand = commonBrands.some(brand => cell1?.includes(brand));
+
+                    if (cell2HasBrand && !cell1HasBrand && cell1) {
+                        columnOffset = 1; // Extra serial number column present
+                        console.log('Detected format with Serial Number column');
+                    }
+                }
+
                 // Skip BOTH header rows (row 0 = main headers, row 1 = sub-headers), process data rows starting at row 2
                 for (let i = 2; i < rows.length; i++) {
                     const cells = rows[i].querySelectorAll('td');
@@ -1892,8 +1911,13 @@
                     // Column 0: Pipet No.
                     pipetteData.number = cells[0]?.textContent.trim();
 
-                    // Column 1: Manufacturer/Model
-                    const makeModel = cells[1]?.textContent.trim();
+                    // Handle optional Serial Number column
+                    if (columnOffset === 1) {
+                        pipetteData.serial = cells[1]?.textContent.trim();
+                    }
+
+                    // Manufacturer/Model (adjusted for column offset)
+                    const makeModel = cells[1 + columnOffset]?.textContent.trim();
                     if (makeModel && makeModel !== '') {
                         pipetteData.makeModel = makeModel;
                         // Try to split into brand and model
@@ -1904,47 +1928,53 @@
                         }
                     }
 
-                    // Column 2: Max Volume
-                    const maxVol = cells[2]?.textContent.trim();
+                    // Max Volume (adjusted for column offset)
+                    const maxVol = cells[2 + columnOffset]?.textContent.trim();
                     if (maxVol) pipetteData.maxVolume = maxVol;
 
-                    // Column 3: In Spec (checkbox)
-                    pipetteData.inSpec = cells[3]?.textContent.includes('✓') ||
-                                        cells[3]?.textContent.includes('X') ||
-                                        cells[3]?.textContent.includes('x');
+                    // In Spec (adjusted for column offset)
+                    pipetteData.inSpec = cells[3 + columnOffset]?.textContent.includes('✓') ||
+                                        cells[3 + columnOffset]?.textContent.includes('X') ||
+                                        cells[3 + columnOffset]?.textContent.includes('x') ||
+                                        cells[3 + columnOffset]?.textContent.includes('*');
 
-                    // Column 4: Out Spec (checkbox)
-                    pipetteData.outSpec = cells[4]?.textContent.includes('✓') ||
-                                         cells[4]?.textContent.includes('X') ||
-                                         cells[4]?.textContent.includes('x');
+                    // Out Spec (adjusted for column offset)
+                    pipetteData.outSpec = cells[4 + columnOffset]?.textContent.includes('✓') ||
+                                         cells[4 + columnOffset]?.textContent.includes('X') ||
+                                         cells[4 + columnOffset]?.textContent.includes('x') ||
+                                         cells[4 + columnOffset]?.textContent.includes('*');
 
-                    // Columns 5-11: Adjustments (SE, COR, G, SH, FR, O, OTHER)
+                    // Adjustments (adjusted for column offset)
                     pipetteData.adjustments = {
-                        SE: cells[5]?.textContent.includes('✓') || cells[5]?.textContent.includes('X'),
-                        COR: cells[6]?.textContent.includes('✓') || cells[6]?.textContent.includes('X'),
-                        G: cells[7]?.textContent.includes('✓') || cells[7]?.textContent.includes('X'),
-                        SH: cells[8]?.textContent.includes('✓') || cells[8]?.textContent.includes('X'),
-                        FR: cells[9]?.textContent.includes('✓') || cells[9]?.textContent.includes('X'),
-                        O: cells[10]?.textContent.includes('✓') || cells[10]?.textContent.includes('X'),
-                        OTHER: cells[11]?.textContent.trim()
+                        SE: cells[5 + columnOffset]?.textContent.includes('✓') || cells[5 + columnOffset]?.textContent.includes('X') || cells[5 + columnOffset]?.textContent.includes('*'),
+                        COR: cells[6 + columnOffset]?.textContent.includes('✓') || cells[6 + columnOffset]?.textContent.includes('X') || cells[6 + columnOffset]?.textContent.includes('*'),
+                        G: cells[7 + columnOffset]?.textContent.includes('✓') || cells[7 + columnOffset]?.textContent.includes('X') || cells[7 + columnOffset]?.textContent.includes('*'),
+                        SH: cells[8 + columnOffset]?.textContent.includes('✓') || cells[8 + columnOffset]?.textContent.includes('X') || cells[8 + columnOffset]?.textContent.includes('*'),
+                        FR: cells[9 + columnOffset]?.textContent.includes('✓') || cells[9 + columnOffset]?.textContent.includes('X') || cells[9 + columnOffset]?.textContent.includes('*'),
+                        O: cells[10 + columnOffset]?.textContent.includes('✓') || cells[10 + columnOffset]?.textContent.includes('X') || cells[10 + columnOffset]?.textContent.includes('*'),
+                        OTHER: cells[11 + columnOffset]?.textContent.trim()
                     };
 
-                    // Columns 12-15: Final Corrected Volumes (4 samples)
+                    // Final Corrected Volumes (adjusted for column offset)
                     pipetteData.finalVolumes = [
-                        cells[12]?.textContent.trim() || '',
-                        cells[13]?.textContent.trim() || '',
-                        cells[14]?.textContent.trim() || '',
-                        cells[15]?.textContent.trim() || ''
+                        cells[12 + columnOffset]?.textContent.trim() || '',
+                        cells[13 + columnOffset]?.textContent.trim() || '',
+                        cells[14 + columnOffset]?.textContent.trim() || '',
+                        cells[15 + columnOffset]?.textContent.trim() || ''
                     ];
 
-                    // Column 17: P/F (Pass/Fail) - there's an extra column at 16 we skip
-                    const pfText = cells[17]?.textContent.trim().toUpperCase();
+                    // P/F (Pass/Fail) - adjusted for column offset, there's an extra column we skip
+                    const pfText = cells[17 + columnOffset]?.textContent.trim().toUpperCase();
                     pipetteData.passFail = pfText === 'P' || pfText === 'PASS' ? 'P' :
                                           (pfText === 'F' || pfText === 'FAIL' ? 'F' : '');
 
                     // Only add if there's actual data (not an empty row)
                     if (pipetteData.makeModel || pipetteData.maxVolume) {
                         pipetteData.serviceLevel = 'basic'; // Legacy imports are basic calibrations
+                        // If no serial was in the extra column, use the pipet number as serial
+                        if (!pipetteData.serial) {
+                            pipetteData.serial = pipetteData.number;
+                        }
                         extracted.pipettes.push(pipetteData);
                     }
                 }
