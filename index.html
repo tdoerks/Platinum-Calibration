@@ -1261,6 +1261,10 @@
             }
         }
     </style>
+
+    <!-- External Libraries for Equipment History Database -->
+    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
     <div id="saveIndicator" class="save-indicator">Saved</div>
@@ -1485,6 +1489,874 @@
         // Dymo Label Printer Variables
         let dymoAvailable = false;
         let dymoPrinters = [];
+
+        // ========================================
+        // EQUIPMENT HISTORY DATABASE (IndexedDB)
+        // ========================================
+
+        // Initialize Dexie database for equipment history
+        const equipmentDB = new Dexie('PlatinumEquipmentHistory');
+
+        equipmentDB.version(1).stores({
+            // Equipment master table - one record per unique serial number
+            equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate',
+
+            // Calibration records - historical calibrations for each equipment
+            calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate]'
+        });
+
+        // Equipment model - represents a single piece of equipment
+        class Equipment {
+            constructor(serial, brand, pipetteModel, model, volume) {
+                this.serial = serial;
+                this.brand = brand;
+                this.pipetteModel = pipetteModel;
+                this.model = model;  // e.g., P-100, P-1000
+                this.volume = volume;
+                this.firstCalibrationDate = new Date().toISOString();
+                this.lastCalibrationDate = new Date().toISOString();
+                this.totalCalibrations = 0;
+            }
+        }
+
+        // Calibration record model - represents a single calibration event
+        class CalibrationRecord {
+            constructor(pipetteData, sessionInfo) {
+                // Link to equipment
+                this.serial = pipetteData.serial;
+                this.number = pipetteData.number;
+
+                // Equipment details at time of calibration
+                this.brand = pipetteData.brand;
+                this.pipetteModel = pipetteData.pipetteModel;
+                this.model = pipetteData.model;
+                this.volume = pipetteData.volume;
+                this.channelType = pipetteData.channelType;
+                this.channelCount = pipetteData.channelCount;
+
+                // Calibration event info
+                this.calibrationDate = sessionInfo.calDate || new Date().toISOString().split('T')[0];
+                this.dueDate = sessionInfo.dueDate;
+                this.workOrderNo = sessionInfo.workOrderNo;
+                this.invoiceNo = sessionInfo.invoiceNo;
+                this.technician = sessionInfo.technician;
+                this.client = sessionInfo.client;
+                this.location = sessionInfo.location;
+
+                // Service level and type
+                this.serviceLevel = pipetteData.serviceLevel || 'platinum';
+
+                // Platinum-specific data
+                if (pipetteData.serviceLevel === 'platinum') {
+                    this.measurements = pipetteData.measurements;
+                    this.statusAsFound = pipetteData.statusAsFound;
+                    this.statusAsLeft = pipetteData.statusAsLeft;
+                    this.adjustmentsMade = pipetteData.adjustmentsMade || {};
+                }
+
+                // Basic-specific data
+                if (pipetteData.serviceLevel === 'basic') {
+                    this.inSpec = pipetteData.inSpec;
+                    this.outSpec = pipetteData.outSpec;
+                    this.adjustments = pipetteData.adjustments;  // SE, COR, G, SH, FR, O, OTHER
+                    this.finalVolumes = pipetteData.finalVolumes;  // 4 samples
+                    this.passFail = pipetteData.passFail;
+                }
+
+                // Balance used for calibration
+                this.balanceInfo = {
+                    make: sessionInfo.balanceMake,
+                    model: sessionInfo.balanceModel,
+                    serial: sessionInfo.balanceSerial,
+                    calDate: sessionInfo.balanceCalDate,
+                    dueDate: sessionInfo.balanceDueDate
+                };
+
+                // Environmental conditions
+                this.environmental = {
+                    temperature: sessionInfo.temperature,
+                    humidity: sessionInfo.humidity,
+                    pressure: sessionInfo.pressure
+                };
+
+                // Comments and notes
+                this.comments = pipetteData.comments;
+
+                // Timestamp
+                this.timestamp = new Date().toISOString();
+            }
+        }
+
+        // Database helper functions
+        async function saveToEquipmentHistory(pipetteData, sessionInfo) {
+            try {
+                if (!pipetteData.serial || pipetteData.serial.trim() === '') {
+                    console.log('Skipping equipment history save - no serial number');
+                    return;
+                }
+
+                // Check if equipment exists
+                const existingEquipment = await equipmentDB.equipment
+                    .where('serial')
+                    .equals(pipetteData.serial)
+                    .first();
+
+                if (existingEquipment) {
+                    // Update existing equipment
+                    await equipmentDB.equipment.update(existingEquipment.id, {
+                        lastCalibrationDate: new Date().toISOString(),
+                        totalCalibrations: (existingEquipment.totalCalibrations || 0) + 1
+                    });
+                } else {
+                    // Create new equipment record
+                    const equipment = new Equipment(
+                        pipetteData.serial,
+                        pipetteData.brand,
+                        pipetteData.pipetteModel,
+                        pipetteData.model,
+                        pipetteData.volume
+                    );
+                    equipment.totalCalibrations = 1;
+                    await equipmentDB.equipment.add(equipment);
+                }
+
+                // Always add new calibration record
+                const calibration = new CalibrationRecord(pipetteData, sessionInfo);
+                await equipmentDB.calibrations.add(calibration);
+
+                console.log(`Saved to equipment history: ${pipetteData.serial}`);
+            } catch (error) {
+                console.error('Error saving to equipment history:', error);
+            }
+        }
+
+        async function getEquipmentHistory(serial) {
+            try {
+                const equipment = await equipmentDB.equipment
+                    .where('serial')
+                    .equals(serial)
+                    .first();
+
+                const calibrations = await equipmentDB.calibrations
+                    .where('serial')
+                    .equals(serial)
+                    .reverse()
+                    .sortBy('calibrationDate');
+
+                return {
+                    equipment: equipment,
+                    calibrations: calibrations
+                };
+            } catch (error) {
+                console.error('Error fetching equipment history:', error);
+                return null;
+            }
+        }
+
+        async function searchEquipment(searchTerm) {
+            try {
+                const term = searchTerm.toLowerCase();
+                const allEquipment = await equipmentDB.equipment.toArray();
+
+                return allEquipment.filter(eq =>
+                    (eq.serial && eq.serial.toLowerCase().includes(term)) ||
+                    (eq.brand && eq.brand.toLowerCase().includes(term)) ||
+                    (eq.pipetteModel && eq.pipetteModel.toLowerCase().includes(term)) ||
+                    (eq.model && eq.model.toLowerCase().includes(term))
+                );
+            } catch (error) {
+                console.error('Error searching equipment:', error);
+                return [];
+            }
+        }
+
+        async function exportEquipmentDatabase() {
+            try {
+                const equipment = await equipmentDB.equipment.toArray();
+                const calibrations = await equipmentDB.calibrations.toArray();
+
+                const exportData = {
+                    exportDate: new Date().toISOString(),
+                    version: '1.0',
+                    equipment: equipment,
+                    calibrations: calibrations
+                };
+
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `equipment-history-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showAlert(`Equipment database exported successfully!\n${equipment.length} equipment records\n${calibrations.length} calibration records`, 'Export Complete');
+            } catch (error) {
+                console.error('Error exporting database:', error);
+                showAlert('Error exporting database: ' + error.message, 'Export Failed');
+            }
+        }
+
+        async function importEquipmentDatabase(jsonData) {
+            try {
+                const data = JSON.parse(jsonData);
+
+                if (!data.equipment || !data.calibrations) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                // Import equipment (merge, don't duplicate)
+                let equipmentAdded = 0;
+                let equipmentUpdated = 0;
+                for (const eq of data.equipment) {
+                    const existing = await equipmentDB.equipment
+                        .where('serial')
+                        .equals(eq.serial)
+                        .first();
+
+                    if (existing) {
+                        // Update if imported record is newer
+                        if (new Date(eq.lastCalibrationDate) > new Date(existing.lastCalibrationDate)) {
+                            await equipmentDB.equipment.update(existing.id, eq);
+                            equipmentUpdated++;
+                        }
+                    } else {
+                        await equipmentDB.equipment.add(eq);
+                        equipmentAdded++;
+                    }
+                }
+
+                // Import calibrations (avoid duplicates)
+                let calibrationsAdded = 0;
+                let calibrationsSkipped = 0;
+                for (const cal of data.calibrations) {
+                    const existing = await equipmentDB.calibrations
+                        .where('[serial+calibrationDate]')
+                        .equals([cal.serial, cal.calibrationDate])
+                        .first();
+
+                    if (!existing) {
+                        await equipmentDB.calibrations.add(cal);
+                        calibrationsAdded++;
+                    } else {
+                        calibrationsSkipped++;
+                    }
+                }
+
+                showAlert(
+                    `Import complete!\n` +
+                    `Equipment: ${equipmentAdded} added, ${equipmentUpdated} updated\n` +
+                    `Calibrations: ${calibrationsAdded} added, ${calibrationsSkipped} duplicates skipped`,
+                    'Import Successful'
+                );
+
+                // Refresh the history view
+                await loadEquipmentHistory();
+            } catch (error) {
+                console.error('Error importing database:', error);
+                showAlert('Error importing database: ' + error.message, 'Import Failed');
+            }
+        }
+
+        // Save current session's completed calibrations to equipment history
+        async function saveSessionToHistory() {
+            try {
+                const sessionInfo = getSessionInfo();
+                let savedCount = 0;
+                let skippedCount = 0;
+
+                // Save each pipette that has a serial number
+                for (const pipette of pipettes) {
+                    if (pipette.serial && pipette.serial.trim() !== '') {
+                        // Check if this exact calibration already exists
+                        const existing = await equipmentDB.calibrations
+                            .where('[serial+calibrationDate]')
+                            .equals([pipette.serial, sessionInfo.calDate])
+                            .first();
+
+                        if (!existing) {
+                            await saveToEquipmentHistory(pipette, sessionInfo);
+                            savedCount++;
+                        } else {
+                            skippedCount++;
+                        }
+                    }
+                }
+
+                if (savedCount > 0 || skippedCount > 0) {
+                    showAlert(
+                        `Equipment history updated!\n` +
+                        `${savedCount} calibration(s) saved\n` +
+                        `${skippedCount} already in history`,
+                        'History Saved'
+                    );
+                } else {
+                    showAlert('No equipment with serial numbers found to save.', 'No Equipment');
+                }
+
+                // Update last save timestamp
+                localStorage.setItem('platinumLastHistorySave', Date.now().toString());
+            } catch (error) {
+                console.error('Error saving session to history:', error);
+                showAlert('Error saving to equipment history: ' + error.message, 'Save Failed');
+            }
+        }
+
+        // ========================================
+        // WORD DOCUMENT PARSER FOR LEGACY UPLOADS
+        // ========================================
+
+        async function parseWordDocument(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({arrayBuffer: arrayBuffer});
+
+                // Also extract with HTML to parse tables better
+                const htmlResult = await mammoth.convertToHtml({arrayBuffer: arrayBuffer});
+
+                // Parse the document structure to extract calibration data
+                // This will extract data from the Basic Calibration Workorder format
+                const calibrationData = extractCalibrationDataFromHtml(htmlResult.value, file.name);
+
+                return calibrationData;
+            } catch (error) {
+                console.error('Error parsing Word document:', error);
+                throw new Error('Failed to parse Word document: ' + error.message);
+            }
+        }
+
+        function extractCalibrationDataFromHtml(html, filename) {
+            // Create a temporary div to parse HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            const extracted = {
+                filename: filename,
+                sessionInfo: {},
+                pipettes: [],
+                parseDate: new Date().toISOString()
+            };
+
+            try {
+                // Find all tables in the document
+                const tables = tempDiv.querySelectorAll('table');
+
+                if (tables.length < 2) {
+                    throw new Error('Document does not contain expected table structure');
+                }
+
+                // First table: Header information (PI, dates, balance info)
+                const headerTable = tables[0];
+                const headerText = headerTable.textContent;
+
+                // Extract PI name
+                const piMatch = headerText.match(/PI\s*:\s*([^\n\t]+)/i) ||
+                               headerText.match(/Principal\s*Investigator\s*:\s*([^\n\t]+)/i);
+                if (piMatch) extracted.sessionInfo.pi = piMatch[1].trim();
+
+                // Extract service date
+                const serviceDateMatch = headerText.match(/Service\s*Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i) ||
+                                        headerText.match(/Date\s*of\s*Service\s*:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+                if (serviceDateMatch) {
+                    extracted.sessionInfo.serviceDate = serviceDateMatch[1].trim();
+                }
+
+                // Extract work order / invoice number
+                const woMatch = headerText.match(/(?:Work\s*Order|Invoice)\s*#?\s*:\s*([^\n\t]+)/i);
+                if (woMatch) extracted.sessionInfo.workOrderNo = woMatch[1].trim();
+
+                // Extract balance information
+                const balanceMatch = headerText.match(/Balance\s*(?:Make|Manufacturer)\s*:\s*([^\n\t]+)/i);
+                if (balanceMatch) extracted.sessionInfo.balanceMake = balanceMatch[1].trim();
+
+                const balanceModelMatch = headerText.match(/Balance\s*Model\s*:\s*([^\n\t]+)/i);
+                if (balanceModelMatch) extracted.sessionInfo.balanceModel = balanceModelMatch[1].trim();
+
+                const balanceSerialMatch = headerText.match(/Balance\s*Serial\s*:\s*([^\n\t]+)/i);
+                if (balanceSerialMatch) extracted.sessionInfo.balanceSerial = balanceSerialMatch[1].trim();
+
+                // Second table: Pipette calibration data
+                const pipetteTable = tables[1];
+                const rows = pipetteTable.querySelectorAll('tr');
+
+                // Skip header row, process data rows
+                for (let i = 1; i < rows.length; i++) {
+                    const cells = rows[i].querySelectorAll('td');
+                    if (cells.length < 10) continue; // Skip if not enough cells
+
+                    const pipetteData = {};
+
+                    // Column 0: Pipet No.
+                    pipetteData.number = cells[0]?.textContent.trim();
+
+                    // Column 1: Manufacturer/Model
+                    const makeModel = cells[1]?.textContent.trim();
+                    if (makeModel && makeModel !== '') {
+                        pipetteData.makeModel = makeModel;
+                        // Try to split into brand and model
+                        const parts = makeModel.split(/\s+/);
+                        if (parts.length > 0) {
+                            pipetteData.brand = parts[0];
+                            pipetteData.pipetteModel = parts.slice(1).join(' ');
+                        }
+                    }
+
+                    // Column 2: Max Volume
+                    const maxVol = cells[2]?.textContent.trim();
+                    if (maxVol) pipetteData.maxVolume = maxVol;
+
+                    // Column 3: In Spec (checkbox)
+                    pipetteData.inSpec = cells[3]?.textContent.includes('✓') ||
+                                        cells[3]?.textContent.includes('X') ||
+                                        cells[3]?.textContent.includes('x');
+
+                    // Column 4: Out Spec (checkbox)
+                    pipetteData.outSpec = cells[4]?.textContent.includes('✓') ||
+                                         cells[4]?.textContent.includes('X') ||
+                                         cells[4]?.textContent.includes('x');
+
+                    // Columns 5-11: Adjustments (SE, COR, G, SH, FR, O, OTHER)
+                    pipetteData.adjustments = {
+                        SE: cells[5]?.textContent.includes('✓') || cells[5]?.textContent.includes('X'),
+                        COR: cells[6]?.textContent.includes('✓') || cells[6]?.textContent.includes('X'),
+                        G: cells[7]?.textContent.includes('✓') || cells[7]?.textContent.includes('X'),
+                        SH: cells[8]?.textContent.includes('✓') || cells[8]?.textContent.includes('X'),
+                        FR: cells[9]?.textContent.includes('✓') || cells[9]?.textContent.includes('X'),
+                        O: cells[10]?.textContent.includes('✓') || cells[10]?.textContent.includes('X'),
+                        OTHER: cells[11]?.textContent.trim()
+                    };
+
+                    // Columns 12-15: Final Corrected Volumes (4 samples)
+                    pipetteData.finalVolumes = [
+                        cells[12]?.textContent.trim() || '',
+                        cells[13]?.textContent.trim() || '',
+                        cells[14]?.textContent.trim() || '',
+                        cells[15]?.textContent.trim() || ''
+                    ];
+
+                    // Column 16: P/F (Pass/Fail)
+                    const pfText = cells[16]?.textContent.trim().toUpperCase();
+                    pipetteData.passFail = pfText === 'P' || pfText === 'PASS' ? 'P' :
+                                          (pfText === 'F' || pfText === 'FAIL' ? 'F' : '');
+
+                    // Only add if there's actual data (not an empty row)
+                    if (pipetteData.makeModel || pipetteData.maxVolume) {
+                        pipetteData.serviceLevel = 'basic'; // Legacy imports are basic calibrations
+                        extracted.pipettes.push(pipetteData);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error extracting data from HTML:', error);
+                throw new Error('Failed to extract calibration data: ' + error.message);
+            }
+
+            return extracted;
+        }
+
+        async function importWordDocuments(files) {
+            const previewContainer = document.getElementById('wordImportPreview');
+            if (!previewContainer) return;
+
+            previewContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Parsing documents...</div>';
+
+            let allExtracted = [];
+            let parseErrors = [];
+
+            for (const file of files) {
+                try {
+                    const data = await parseWordDocument(file);
+                    allExtracted.push(data);
+                } catch (error) {
+                    parseErrors.push({file: file.name, error: error.message});
+                }
+            }
+
+            // Display preview
+            displayWordImportPreview(allExtracted, parseErrors);
+        }
+
+        function displayWordImportPreview(extractedData, errors) {
+            const previewContainer = document.getElementById('wordImportPreview');
+            if (!previewContainer) return;
+
+            let html = '<div style="margin: 20px 0;">';
+
+            // Show errors if any
+            if (errors.length > 0) {
+                html += '<div class="alert alert-warning" style="margin-bottom: 20px;">';
+                html += '<strong>⚠️ Parse Errors:</strong><ul>';
+                errors.forEach(err => {
+                    html += `<li>${err.file}: ${err.error}</li>`;
+                });
+                html += '</ul></div>';
+            }
+
+            // Show preview of extracted data
+            if (extractedData.length > 0) {
+                html += `<div class="alert alert-success" style="margin-bottom: 20px;">`;
+                html += `<strong>✓ Successfully parsed ${extractedData.length} document(s)</strong></div>`;
+
+                extractedData.forEach((doc, idx) => {
+                    html += `<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px;">`;
+                    html += `<h4 style="margin-top: 0;">${doc.filename}</h4>`;
+                    html += `<p><strong>Work Order:</strong> ${doc.sessionInfo.workOrderNo || 'N/A'} | `;
+                    html += `<strong>PI:</strong> ${doc.sessionInfo.pi || 'N/A'} | `;
+                    html += `<strong>Date:</strong> ${doc.sessionInfo.serviceDate || 'N/A'}</p>`;
+                    html += `<p><strong>Pipettes found:</strong> ${doc.pipettes.length}</p>`;
+
+                    if (doc.pipettes.length > 0) {
+                        html += '<table style="width: 100%; font-size: 12px; margin-top: 10px;"><thead><tr>';
+                        html += '<th>No.</th><th>Make/Model</th><th>Max Vol</th><th>Spec</th><th>Adjustments</th><th>P/F</th>';
+                        html += '</tr></thead><tbody>';
+
+                        doc.pipettes.slice(0, 5).forEach(p => {
+                            const adjustStr = Object.entries(p.adjustments || {})
+                                .filter(([k, v]) => v && k !== 'OTHER')
+                                .map(([k]) => k)
+                                .join(', ');
+
+                            html += '<tr>';
+                            html += `<td>${p.number || ''}</td>`;
+                            html += `<td>${p.makeModel || ''}</td>`;
+                            html += `<td>${p.maxVolume || ''}</td>`;
+                            html += `<td>${p.inSpec ? 'IN' : (p.outSpec ? 'OUT' : '')}</td>`;
+                            html += `<td>${adjustStr || (p.adjustments?.OTHER || 'None')}</td>`;
+                            html += `<td>${p.passFail || ''}</td>`;
+                            html += '</tr>';
+                        });
+
+                        if (doc.pipettes.length > 5) {
+                            html += `<tr><td colspan="6" style="text-align: center; font-style: italic;">... and ${doc.pipettes.length - 5} more</td></tr>`;
+                        }
+
+                        html += '</tbody></table>';
+                    }
+
+                    html += `</div>`;
+                });
+
+                // Add import button
+                html += `<div style="text-align: center; margin-top: 20px;">`;
+                html += `<button class="btn btn-primary" onclick="confirmWordImport()" style="font-size: 16px; padding: 12px 24px;">`;
+                html += `📥 Import ${extractedData.reduce((sum, doc) => sum + doc.pipettes.length, 0)} Pipette(s) to History</button>`;
+                html += `</div>`;
+            }
+
+            html += '</div>';
+            previewContainer.innerHTML = html;
+
+            // Store extracted data for import
+            window.wordImportData = extractedData;
+        }
+
+        async function confirmWordImport() {
+            if (!window.wordImportData || window.wordImportData.length === 0) {
+                showAlert('No data to import', 'Import Error');
+                return;
+            }
+
+            try {
+                let totalSaved = 0;
+                let totalSkipped = 0;
+
+                for (const doc of window.wordImportData) {
+                    const sessionInfo = doc.sessionInfo;
+
+                    for (const pipetteData of doc.pipettes) {
+                        // Create a more complete pipette object
+                        const completePipette = {
+                            ...pipetteData,
+                            serial: pipetteData.number || `LEGACY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            serviceLevel: 'basic'
+                        };
+
+                        // Check if already exists
+                        const calDate = sessionInfo.serviceDate || new Date().toISOString().split('T')[0];
+                        const existing = await equipmentDB.calibrations
+                            .where('[serial+calibrationDate]')
+                            .equals([completePipette.serial, calDate])
+                            .first();
+
+                        if (!existing) {
+                            await saveToEquipmentHistory(completePipette, {
+                                ...sessionInfo,
+                                calDate: calDate,
+                                technician: 'Legacy Import',
+                                client: sessionInfo.pi || 'Unknown'
+                            });
+                            totalSaved++;
+                        } else {
+                            totalSkipped++;
+                        }
+                    }
+                }
+
+                showAlert(
+                    `Import complete!\n${totalSaved} calibration(s) imported\n${totalSkipped} duplicates skipped`,
+                    'Import Successful'
+                );
+
+                // Clear preview
+                document.getElementById('wordImportPreview').innerHTML = '';
+                window.wordImportData = null;
+
+                // Refresh history view
+                await loadEquipmentHistory();
+
+            } catch (error) {
+                console.error('Error importing Word documents:', error);
+                showAlert('Error importing data: ' + error.message, 'Import Failed');
+            }
+        }
+
+        // ========================================
+        // EQUIPMENT HISTORY UI FUNCTIONS
+        // ========================================
+
+        function handleWordImport(event) {
+            const files = Array.from(event.target.files);
+            if (files.length > 0) {
+                importWordDocuments(files);
+            }
+            // Reset file input so same file can be selected again
+            event.target.value = '';
+        }
+
+        async function handleJsonImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const text = await file.text();
+                await importEquipmentDatabase(text);
+            } catch (error) {
+                showAlert('Error reading JSON file: ' + error.message, 'Import Failed');
+            }
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        async function performEquipmentSearch() {
+            const searchInput = document.getElementById('equipmentSearch');
+            const searchTerm = searchInput.value.trim();
+            const resultsContainer = document.getElementById('searchResults');
+
+            if (!searchTerm || searchTerm.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            try {
+                const results = await searchEquipment(searchTerm);
+
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = '<div class="alert alert-info">No equipment found matching your search.</div>';
+                    return;
+                }
+
+                let html = '<div style="margin-top: 15px;">';
+                html += `<p><strong>Found ${results.length} equipment:</strong></p>`;
+
+                for (const eq of results) {
+                    html += `<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer;"
+                                  onclick="showEquipmentDetails('${eq.serial}')">`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: start;">`;
+                    html += `<div>`;
+                    html += `<h4 style="margin: 0 0 5px 0;">${eq.brand} ${eq.pipetteModel || ''}</h4>`;
+                    html += `<p style="margin: 0; color: #666; font-size: 14px;">Serial: <strong>${eq.serial}</strong> | Model: ${eq.model || 'N/A'}</p>`;
+                    html += `<p style="margin: 5px 0 0 0; font-size: 13px; color: #888;">`;
+                    html += `${eq.totalCalibrations || 0} calibration(s) | Last: ${new Date(eq.lastCalibrationDate).toLocaleDateString()}`;
+                    html += `</p>`;
+                    html += `</div>`;
+                    html += `<div style="background: #007bff; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">`;
+                    html += `View →`;
+                    html += `</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                }
+
+                html += '</div>';
+                resultsContainer.innerHTML = html;
+            } catch (error) {
+                console.error('Error searching equipment:', error);
+                resultsContainer.innerHTML = '<div class="alert alert-danger">Error performing search.</div>';
+            }
+        }
+
+        async function loadEquipmentHistory() {
+            const container = document.getElementById('equipmentHistoryContainer');
+            if (!container) return;
+
+            container.innerHTML = '<div style="text-align: center; padding: 20px;">Loading equipment history...</div>';
+
+            try {
+                const allEquipment = await equipmentDB.equipment.toArray();
+
+                if (allEquipment.length === 0) {
+                    container.innerHTML = `
+                        <div class="alert alert-info">
+                            <h4>No Equipment History Yet</h4>
+                            <p>Get started by:</p>
+                            <ul style="text-align: left; margin: 10px 0;">
+                                <li>Clicking "Save Current Session to History" after completing calibrations</li>
+                                <li>Importing old Word document work orders</li>
+                                <li>Importing a history database backup (JSON)</li>
+                            </ul>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort by last calibration date (most recent first)
+                allEquipment.sort((a, b) => new Date(b.lastCalibrationDate) - new Date(a.lastCalibrationDate));
+
+                let html = `<p style="margin-bottom: 15px; color: #666;">Total Equipment: <strong>${allEquipment.length}</strong></p>`;
+
+                for (const eq of allEquipment) {
+                    html += `<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer;"
+                                  onclick="showEquipmentDetails('${eq.serial}')">`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: start;">`;
+                    html += `<div style="flex: 1;">`;
+                    html += `<h4 style="margin: 0 0 8px 0;">${eq.brand} ${eq.pipetteModel || ''}</h4>`;
+                    html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 13px; color: #666;">`;
+                    html += `<div><strong>Serial:</strong> ${eq.serial}</div>`;
+                    html += `<div><strong>Model:</strong> ${eq.model || 'N/A'}</div>`;
+                    html += `<div><strong>Volume:</strong> ${eq.volume ? eq.volume + ' µL' : 'N/A'}</div>`;
+                    html += `<div><strong>Total Calibrations:</strong> ${eq.totalCalibrations || 0}</div>`;
+                    html += `<div><strong>First Cal:</strong> ${new Date(eq.firstCalibrationDate).toLocaleDateString()}</div>`;
+                    html += `<div><strong>Last Cal:</strong> ${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                    html += `<div style="background: #007bff; color: white; padding: 6px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap;">`;
+                    html += `View History →`;
+                    html += `</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+                }
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading equipment history:', error);
+                container.innerHTML = '<div class="alert alert-danger">Error loading equipment history.</div>';
+            }
+        }
+
+        async function showEquipmentDetails(serial) {
+            try {
+                const history = await getEquipmentHistory(serial);
+
+                if (!history || !history.equipment) {
+                    showAlert('Equipment not found.', 'Error');
+                    return;
+                }
+
+                const eq = history.equipment;
+                const calibrations = history.calibrations;
+
+                // Build detailed view
+                let html = `
+                    <div style="max-height: 70vh; overflow-y: auto;">
+                        <h3 style="margin-top: 0;">${eq.brand} ${eq.pipetteModel || ''}</h3>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                                <div><strong>Serial Number:</strong><br>${eq.serial}</div>
+                                <div><strong>Model:</strong><br>${eq.model || 'N/A'}</div>
+                                <div><strong>Volume:</strong><br>${eq.volume ? eq.volume + ' µL' : 'N/A'}</div>
+                                <div><strong>Total Calibrations:</strong><br>${eq.totalCalibrations || 0}</div>
+                                <div><strong>First Calibration:</strong><br>${new Date(eq.firstCalibrationDate).toLocaleDateString()}</div>
+                                <div><strong>Last Calibration:</strong><br>${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+
+                        <h4>📅 Calibration Timeline (${calibrations.length} records)</h4>
+                `;
+
+                if (calibrations.length === 0) {
+                    html += '<p>No calibration records found.</p>';
+                } else {
+                    calibrations.forEach((cal, idx) => {
+                        const calDate = new Date(cal.calibrationDate).toLocaleDateString();
+                        const isBasic = cal.serviceLevel === 'basic';
+
+                        html += `<div style="border-left: 4px solid #007bff; padding-left: 15px; margin-bottom: 20px; position: relative;">`;
+                        html += `<div style="position: absolute; left: -8px; top: 0; width: 12px; height: 12px; background: #007bff; border-radius: 50%;"></div>`;
+                        html += `<h5 style="margin: 0 0 8px 0;">${calDate} - ${cal.workOrderNo || 'N/A'}</h5>`;
+                        html += `<div style="font-size: 13px; color: #666; margin-bottom: 10px;">`;
+                        html += `<strong>Technician:</strong> ${cal.technician || 'N/A'} | `;
+                        html += `<strong>Client:</strong> ${cal.client || 'N/A'} | `;
+                        html += `<strong>Type:</strong> ${isBasic ? 'Basic' : 'Platinum'}`;
+                        html += `</div>`;
+
+                        if (isBasic) {
+                            // Basic calibration details
+                            html += `<div style="background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 13px;">`;
+                            html += `<div><strong>Status:</strong> ${cal.inSpec ? '✓ IN SPEC' : (cal.outSpec ? '✗ OUT OF SPEC' : 'N/A')}</div>`;
+
+                            if (cal.adjustments) {
+                                const adjustList = Object.entries(cal.adjustments)
+                                    .filter(([k, v]) => v && k !== 'OTHER')
+                                    .map(([k]) => k);
+                                if (adjustList.length > 0 || cal.adjustments.OTHER) {
+                                    html += `<div style="margin-top: 5px;"><strong>Adjustments:</strong> ${adjustList.join(', ') || cal.adjustments.OTHER || 'None'}</div>`;
+                                }
+                            }
+
+                            if (cal.finalVolumes && cal.finalVolumes.some(v => v)) {
+                                html += `<div style="margin-top: 5px;"><strong>Final Volumes:</strong> ${cal.finalVolumes.filter(v => v).join(', ')} µL</div>`;
+                            }
+
+                            html += `<div style="margin-top: 5px;"><strong>Result:</strong> ${cal.passFail === 'P' ? '✓ PASS' : (cal.passFail === 'F' ? '✗ FAIL' : 'N/A')}</div>`;
+                            html += `</div>`;
+                        } else {
+                            // Platinum calibration details
+                            html += `<div style="background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 13px;">`;
+                            html += `<div><strong>As Found:</strong> ${cal.statusAsFound || 'N/A'}</div>`;
+                            html += `<div><strong>As Left:</strong> ${cal.statusAsLeft || 'N/A'}</div>`;
+
+                            if (cal.adjustmentsMade) {
+                                const adjustList = Object.entries(cal.adjustmentsMade)
+                                    .filter(([k, v]) => v)
+                                    .map(([k]) => k);
+                                if (adjustList.length > 0) {
+                                    html += `<div style="margin-top: 5px;"><strong>Adjustments Made:</strong> ${adjustList.join(', ')}</div>`;
+                                }
+                            }
+                            html += `</div>`;
+                        }
+
+                        if (cal.comments) {
+                            html += `<div style="margin-top: 8px; font-size: 13px;"><strong>Comments:</strong> ${cal.comments}</div>`;
+                        }
+
+                        if (cal.balanceInfo && cal.balanceInfo.make) {
+                            html += `<div style="margin-top: 8px; font-size: 12px; color: #888;">`;
+                            html += `<strong>Balance:</strong> ${cal.balanceInfo.make} ${cal.balanceInfo.model || ''} (S/N: ${cal.balanceInfo.serial || 'N/A'})`;
+                            html += `</div>`;
+                        }
+
+                        html += `</div>`;
+                    });
+                }
+
+                html += '</div>';
+
+                // Show in modal
+                document.getElementById('modalTitle').textContent = 'Equipment History Details';
+                document.getElementById('modalMessage').innerHTML = html;
+                document.getElementById('modalConfirmBtn').style.display = 'none';
+                document.querySelector('.modal-footer .btn-secondary').textContent = 'Close';
+                document.getElementById('customModal').style.display = 'flex';
+
+            } catch (error) {
+                console.error('Error showing equipment details:', error);
+                showAlert('Error loading equipment details: ' + error.message, 'Error');
+            }
+        }
 
         // ========================================
         // CUSTOM MODAL FUNCTIONS
@@ -9577,14 +10449,61 @@
 
         <!-- History Tab -->
         <div id="history" class="tab-content">
-            <h2>📚 Calibration History</h2>
-            
-            <div style="margin-bottom: 20px;">
-                <button class="btn btn-primary" onclick="loadHistory()">🔄 Refresh History</button>
+            <h2>📚 Equipment Calibration History</h2>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                <h3 style="margin-top: 0;">💾 Save & Backup</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <button class="btn btn-success" onclick="saveSessionToHistory()">
+                        💾 Save Current Session to History
+                    </button>
+                    <button class="btn btn-primary" onclick="exportEquipmentDatabase()">
+                        📤 Export History Database (JSON)
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('jsonImportFile').click()">
+                        📥 Import History Backup (JSON)
+                    </button>
+                    <input type="file" id="jsonImportFile" accept=".json" style="display: none;" onchange="handleJsonImport(event)">
+                </div>
+                <p style="margin-top: 15px; font-size: 13px; color: #666;">
+                    <strong>Note:</strong> Current session must be saved to history manually. Backup your database periodically to prevent data loss.
+                </p>
             </div>
 
-            <div id="historyContainer">
-                <!-- History will be populated here -->
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #28a745;">
+                <h3 style="margin-top: 0; color: #2e7d32;">📄 Import Legacy Work Orders</h3>
+                <p style="margin-bottom: 15px;">Upload old calibration work orders (Word .docx format) to add them to equipment history.</p>
+                <button class="btn btn-primary" onclick="document.getElementById('wordImportFile').click()">
+                    📤 Upload Word Documents (.docx)
+                </button>
+                <input type="file" id="wordImportFile" accept=".docx,.doc" multiple style="display: none;" onchange="handleWordImport(event)">
+                <div id="wordImportPreview" style="margin-top: 20px;">
+                    <!-- Preview will appear here -->
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #dee2e6;">
+                <h3 style="margin-top: 0;">🔍 Search Equipment History</h3>
+                <div style="margin-bottom: 20px;">
+                    <input type="text"
+                           id="equipmentSearch"
+                           placeholder="Search by serial number, brand, model..."
+                           style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px;"
+                           oninput="performEquipmentSearch()">
+                </div>
+                <div id="searchResults" style="margin-top: 15px;">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">📋 All Equipment</h3>
+                    <button class="btn btn-secondary" onclick="loadEquipmentHistory()">🔄 Refresh</button>
+                </div>
+                <div id="equipmentHistoryContainer">
+                    <!-- Equipment list will be populated here -->
+                </div>
             </div>
         </div>
     </div>
