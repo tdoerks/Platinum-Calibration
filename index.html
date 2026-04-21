@@ -1882,8 +1882,8 @@
                 const pipetteTable = tables[1];
                 const rows = pipetteTable.querySelectorAll('tr');
 
-                // Skip header row, process data rows
-                for (let i = 1; i < rows.length; i++) {
+                // Skip BOTH header rows (row 0 = main headers, row 1 = sub-headers), process data rows starting at row 2
+                for (let i = 2; i < rows.length; i++) {
                     const cells = rows[i].querySelectorAll('td');
                     if (cells.length < 10) continue; // Skip if not enough cells
 
@@ -1937,8 +1937,8 @@
                         cells[15]?.textContent.trim() || ''
                     ];
 
-                    // Column 16: P/F (Pass/Fail)
-                    const pfText = cells[16]?.textContent.trim().toUpperCase();
+                    // Column 17: P/F (Pass/Fail) - there's an extra column at 16 we skip
+                    const pfText = cells[17]?.textContent.trim().toUpperCase();
                     pipetteData.passFail = pfText === 'P' || pfText === 'PASS' ? 'P' :
                                           (pfText === 'F' || pfText === 'FAIL' ? 'F' : '');
 
