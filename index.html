@@ -1516,6 +1516,14 @@
             deletedCalibrations: '++id, serial, deletedDate, deletedReason'
         });
 
+        // Version 3: Add client/location fields to equipment for filtering
+        equipmentDB.version(3).stores({
+            equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate, lastPI, lastCompany, lastLocation',
+            calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate], client, location',
+            deletedEquipment: '++id, serial, deletedDate, deletedReason',
+            deletedCalibrations: '++id, serial, deletedDate, deletedReason'
+        });
+
         // Equipment model - represents a single piece of equipment
         class Equipment {
             constructor(serial, brand, pipetteModel, model, volume) {
@@ -1612,11 +1620,19 @@
                     .equals(pipetteData.serial)
                     .first();
 
+                // Use actual calibration date from work order, not today's date
+                const calDate = sessionInfo.calDate || sessionInfo.serviceDate || new Date().toISOString();
+
                 if (existingEquipment) {
                     // Update existing equipment
                     await equipmentDB.equipment.update(existingEquipment.id, {
-                        lastCalibrationDate: new Date().toISOString(),
-                        totalCalibrations: (existingEquipment.totalCalibrations || 0) + 1
+                        lastCalibrationDate: calDate,
+                        totalCalibrations: (existingEquipment.totalCalibrations || 0) + 1,
+                        // Update client info from most recent calibration
+                        lastPI: sessionInfo.client || sessionInfo.pi,
+                        lastCompany: sessionInfo.company,
+                        lastLocation: sessionInfo.location,
+                        lastPhone: sessionInfo.phone
                     });
                 } else {
                     // Create new equipment record
@@ -1628,6 +1644,13 @@
                         pipetteData.volume
                     );
                     equipment.totalCalibrations = 1;
+                    equipment.firstCalibrationDate = calDate;
+                    equipment.lastCalibrationDate = calDate;
+                    // Store client info
+                    equipment.lastPI = sessionInfo.client || sessionInfo.pi;
+                    equipment.lastCompany = sessionInfo.company;
+                    equipment.lastLocation = sessionInfo.location;
+                    equipment.lastPhone = sessionInfo.phone;
                     await equipmentDB.equipment.add(equipment);
                 }
 
@@ -1884,6 +1907,24 @@
                 if (woMatch) {
                     extracted.sessionInfo.workOrderNo = woMatch[1].trim();
                     console.log('📝 Extracted work order:', woMatch[1].trim());
+                }
+
+                // Extract phone number (handles "Phone928-925-8386" without space/colon)
+                const phoneMatch = headerText.match(/Phone\s*:?\s*([\d\-\(\)\s]+)/i);
+                if (phoneMatch) {
+                    extracted.sessionInfo.phone = phoneMatch[1].trim();
+                    console.log('📞 Extracted phone:', phoneMatch[1].trim());
+                }
+
+                // Extract company/university & building/room
+                const companyMatch = headerText.match(/Company\/University\s*&\s*Bldg\s*w\/\s*Room#\s*:?\s*([^\n\r]+)/i);
+                if (companyMatch) {
+                    const companyText = companyMatch[1].trim();
+                    if (companyText && companyText !== '') {
+                        extracted.sessionInfo.company = companyText;
+                        extracted.sessionInfo.location = companyText;
+                        console.log('🏢 Extracted company/location:', companyText);
+                    }
                 }
 
                 // Extract balance information
