@@ -2642,8 +2642,12 @@
                     html += `<div><strong>Total Calibrations:</strong> ${eq.totalCalibrations || 0}</div>`;
                     html += `<div><strong>First Cal:</strong> ${new Date(eq.firstCalibrationDate).toLocaleDateString()}</div>`;
                     html += `<div><strong>Last Cal:</strong> ${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>`;
+                    html += `<div><strong>Client/PI:</strong> ${eq.lastPI || 'N/A'}</div>`;
+                    html += `<div><strong>Company:</strong> ${eq.lastCompany || 'N/A'}</div>`;
+                    html += `<div><strong>Location:</strong> ${eq.lastLocation || 'N/A'}</div>`;
                     html += `</div>`;
-                    html += `</div>`;
+                    html += `</div>`;  // Close content div
+                    html += `</div>`;  // Close checkbox+content wrapper div
                     html += `<div style="display: flex; gap: 8px; align-items: start;">`;
                     html += `<button class="btn btn-sm" style="background: #007bff; color: white; padding: 6px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap; border: none; cursor: pointer;"
                                       onclick="event.stopPropagation(); showEquipmentDetails('${eq.serial}')">`;
