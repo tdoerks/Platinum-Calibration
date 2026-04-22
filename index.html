@@ -1696,7 +1696,11 @@
                     (eq.serial && eq.serial.toLowerCase().includes(term)) ||
                     (eq.brand && eq.brand.toLowerCase().includes(term)) ||
                     (eq.pipetteModel && eq.pipetteModel.toLowerCase().includes(term)) ||
-                    (eq.model && eq.model.toLowerCase().includes(term))
+                    (eq.model && eq.model.toLowerCase().includes(term)) ||
+                    (eq.lastPI && eq.lastPI.toLowerCase().includes(term)) ||
+                    (eq.lastCompany && eq.lastCompany.toLowerCase().includes(term)) ||
+                    (eq.lastLocation && eq.lastLocation.toLowerCase().includes(term)) ||
+                    (eq.lastPhone && eq.lastPhone.toLowerCase().includes(term))
                 );
             } catch (error) {
                 console.error('Error searching equipment:', error);
