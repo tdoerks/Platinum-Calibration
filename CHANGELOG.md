@@ -1,5 +1,110 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.4.0 (April 2026)
+
+### 📚 Equipment History Database - Legacy Document Import
+
+Major new feature: Import legacy calibration work orders (Word documents) directly into equipment history database!
+
+### ✨ New Features
+
+#### **Word Document Parser for Legacy Imports**
+- **Auto-detects Serial Number column** in calibration tables
+- **Handles Mammoth.js quirks** - Works with both `<td>` and `<th>` HTML table cells
+- **Extracts client information** - PI name, company, location, phone from work order headers
+- **Uses actual service dates** - Reads dates from work orders, not upload timestamps
+- **Smart P/F detection** - Always reads last column for Pass/Fail status
+
+#### **Client Information Tracking**
+- Equipment records now track last PI name, company, location, and phone
+- Client data extracted automatically from Word document headers
+- Equipment cards display client info for easy reference
+- Database schema Version 3 adds: `lastPI`, `lastCompany`, `lastLocation`, `lastPhone`
+
+#### **Enhanced Search Functionality**
+- **Search by client** - Find equipment by PI name, company, or location
+- **Search by date** - Search calibration dates (e.g., "12/31/2025", "2025", "December")
+- **Autocomplete suggestions** - Dropdown shows all known companies, PIs, locations, brands, models
+- **Smart filtering** - Search works across all relevant fields simultaneously
+
+#### **Professional Data Management**
+- **Delete with audit trail** - Deleted records preserved with reason and timestamp
+- **Bulk delete** - Select multiple equipment records with checkboxes
+- **Soft delete pattern** - Data archived to `deletedEquipment` and `deletedCalibrations` tables
+- **Required deletion reason** - Must provide justification before deleting
+
+### 🔧 Bug Fixes
+
+**Company/Location Extraction**
+- **Issue:** Company and location fields captured entire header text including "Date of Service", "Balance Information", etc.
+- **Fix:** Updated regex to capture only first line after label, reject known junk patterns
+- **Result:** Empty fields now properly show "N/A" instead of header text
+
+**P/F Column Index**
+- **Issue:** Parser tried to read `cells[18]` when only 18 cells exist (0-17)
+- **Fix:** Changed to `cells[cells.length - 1]` to always get last cell
+- **Result:** No more array index errors on P/F column
+
+**Serial Number Overwrite**
+- **Issue:** Line 2126 overwrote extracted serial numbers with pipette numbers (01, 02, 03, 04)
+- **Fix:** Changed to `serial: pipetteData.serial || pipetteData.number || ...`
+- **Result:** Actual serial numbers (C202358375, F03069, etc.) now preserved
+
+**Calibration Dates Wrong**
+- **Issue:** Equipment showing upload date (4/21/2026) instead of service date (12/31/2025)
+- **Fix:** Use `sessionInfo.calDate || sessionInfo.serviceDate` instead of `new Date()`
+- **Result:** Calibration dates match work order service dates
+
+**Equipment Card Layout**
+- **Issue:** Cards appeared nested/weird due to missing closing `</div>` tag
+- **Fix:** Added missing closing tag at line 2650
+- **Result:** Each equipment record has clean, individual card layout
+
+### 🗄️ Database Schema Evolution
+
+**Version 3 Schema:**
+```javascript
+equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate, lastPI, lastCompany, lastLocation'
+calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate], client, location'
+deletedEquipment: '++id, serial, deletedDate, deletedReason'
+deletedCalibrations: '++id, serial, deletedDate, deletedReason'
+```
+
+### 🎯 Use Cases Enabled
+
+- **Import legacy archives** - Upload old Word work orders to build equipment history
+- **Track client equipment** - See which pipettes belong to which labs/institutions
+- **Search by institution** - "Kansas State University" finds all their equipment
+- **Search by PI** - "Doerksen" finds equipment calibrated for that researcher
+- **Audit trail** - Know who deleted what and why
+- **Bulk operations** - Delete multiple test records at once
+
+### 📝 Technical Changes
+
+**Word Document Parser** (`extractCalibrationDataFromHtml`)
+- Lines 1895-1900: Added `<th>` cell fallback when `<td>` cells not found
+- Lines 1912-1935: Client info extraction (phone, company, location)
+- Line 1987: Fixed P/F column to use `cells.length - 1`
+- Lines 2127-2134: Fixed serial/model/volume field mapping
+
+**Equipment History Functions**
+- Lines 1615-1654: Updated to save client info to database
+- Lines 2275-2319: Added `updateEquipmentSuggestions()` for autocomplete
+- Lines 2638-2651: Equipment cards now display client info
+- Lines 1690-1715: Search function includes PI, company, location, phone, dates
+
+**Deletion Features**
+- Lines 2268-2375: `showDeleteEquipmentConfirmation()` with required reason
+- Lines 2422-2584: Bulk delete with checkbox selection
+
+### 🚀 What's Next
+
+**Planned Features:**
+- Legacy import for Balance, Timer, Centrifuge, Temperature calibrations
+- Scheduling tab showing equipment coming due for calibration
+- Due date calculation from invoice suffix (A=Annual, M=Monthly, etc.)
+- Calendar view for calibration scheduling
+
 ## Version 2.3.5 (January 2026)
 
 ### 🏗️ Major Architectural Change
