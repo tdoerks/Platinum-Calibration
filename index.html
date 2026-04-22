@@ -1963,8 +1963,8 @@
                         cells[15 + columnOffset]?.textContent.trim() || ''
                     ];
 
-                    // P/F (Pass/Fail) - adjusted for column offset, there's an extra column we skip
-                    const pfText = cells[17 + columnOffset]?.textContent.trim().toUpperCase();
+                    // P/F (Pass/Fail) - always in the last cell of the row
+                    const pfText = cells[cells.length - 1]?.textContent.trim().toUpperCase();
                     pipetteData.passFail = pfText === 'P' || pfText === 'PASS' ? 'P' :
                                           (pfText === 'F' || pfText === 'FAIL' ? 'F' : '');
 
