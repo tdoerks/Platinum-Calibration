@@ -1917,13 +1917,20 @@
                 }
 
                 // Extract company/university & building/room
-                const companyMatch = headerText.match(/Company\/University\s*&\s*Bldg\s*w\/\s*Room#\s*:?\s*([^\n\r]+)/i);
+                // This field format: "Company/University & Bldg w/ Room#" followed by value on next line(s)
+                // Match the label, then capture content up to double newline or next label
+                const companyMatch = headerText.match(/Company\/University\s*&\s*Bldg\s*w\/\s*Room#\s*:?\s*\n([^\n]+)/i);
                 if (companyMatch) {
                     const companyText = companyMatch[1].trim();
-                    if (companyText && companyText !== '') {
+                    // Only save if there's actual content (not just whitespace or "Date of Service" etc)
+                    if (companyText &&
+                        companyText !== '' &&
+                        !companyText.match(/^(Date of Service|Next Service|Balance Information)/i)) {
                         extracted.sessionInfo.company = companyText;
                         extracted.sessionInfo.location = companyText;
                         console.log('🏢 Extracted company/location:', companyText);
+                    } else {
+                        console.log('🏢 Company/Location field is empty');
                     }
                 }
 
