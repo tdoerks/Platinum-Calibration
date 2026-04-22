@@ -1505,6 +1505,17 @@
             calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate]'
         });
 
+        // Version 2: Add deletion archive tables
+        equipmentDB.version(2).stores({
+            // Keep existing tables
+            equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate',
+            calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate]',
+
+            // New: Archive deleted records for audit trail
+            deletedEquipment: '++id, serial, deletedDate, deletedReason',
+            deletedCalibrations: '++id, serial, deletedDate, deletedReason'
+        });
+
         // Equipment model - represents a single piece of equipment
         class Equipment {
             constructor(serial, brand, pipetteModel, model, volume) {
@@ -2250,6 +2261,119 @@
             }
         }
 
+        // ========================================
+        // EQUIPMENT DELETION WITH AUDIT TRAIL
+        // ========================================
+
+        function showDeleteEquipmentConfirmation(serial, brand, model) {
+            const modal = document.createElement('div');
+            modal.id = 'deleteEquipmentModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+
+            const dialog = document.createElement('div');
+            dialog.style.cssText = 'background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
+
+            dialog.innerHTML = `
+                <h2 style="margin-top: 0; color: #dc3545;">⚠️ Delete Equipment Record?</h2>
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; font-weight: bold;">Equipment to Delete:</p>
+                    <p style="margin: 5px 0 0 0;">Serial: <strong>${serial}</strong></p>
+                    <p style="margin: 5px 0 0 0;">Brand/Model: <strong>${brand} ${model}</strong></p>
+                </div>
+                <p style="color: #666; margin: 15px 0;">
+                    <strong>Warning:</strong> This will archive all calibration records for this equipment.
+                    The data will be preserved for audit purposes but removed from active history.
+                </p>
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">
+                        Reason for Deletion: <span style="color: #dc3545;">*</span>
+                    </label>
+                    <textarea id="deleteReason"
+                        style="width: 100%; min-height: 80px; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px;"
+                        placeholder="e.g., Incorrect import, duplicate record, equipment retired, etc."
+                        required></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('deleteEquipmentModal').remove()">
+                        Cancel
+                    </button>
+                    <button class="btn btn-danger" onclick="confirmDeleteEquipment('${serial}')">
+                        🗑️ Delete & Archive
+                    </button>
+                </div>
+            `;
+
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+
+            // Focus the textarea
+            setTimeout(() => document.getElementById('deleteReason').focus(), 100);
+        }
+
+        async function confirmDeleteEquipment(serial) {
+            const reason = document.getElementById('deleteReason').value.trim();
+
+            if (!reason) {
+                alert('Please provide a reason for deletion.');
+                document.getElementById('deleteReason').focus();
+                return;
+            }
+
+            try {
+                // Get all data before deleting
+                const equipment = await equipmentDB.equipment.where('serial').equals(serial).first();
+                const calibrations = await equipmentDB.calibrations.where('serial').equals(serial).toArray();
+
+                if (!equipment) {
+                    throw new Error('Equipment not found');
+                }
+
+                const deletedDate = new Date().toISOString();
+
+                // Archive equipment record
+                await equipmentDB.deletedEquipment.add({
+                    ...equipment,
+                    deletedDate: deletedDate,
+                    deletedReason: reason,
+                    deletedBy: 'User', // Could add username later
+                    calibrationCount: calibrations.length
+                });
+
+                // Archive all calibration records
+                for (const cal of calibrations) {
+                    await equipmentDB.deletedCalibrations.add({
+                        ...cal,
+                        deletedDate: deletedDate,
+                        deletedReason: reason,
+                        deletedBy: 'User'
+                    });
+                }
+
+                // Delete from active tables
+                await equipmentDB.equipment.where('serial').equals(serial).delete();
+                await equipmentDB.calibrations.where('serial').equals(serial).delete();
+
+                console.log(`✅ Deleted and archived equipment ${serial} with ${calibrations.length} calibration(s)`);
+                console.log(`📝 Reason: ${reason}`);
+
+                // Close modal
+                document.getElementById('deleteEquipmentModal').remove();
+
+                // Refresh the equipment list
+                await loadEquipmentHistory();
+
+                // Show success message
+                showAlert(
+                    `Equipment ${serial} deleted successfully.\n${calibrations.length} calibration record(s) archived.\n\nReason: ${reason}`,
+                    'Deletion Complete'
+                );
+
+            } catch (error) {
+                console.error('Error deleting equipment:', error);
+                showAlert('Error deleting equipment: ' + error.message, 'Deletion Failed');
+            }
+        }
+
         async function loadEquipmentHistory() {
             const container = document.getElementById('equipmentHistoryContainer');
             if (!container) return;
@@ -2294,8 +2418,15 @@
                     html += `<div><strong>Last Cal:</strong> ${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>`;
                     html += `</div>`;
                     html += `</div>`;
-                    html += `<div style="background: #007bff; color: white; padding: 6px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap;">`;
+                    html += `<div style="display: flex; gap: 8px; align-items: start;">`;
+                    html += `<button class="btn btn-sm" style="background: #007bff; color: white; padding: 6px 16px; border-radius: 12px; font-size: 13px; white-space: nowrap; border: none; cursor: pointer;"
+                                      onclick="event.stopPropagation(); showEquipmentDetails('${eq.serial}')">`;
                     html += `View History →`;
+                    html += `</button>`;
+                    html += `<button class="btn btn-sm btn-danger" style="padding: 6px 12px; border-radius: 12px; font-size: 13px; white-space: nowrap;"
+                                      onclick="event.stopPropagation(); showDeleteEquipmentConfirmation('${eq.serial}', '${eq.brand}', '${eq.pipetteModel || eq.model || ''}')">`;
+                    html += `🗑️`;
+                    html += `</button>`;
                     html += `</div>`;
                     html += `</div>`;
                     html += `</div>`;
