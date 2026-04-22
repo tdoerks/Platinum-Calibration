@@ -1861,16 +1861,19 @@
                                headerText.match(/Principal\s*Investigator\s*:\s*([^\n\t]+)/i);
                 if (piMatch) extracted.sessionInfo.pi = piMatch[1].trim();
 
-                // Extract service date
-                const serviceDateMatch = headerText.match(/Service\s*Date\s*:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i) ||
-                                        headerText.match(/Date\s*of\s*Service\s*:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+                // Extract service date (handles "Date of Service12/31/2025" without colon/space)
+                const serviceDateMatch = headerText.match(/(?:Service\s*Date|Date\s*of\s*Service)\s*:?\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
                 if (serviceDateMatch) {
                     extracted.sessionInfo.serviceDate = serviceDateMatch[1].trim();
+                    console.log('📅 Extracted service date:', serviceDateMatch[1].trim());
                 }
 
-                // Extract work order / invoice number
-                const woMatch = headerText.match(/(?:Work\s*Order|Invoice)\s*#?\s*:\s*([^\n\t]+)/i);
-                if (woMatch) extracted.sessionInfo.workOrderNo = woMatch[1].trim();
+                // Extract work order / invoice number (handles "INVOICE NO.TSD3112251A" without space)
+                const woMatch = headerText.match(/(?:Work\s*Order|Invoice)\s*(?:NO\.?|#)\s*:?\s*([A-Z0-9]+)/i);
+                if (woMatch) {
+                    extracted.sessionInfo.workOrderNo = woMatch[1].trim();
+                    console.log('📝 Extracted work order:', woMatch[1].trim());
+                }
 
                 // Extract balance information
                 const balanceMatch = headerText.match(/Balance\s*(?:Make|Manufacturer)\s*:\s*([^\n\t]+)/i);
@@ -2123,9 +2126,15 @@
                         // Create a more complete pipette object
                         const completePipette = {
                             ...pipetteData,
-                            serial: pipetteData.number || `LEGACY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            // Don't overwrite serial if it exists! Use serial first, then number, then generate one
+                            serial: pipetteData.serial || pipetteData.number || `LEGACY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            // Ensure model and volume fields are set
+                            model: pipetteData.pipetteModel || pipetteData.makeModel || 'N/A',
+                            volume: pipetteData.maxVolume || 'N/A',
                             serviceLevel: 'basic'
                         };
+
+                        console.log('💾 Saving pipette to history:', completePipette.serial, '-', completePipette.brand, completePipette.model);
 
                         // Check if already exists
                         const calDate = sessionInfo.serviceDate || new Date().toISOString().split('T')[0];
