@@ -3181,6 +3181,9 @@
                 `;
 
                 for (const eq of allEquipment) {
+                    // Get due date status
+                    const status = eq.nextDueDate ? getEquipmentStatus(eq.nextDueDate) : null;
+
                     html += `<div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 10px; cursor: pointer;"
                                   onclick="if (!event.target.classList.contains('equipment-checkbox')) showEquipmentDetails('${eq.serial}')">`;
                     html += `<div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">`;
@@ -3189,7 +3192,20 @@
                                     style="width: 20px; height: 20px; margin-top: 2px; cursor: pointer;"
                                     onchange="updateBulkDeleteUI()" onclick="event.stopPropagation()">`;
                     html += `<div style="flex: 1;">`;
-                    html += `<h4 style="margin: 0 0 8px 0;">${eq.brand} ${eq.pipetteModel || ''}</h4>`;
+
+                    // Title with status badge
+                    html += `<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">`;
+                    html += `<h4 style="margin: 0;">${eq.brand} ${eq.pipetteModel || ''}</h4>`;
+                    if (status) {
+                        const badgeColor = status.status === 'overdue' ? '#f44336' :
+                                         status.status === 'due_soon' ? '#ff9800' :
+                                         status.status === 'upcoming' ? '#4caf50' : '#2196f3';
+                        html += `<span style="background: ${badgeColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap;">
+                                    ${status.icon} ${status.label}
+                                 </span>`;
+                    }
+                    html += `</div>`;
+
                     html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; font-size: 13px; color: #666;">`;
                     html += `<div><strong>Serial:</strong> ${eq.serial}</div>`;
                     html += `<div><strong>Model:</strong> ${eq.model || 'N/A'}</div>`;
@@ -3197,6 +3213,14 @@
                     html += `<div><strong>Total Calibrations:</strong> ${eq.totalCalibrations || 0}</div>`;
                     html += `<div><strong>First Cal:</strong> ${new Date(eq.firstCalibrationDate).toLocaleDateString()}</div>`;
                     html += `<div><strong>Last Cal:</strong> ${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>`;
+
+                    // Add next due date if available
+                    if (eq.nextDueDate) {
+                        const dueColor = status.status === 'overdue' ? '#d32f2f' :
+                                       status.status === 'due_soon' ? '#f57c00' : '#388e3c';
+                        html += `<div style="color: ${dueColor}; font-weight: 600;"><strong>Next Due:</strong> ${new Date(eq.nextDueDate).toLocaleDateString()}</div>`;
+                    }
+
                     html += `<div><strong>Client/PI:</strong> ${eq.lastPI || 'N/A'}</div>`;
                     html += `<div><strong>Company:</strong> ${eq.lastCompany || 'N/A'}</div>`;
                     html += `<div><strong>Location:</strong> ${eq.lastLocation || 'N/A'}</div>`;
