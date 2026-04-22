@@ -1844,8 +1844,12 @@
                 // Find all tables in the document
                 const tables = tempDiv.querySelectorAll('table');
 
+                console.log('🔍 DEBUG: Mammoth HTML output:', html.substring(0, 500));
+                console.log('🔍 DEBUG: Found tables:', tables.length);
+
                 if (tables.length < 2) {
-                    throw new Error('Document does not contain expected table structure');
+                    console.error('❌ ERROR: Only found', tables.length, 'table(s), need at least 2');
+                    throw new Error(`Document does not contain expected table structure (found ${tables.length} table(s), need 2)`);
                 }
 
                 // First table: Header information (PI, dates, balance info)
@@ -1885,10 +1889,15 @@
                 // Auto-detect format: some documents have an extra Serial Number column
                 // Check first data row (row 2) to determine column layout
                 let columnOffset = 0;
+                console.log('🔍 DEBUG: Pipette table has', rows.length, 'rows');
+
                 if (rows.length > 2) {
                     const firstDataRow = rows[2].querySelectorAll('td');
                     const cell1 = firstDataRow[1]?.textContent.trim();
                     const cell2 = firstDataRow[2]?.textContent.trim();
+
+                    console.log('🔍 DEBUG: First data row cell 1:', cell1);
+                    console.log('🔍 DEBUG: First data row cell 2:', cell2);
 
                     // If cell 2 contains brand names and cell 1 doesn't, we have the serial number format
                     const commonBrands = ['Eppendorf', 'Gilson', 'Rainin', 'Finn', 'VWR', 'Biotix', 'Fisher', 'Thermo'];
@@ -1897,7 +1906,9 @@
 
                     if (cell2HasBrand && !cell1HasBrand && cell1) {
                         columnOffset = 1; // Extra serial number column present
-                        console.log('Detected format with Serial Number column');
+                        console.log('✅ Detected format with Serial Number column (columnOffset = 1)');
+                    } else {
+                        console.log('ℹ️ Using standard format (columnOffset = 0)');
                     }
                 }
 
@@ -1975,9 +1986,12 @@
                         if (!pipetteData.serial) {
                             pipetteData.serial = pipetteData.number;
                         }
+                        console.log('✅ Extracted pipette:', pipetteData.number, '-', pipetteData.serial, '-', pipetteData.makeModel);
                         extracted.pipettes.push(pipetteData);
                     }
                 }
+
+                console.log('🎉 Total pipettes extracted:', extracted.pipettes.length);
 
             } catch (error) {
                 console.error('Error extracting data from HTML:', error);
