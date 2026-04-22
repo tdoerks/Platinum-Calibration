@@ -1524,6 +1524,14 @@
             deletedCalibrations: '++id, serial, deletedDate, deletedReason'
         });
 
+        // Version 4: Add frequency and due date tracking for scheduling
+        equipmentDB.version(4).stores({
+            equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate, nextDueDate, lastPI, lastCompany, lastLocation',
+            calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate], client, location, frequency, nextDueDate',
+            deletedEquipment: '++id, serial, deletedDate, deletedReason',
+            deletedCalibrations: '++id, serial, deletedDate, deletedReason'
+        });
+
         // Equipment model - represents a single piece of equipment
         class Equipment {
             constructor(serial, brand, pipetteModel, model, volume) {
@@ -1606,6 +1614,144 @@
             }
         }
 
+        // ========================================
+        // DUE DATE CALCULATION FUNCTIONS
+        // ========================================
+
+        /**
+         * Parse frequency code from invoice number
+         * Invoice format: TSD3112251A
+         *   TSD = Technician initials
+         *   311225 = Date (31 Dec 2025)
+         *   1 = Sequential number that day
+         *   A = Frequency code (A=Annual, SA=Semi-Annual, Q=Quarterly, M=Monthly)
+         *
+         * @param {string} invoiceNo - Invoice number to parse
+         * @returns {string|null} - Frequency code (A, SA, Q, M) or null if not found
+         */
+        function parseFrequencyFromInvoice(invoiceNo) {
+            if (!invoiceNo) return null;
+
+            // Regex: letters + digits + optional digit(s) + frequency suffix
+            // Matches: TSD3112251A, ABC0112241SA, XY12310512Q, etc.
+            const match = invoiceNo.match(/^[A-Z]{2,4}\d{6}\d*([A-Z]+)$/i);
+
+            if (match && match[1]) {
+                const frequency = match[1].toUpperCase();
+                // Validate known frequency codes
+                if (['A', 'SA', 'S', 'Q', 'M'].includes(frequency)) {
+                    // Normalize: S -> SA for consistency
+                    return frequency === 'S' ? 'SA' : frequency;
+                }
+            }
+
+            console.warn(`⚠️ Could not parse frequency from invoice: ${invoiceNo}`);
+            return null;
+        }
+
+        /**
+         * Calculate next due date based on calibration date and frequency
+         *
+         * @param {Date|string} calibrationDate - Date of calibration
+         * @param {string} frequency - Frequency code (A, SA, Q, M)
+         * @returns {Date|null} - Next due date or null if invalid inputs
+         */
+        function calculateDueDate(calibrationDate, frequency) {
+            if (!calibrationDate || !frequency) return null;
+
+            const calDate = new Date(calibrationDate);
+            if (isNaN(calDate.getTime())) {
+                console.error('Invalid calibration date:', calibrationDate);
+                return null;
+            }
+
+            // Map frequency codes to months
+            const frequencyMonths = {
+                'A': 12,   // Annual
+                'SA': 6,   // Semi-Annual
+                'Q': 3,    // Quarterly
+                'M': 1     // Monthly
+            };
+
+            const months = frequencyMonths[frequency];
+            if (!months) {
+                console.error('Unknown frequency code:', frequency);
+                return null;
+            }
+
+            // Add months to calibration date
+            const dueDate = new Date(calDate);
+            dueDate.setMonth(dueDate.getMonth() + months);
+
+            console.log(`📅 Due date calculated: ${calDate.toLocaleDateString()} + ${months} months = ${dueDate.toLocaleDateString()}`);
+
+            return dueDate;
+        }
+
+        /**
+         * Get equipment status based on due date
+         *
+         * @param {Date|string} dueDate - Next due date
+         * @returns {object} - Status object with {status, daysUntil, colorClass, icon}
+         */
+        function getEquipmentStatus(dueDate) {
+            if (!dueDate) {
+                return {
+                    status: 'unknown',
+                    daysUntil: null,
+                    colorClass: 'gray',
+                    icon: '❓',
+                    label: 'No Due Date'
+                };
+            }
+
+            const due = new Date(dueDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize to start of day
+            due.setHours(0, 0, 0, 0);
+
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                // Overdue
+                return {
+                    status: 'overdue',
+                    daysUntil: diffDays,
+                    colorClass: 'red',
+                    icon: '🔴',
+                    label: `${Math.abs(diffDays)} days overdue`
+                };
+            } else if (diffDays <= 30) {
+                // Due soon (within 30 days)
+                return {
+                    status: 'due_soon',
+                    daysUntil: diffDays,
+                    colorClass: 'yellow',
+                    icon: '🟡',
+                    label: diffDays === 0 ? 'Due today!' : `Due in ${diffDays} days`
+                };
+            } else if (diffDays <= 90) {
+                // Upcoming (31-90 days)
+                return {
+                    status: 'upcoming',
+                    daysUntil: diffDays,
+                    colorClass: 'green',
+                    icon: '🟢',
+                    label: `Due in ${diffDays} days`
+                };
+            } else {
+                // Future (>90 days)
+                return {
+                    status: 'future',
+                    daysUntil: diffDays,
+                    colorClass: 'blue',
+                    icon: '🔵',
+                    label: `Due in ${diffDays} days`
+                };
+            }
+        }
+
         // Database helper functions
         async function saveToEquipmentHistory(pipetteData, sessionInfo) {
             try {
@@ -1623,10 +1769,15 @@
                 // Use actual calibration date from work order, not today's date
                 const calDate = sessionInfo.calDate || sessionInfo.serviceDate || new Date().toISOString();
 
+                // Calculate due date from invoice number
+                const frequency = parseFrequencyFromInvoice(sessionInfo.invoiceNo || sessionInfo.workOrderNo);
+                const nextDueDate = calculateDueDate(calDate, frequency);
+
                 if (existingEquipment) {
                     // Update existing equipment
                     await equipmentDB.equipment.update(existingEquipment.id, {
                         lastCalibrationDate: calDate,
+                        nextDueDate: nextDueDate ? nextDueDate.toISOString() : null,
                         totalCalibrations: (existingEquipment.totalCalibrations || 0) + 1,
                         // Update client info from most recent calibration
                         lastPI: sessionInfo.client || sessionInfo.pi,
@@ -1634,6 +1785,7 @@
                         lastLocation: sessionInfo.location,
                         lastPhone: sessionInfo.phone
                     });
+                    console.log(`Updated equipment ${pipetteData.serial}: frequency=${frequency}, nextDue=${nextDueDate ? nextDueDate.toLocaleDateString() : 'N/A'}`);
                 } else {
                     // Create new equipment record
                     const equipment = new Equipment(
@@ -1646,19 +1798,23 @@
                     equipment.totalCalibrations = 1;
                     equipment.firstCalibrationDate = calDate;
                     equipment.lastCalibrationDate = calDate;
+                    equipment.nextDueDate = nextDueDate ? nextDueDate.toISOString() : null;
                     // Store client info
                     equipment.lastPI = sessionInfo.client || sessionInfo.pi;
                     equipment.lastCompany = sessionInfo.company;
                     equipment.lastLocation = sessionInfo.location;
                     equipment.lastPhone = sessionInfo.phone;
                     await equipmentDB.equipment.add(equipment);
+                    console.log(`Created equipment ${pipetteData.serial}: frequency=${frequency}, nextDue=${nextDueDate ? nextDueDate.toLocaleDateString() : 'N/A'}`);
                 }
 
-                // Always add new calibration record
+                // Always add new calibration record with frequency and due date
                 const calibration = new CalibrationRecord(pipetteData, sessionInfo);
+                calibration.frequency = frequency;
+                calibration.nextDueDate = nextDueDate ? nextDueDate.toISOString() : null;
                 await equipmentDB.calibrations.add(calibration);
 
-                console.log(`Saved to equipment history: ${pipetteData.serial}`);
+                console.log(`✅ Saved to equipment history: ${pipetteData.serial}`);
             } catch (error) {
                 console.error('Error saving to equipment history:', error);
             }
