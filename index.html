@@ -2272,6 +2272,52 @@
             event.target.value = '';
         }
 
+        async function updateEquipmentSuggestions() {
+            try {
+                const allEquipment = await equipmentDB.equipment.toArray();
+                const datalist = document.getElementById('equipmentSuggestions');
+
+                // Collect unique values from all relevant fields
+                const suggestions = new Set();
+
+                allEquipment.forEach(eq => {
+                    // Add company names
+                    if (eq.lastCompany && eq.lastCompany.trim()) {
+                        suggestions.add(eq.lastCompany.trim());
+                    }
+                    // Add PI names
+                    if (eq.lastPI && eq.lastPI.trim()) {
+                        suggestions.add(eq.lastPI.trim());
+                    }
+                    // Add locations
+                    if (eq.lastLocation && eq.lastLocation.trim()) {
+                        suggestions.add(eq.lastLocation.trim());
+                    }
+                    // Add brands
+                    if (eq.brand && eq.brand.trim()) {
+                        suggestions.add(eq.brand.trim());
+                    }
+                    // Add models
+                    if (eq.pipetteModel && eq.pipetteModel.trim()) {
+                        suggestions.add(eq.pipetteModel.trim());
+                    }
+                    if (eq.model && eq.model.trim() && eq.model !== eq.pipetteModel) {
+                        suggestions.add(eq.model.trim());
+                    }
+                });
+
+                // Sort alphabetically and populate datalist
+                const sortedSuggestions = Array.from(suggestions).sort();
+                datalist.innerHTML = sortedSuggestions
+                    .map(value => `<option value="${value}">`)
+                    .join('');
+
+                console.log(`📋 Populated ${sortedSuggestions.length} autocomplete suggestions`);
+            } catch (error) {
+                console.error('Error updating equipment suggestions:', error);
+            }
+        }
+
         async function performEquipmentSearch() {
             const searchInput = document.getElementById('equipmentSearch');
             const searchTerm = searchInput.value.trim();
@@ -2680,6 +2726,9 @@
                 }
 
                 container.innerHTML = html;
+
+                // Update autocomplete suggestions with latest data
+                updateEquipmentSuggestions();
             } catch (error) {
                 console.error('Error loading equipment history:', error);
                 container.innerHTML = '<div class="alert alert-danger">Error loading equipment history.</div>';
@@ -10927,9 +10976,14 @@
                 <div style="margin-bottom: 20px;">
                     <input type="text"
                            id="equipmentSearch"
-                           placeholder="Search by serial number, brand, model..."
+                           list="equipmentSuggestions"
+                           placeholder="Search by serial, brand, model, PI, company, location..."
                            style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #007bff; border-radius: 8px;"
-                           oninput="performEquipmentSearch()">
+                           oninput="performEquipmentSearch()"
+                           onfocus="updateEquipmentSuggestions()">
+                    <datalist id="equipmentSuggestions">
+                        <!-- Autocomplete suggestions will be populated here -->
+                    </datalist>
                 </div>
                 <div id="searchResults" style="margin-top: 15px;">
                     <!-- Search results will appear here -->
