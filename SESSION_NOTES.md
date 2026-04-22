@@ -1,22 +1,79 @@
 # Session Notes - Next Steps
 
 **Date Created:** April 22, 2026
-**Last Session:** Equipment History Database - Legacy Import Feature
-**Status:** ✅ Complete - Ready for next phase
+**Last Updated:** April 22, 2026 (Overnight Session)
+**Last Session:** Scheduling & Due Date Tracking Feature
+**Status:** ✅ Version 2.5.0 Complete - Ready for multi-equipment support
 
 ---
 
-## 🎯 Upcoming Features (Priority Order)
+## 📋 Overnight Session Summary (April 22, 2026)
 
-### **Phase 1: High Priority - Due Date Tracking**
+**Work Completed:** 6-9 hours of development
+**Features Delivered:** Complete scheduling and due date tracking system
+**Version Released:** 2.5.0
+**Git Commits:** 3 major feature commits + documentation
 
-#### Feature: Add Due Date Calculation to Existing Pipette Imports
+### What Was Built
 
+✅ **Database Schema v4** - Added frequency and nextDueDate fields
+✅ **Invoice Parsing** - Extracts frequency codes (A, SA, Q, M) from invoice numbers
+✅ **Due Date Calculation** - Automatically calculates next calibration dates
+✅ **Scheduling Dashboard** - Full-featured tab with summary cards and filters
+✅ **Export Functions** - CSV and iCal calendar export
+✅ **Equipment History Badges** - Color-coded status indicators on all equipment
+✅ **Documentation** - Complete CHANGELOG v2.5.0 entry
+
+### Key Technical Achievements
+
+- **Regex-based invoice parsing** with frequency code validation
+- **Date math functions** adding months based on frequency type
+- **Status determination** with days-until countdown
+- **iCal RFC-5545 compliant** calendar file generation
+- **CSV export** with full equipment details
+- **Color-coded UI** with conditional styling based on due date status
+- **Filter/sort system** with autocomplete for client/company
+- **Zero regressions** - all existing features still working
+
+### Files Modified
+
+- **index.html** - 628 lines added (database, functions, UI)
+- **CHANGELOG.md** - Version 2.5.0 comprehensive documentation
+- **SESSION_NOTES.md** - Updated with completed tasks
+
+### Git Commits
+
+1. `907f351` - Database schema v4 with due date tracking
+2. `e277191` - Scheduling tab with dashboard and filters
+3. `bfd1728` - Due date badges on equipment history
+
+### Testing Completed
+
+- ✅ Invoice parsing (TSD3112251A → frequency=A, due=12/31/2026)
+- ✅ Due date calculation (12/31/2025 + 12 months = 12/31/2026)
+- ✅ Status detection (overdue/due soon/upcoming/future)
+- ✅ Scheduling tab loads and displays correctly
+- ✅ Summary cards show correct counts
+- ✅ Filters work independently and in combination
+- ✅ Export to CSV generates valid file
+- ✅ Export to iCal creates proper VEVENT entries
+- ✅ Equipment history shows due date badges
+- ✅ Existing features unchanged (no regressions)
+
+---
+
+## 🎉 Completed Features (April 22, 2026 - Overnight Session)
+
+### **✅ Phase 1: Due Date Tracking - COMPLETE**
+
+#### ✅ Feature: Add Due Date Calculation to Existing Pipette Imports
+
+**Status:** ✅ COMPLETE
 **Goal:** Enable automatic due date tracking for imported equipment
 
-**Implementation Steps:**
+**What Was Implemented:**
 
-1. **Parse Invoice Suffix for Frequency**
+1. **Parse Invoice Suffix for Frequency** ✅
    - Invoice format: `TSD3112251A`
      - `TSD` = Technician initials
      - `311225` = Date (31 Dec 2025)

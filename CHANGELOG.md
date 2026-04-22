@@ -1,5 +1,133 @@
 # Pipette Calibration System - Changelog
 
+## Version 2.5.0 (April 2026)
+
+### 📅 Calibration Scheduling & Due Date Tracking
+
+Major new feature: Automatic due date calculation and scheduling dashboard!
+
+### ✨ New Features
+
+#### **Automatic Due Date Calculation**
+- **Parse invoice frequency** - Extracts frequency code from invoice number suffix (A, SA, Q, M)
+- **Calculate due dates** - Automatically adds months based on frequency:
+  - `A` = Annual (12 months)
+  - `SA` / `S` = Semi-Annual (6 months)
+  - `Q` = Quarterly (3 months)
+  - `M` = Monthly (1 month)
+- **Smart status detection** - Determines if equipment is overdue, due soon, upcoming, or future
+- **Color-coded badges** - Visual indicators on equipment cards (red/yellow/green/blue)
+
+#### **Scheduling Dashboard Tab**
+- **Summary Cards** showing:
+  - 🔴 Overdue equipment (past due date)
+  - 🟡 Due Soon (within 30 days)
+  - 🟢 Upcoming (31-90 days)
+  - 📋 Total equipment tracked
+- **Filter Controls:**
+  - Filter by status (all/overdue/due soon/upcoming)
+  - Filter by client/PI with autocomplete
+  - Filter by company with autocomplete
+- **Sort Options:**
+  - By due date (soonest first)
+  - By serial number
+  - By client/PI
+  - By company
+- **Equipment Cards** displaying:
+  - Status badge with icon and label
+  - Serial, brand, model, volume
+  - Last calibration date
+  - Next due date (color-coded)
+  - Days until/overdue countdown
+  - Client, company info
+  - Quick link to view full history
+
+#### **Export Functionality**
+- **Export to CSV** - Download schedule in Excel-compatible format with all details
+- **Export to iCal** - Import into Google Calendar, Outlook, or Apple Calendar
+  - Creates calendar events for each due date
+  - 7-day advance reminder for each calibration
+  - Includes equipment details in event description
+
+#### **Equipment History Enhancements**
+- **Due date badges** on equipment cards showing status at a glance
+- **Next due date** displayed with color coding
+- **Status indicators:**
+  - 🔴 Red badge: Overdue equipment
+  - 🟡 Yellow badge: Due within 30 days
+  - 🟢 Green badge: Due within 31-90 days
+  - 🔵 Blue badge: Due beyond 90 days
+
+### 🗄️ Database Schema Evolution
+
+**Version 4 Schema:**
+```javascript
+equipment: '++id, serial, [brand+pipetteModel], firstCalibrationDate, lastCalibrationDate, nextDueDate, lastPI, lastCompany, lastLocation'
+calibrations: '++id, serial, calibrationDate, workOrderNo, [serial+calibrationDate], client, location, frequency, nextDueDate'
+```
+
+**New Fields:**
+- `frequency` - Calibration frequency code (A, SA, Q, M)
+- `nextDueDate` - Calculated next calibration due date
+
+### 🔧 Technical Implementation
+
+**Due Date Functions** (lines 1617-1753)
+- `parseFrequencyFromInvoice(invoiceNo)` - Regex-based frequency extraction
+- `calculateDueDate(calibrationDate, frequency)` - Date math with month addition
+- `getEquipmentStatus(dueDate)` - Status determination with days-until calculation
+
+**Scheduling Functions** (lines 2805-3139)
+- `loadSchedule()` - Load dashboard with summary and filters
+- `updateScheduleSummary(equipment)` - Count equipment by status
+- `updateScheduleFilters(equipment)` - Populate client/company dropdowns
+- `filterSchedule()` - Apply filters and sort, render cards
+- `clearScheduleFilters()` - Reset all filters to defaults
+- `exportScheduleCSV()` - Generate and download CSV file
+- `exportScheduleICal()` - Generate iCal file with VEVENT entries
+
+**Equipment History Integration** (lines 3184-3222)
+- Status badge display in card header
+- Color-coded next due date
+- Badge colors match status (red/yellow/green)
+
+### 🎯 Use Cases Enabled
+
+- **Track calibration schedules** - Never miss a due date
+- **Prioritize workload** - See overdue and due soon equipment at a glance
+- **Plan ahead** - View upcoming calibrations 90 days out
+- **Client scheduling** - Filter by client to plan visits
+- **Calendar integration** - Export to your calendar app for reminders
+- **Compliance tracking** - Ensure all equipment stays current
+- **Workload forecasting** - See calibration volume by month
+
+### 📊 Example Workflow
+
+1. **Import legacy work order** with invoice `TSD3112251A`
+2. **System automatically:**
+   - Parses `A` frequency (Annual)
+   - Calculates due date: 12/31/2025 + 12 months = 12/31/2026
+   - Saves to database
+3. **Scheduling tab shows:**
+   - Equipment in "Upcoming" section (>90 days away)
+   - Status badge: 🟢 Due in 245 days
+4. **Export to calendar** for automatic reminders
+5. **30 days before due date:**
+   - Equipment moves to "Due Soon" section
+   - Badge changes to: 🟡 Due in 28 days
+6. **After due date passes:**
+   - Equipment moves to "Overdue" section
+   - Badge changes to: 🔴 5 days overdue
+
+### 🚀 What's Next
+
+**Planned for Version 2.6:**
+- Legacy import for Balance, Timer, Centrifuge, Temperature equipment
+- Multi-equipment type scheduling
+- Email notifications for upcoming calibrations (requires backend)
+- Calendar view with month grid
+- Frequency analysis and reporting
+
 ## Version 2.4.0 (April 2026)
 
 ### 📚 Equipment History Database - Legacy Document Import
