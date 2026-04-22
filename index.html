@@ -2802,6 +2802,342 @@
             }
         }
 
+        // ========================================
+        // SCHEDULING TAB FUNCTIONS
+        // ========================================
+
+        /**
+         * Load and display the scheduling dashboard
+         */
+        async function loadSchedule() {
+            try {
+                // Get all equipment with due dates
+                const allEquipment = await equipmentDB.equipment.toArray();
+                const equipmentWithDueDates = allEquipment.filter(eq => eq.nextDueDate);
+
+                // Update summary cards
+                updateScheduleSummary(equipmentWithDueDates);
+
+                // Update filter dropdowns
+                updateScheduleFilters(equipmentWithDueDates);
+
+                // Display schedule
+                await filterSchedule();
+
+                console.log(`📅 Loaded schedule with ${equipmentWithDueDates.length} tracked equipment`);
+            } catch (error) {
+                console.error('Error loading schedule:', error);
+                showAlert('Error loading schedule: ' + error.message, 'Error');
+            }
+        }
+
+        /**
+         * Update summary card counts
+         */
+        function updateScheduleSummary(equipment) {
+            let overdueCount = 0;
+            let dueSoonCount = 0;
+            let upcomingCount = 0;
+
+            equipment.forEach(eq => {
+                const status = getEquipmentStatus(eq.nextDueDate);
+                if (status.status === 'overdue') overdueCount++;
+                else if (status.status === 'due_soon') dueSoonCount++;
+                else if (status.status === 'upcoming') upcomingCount++;
+            });
+
+            document.getElementById('overdueCount').textContent = overdueCount;
+            document.getElementById('dueSoonCount').textContent = dueSoonCount;
+            document.getElementById('upcomingCount').textContent = upcomingCount;
+            document.getElementById('totalTrackedCount').textContent = equipment.length;
+        }
+
+        /**
+         * Update filter dropdown options
+         */
+        function updateScheduleFilters(equipment) {
+            // Get unique clients and companies
+            const clients = new Set();
+            const companies = new Set();
+
+            equipment.forEach(eq => {
+                if (eq.lastPI) clients.add(eq.lastPI);
+                if (eq.lastCompany) companies.add(eq.lastCompany);
+            });
+
+            // Update client datalist
+            const clientList = document.getElementById('scheduleClientList');
+            clientList.innerHTML = Array.from(clients).sort()
+                .map(client => `<option value="${client}">`)
+                .join('');
+
+            // Update company datalist
+            const companyList = document.getElementById('scheduleCompanyList');
+            companyList.innerHTML = Array.from(companies).sort()
+                .map(company => `<option value="${company}">`)
+                .join('');
+        }
+
+        /**
+         * Filter and display schedule based on current filter settings
+         */
+        async function filterSchedule() {
+            const container = document.getElementById('scheduleContainer');
+            container.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
+
+            try {
+                // Get all equipment with due dates
+                let allEquipment = await equipmentDB.equipment.toArray();
+                let equipment = allEquipment.filter(eq => eq.nextDueDate);
+
+                if (equipment.length === 0) {
+                    container.innerHTML = `
+                        <div class="alert alert-info">
+                            <h4>No Equipment Tracked Yet</h4>
+                            <p>Import calibration work orders with invoice numbers to start tracking due dates.</p>
+                            <p><strong>Tip:</strong> Invoice numbers with suffix A, SA, Q, or M determine calibration frequency.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Apply status filter
+                const statusFilter = document.getElementById('scheduleStatusFilter').value;
+                if (statusFilter !== 'all') {
+                    equipment = equipment.filter(eq => {
+                        const status = getEquipmentStatus(eq.nextDueDate);
+                        return status.status === statusFilter;
+                    });
+                }
+
+                // Apply client filter
+                const clientFilter = document.getElementById('scheduleClientFilter').value.trim();
+                if (clientFilter) {
+                    equipment = equipment.filter(eq =>
+                        eq.lastPI && eq.lastPI.toLowerCase().includes(clientFilter.toLowerCase())
+                    );
+                }
+
+                // Apply company filter
+                const companyFilter = document.getElementById('scheduleCompanyFilter').value.trim();
+                if (companyFilter) {
+                    equipment = equipment.filter(eq =>
+                        eq.lastCompany && eq.lastCompany.toLowerCase().includes(companyFilter.toLowerCase())
+                    );
+                }
+
+                // Apply sorting
+                const sortBy = document.getElementById('scheduleSortBy').value;
+                equipment.sort((a, b) => {
+                    switch (sortBy) {
+                        case 'dueDate':
+                            return new Date(a.nextDueDate) - new Date(b.nextDueDate);
+                        case 'serial':
+                            return (a.serial || '').localeCompare(b.serial || '');
+                        case 'client':
+                            return (a.lastPI || '').localeCompare(b.lastPI || '');
+                        case 'company':
+                            return (a.lastCompany || '').localeCompare(b.lastCompany || '');
+                        default:
+                            return 0;
+                    }
+                });
+
+                // Display results
+                if (equipment.length === 0) {
+                    container.innerHTML = '<div class="alert alert-info">No equipment matches the selected filters.</div>';
+                    return;
+                }
+
+                let html = `<p style="color: #666; margin-bottom: 15px;"><strong>Showing ${equipment.length} equipment</strong></p>`;
+
+                equipment.forEach(eq => {
+                    const status = getEquipmentStatus(eq.nextDueDate);
+
+                    // Status-specific styling
+                    let borderColor = '#dee2e6';
+                    let bgColor = '#f8f9fa';
+                    if (status.status === 'overdue') {
+                        borderColor = '#f44336';
+                        bgColor = '#ffebee';
+                    } else if (status.status === 'due_soon') {
+                        borderColor = '#ff9800';
+                        bgColor = '#fff8e1';
+                    }
+
+                    html += `<div style="background: ${bgColor}; border-left: 4px solid ${borderColor}; border-radius: 8px; padding: 15px; margin-bottom: 12px;">`;
+                    html += `<div style="display: flex; justify-content: space-between; align-items: start; gap: 15px; flex-wrap: wrap;">`;
+
+                    // Equipment info
+                    html += `<div style="flex: 1; min-width: 250px;">`;
+                    html += `<h4 style="margin: 0 0 10px 0;">${status.icon} ${eq.brand} ${eq.pipetteModel || ''}</h4>`;
+                    html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 13px; color: #555;">`;
+                    html += `<div><strong>Serial:</strong> ${eq.serial}</div>`;
+                    html += `<div><strong>Model:</strong> ${eq.model || 'N/A'}</div>`;
+                    if (eq.volume) html += `<div><strong>Volume:</strong> ${eq.volume} µL</div>`;
+                    html += `<div><strong>Last Cal:</strong> ${new Date(eq.lastCalibrationDate).toLocaleDateString()}</div>`;
+                    html += `<div style="color: ${status.colorClass === 'red' ? '#d32f2f' : status.colorClass === 'yellow' ? '#f57c00' : '#388e3c'}; font-weight: 600;"><strong>Next Due:</strong> ${new Date(eq.nextDueDate).toLocaleDateString()}</div>`;
+                    html += `<div><strong>${status.label}</strong></div>`;
+                    if (eq.lastPI) html += `<div><strong>Client/PI:</strong> ${eq.lastPI}</div>`;
+                    if (eq.lastCompany) html += `<div><strong>Company:</strong> ${eq.lastCompany}</div>`;
+                    html += `</div>`;
+                    html += `</div>`;
+
+                    // Actions
+                    html += `<div style="display: flex; gap: 8px; align-items: start;">`;
+                    html += `<button class="btn btn-sm" style="background: #007bff; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; white-space: nowrap; border: none; cursor: pointer;"
+                                      onclick="showEquipmentDetails('${eq.serial}')">`;
+                    html += `View History`;
+                    html += `</button>`;
+                    html += `</div>`;
+
+                    html += `</div>`;
+                    html += `</div>`;
+                });
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error filtering schedule:', error);
+                container.innerHTML = '<div class="alert alert-danger">Error loading schedule.</div>';
+            }
+        }
+
+        /**
+         * Clear all schedule filters
+         */
+        function clearScheduleFilters() {
+            document.getElementById('scheduleStatusFilter').value = 'all';
+            document.getElementById('scheduleSortBy').value = 'dueDate';
+            document.getElementById('scheduleClientFilter').value = '';
+            document.getElementById('scheduleCompanyFilter').value = '';
+            filterSchedule();
+        }
+
+        /**
+         * Export schedule to CSV
+         */
+        async function exportScheduleCSV() {
+            try {
+                const allEquipment = await equipmentDB.equipment.toArray();
+                const equipment = allEquipment.filter(eq => eq.nextDueDate);
+
+                if (equipment.length === 0) {
+                    showAlert('No equipment with due dates to export.', 'Export Failed');
+                    return;
+                }
+
+                // CSV header
+                let csv = 'Serial,Brand,Model,Volume,Last Calibration,Next Due Date,Status,Days Until Due,Client/PI,Company,Location\n';
+
+                // Sort by due date
+                equipment.sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+
+                // Add rows
+                equipment.forEach(eq => {
+                    const status = getEquipmentStatus(eq.nextDueDate);
+                    const row = [
+                        eq.serial || '',
+                        eq.brand || '',
+                        eq.model || '',
+                        eq.volume || '',
+                        new Date(eq.lastCalibrationDate).toLocaleDateString(),
+                        new Date(eq.nextDueDate).toLocaleDateString(),
+                        status.status,
+                        status.daysUntil !== null ? status.daysUntil : '',
+                        eq.lastPI || '',
+                        eq.lastCompany || '',
+                        eq.lastLocation || ''
+                    ];
+                    csv += row.map(field => `"${field}"`).join(',') + '\n';
+                });
+
+                // Download
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `calibration-schedule-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showAlert(`Exported ${equipment.length} equipment to CSV.`, 'Export Successful');
+            } catch (error) {
+                console.error('Error exporting CSV:', error);
+                showAlert('Error exporting to CSV: ' + error.message, 'Export Failed');
+            }
+        }
+
+        /**
+         * Export schedule to iCal format for calendar apps
+         */
+        async function exportScheduleICal() {
+            try {
+                const allEquipment = await equipmentDB.equipment.toArray();
+                const equipment = allEquipment.filter(eq => eq.nextDueDate);
+
+                if (equipment.length === 0) {
+                    showAlert('No equipment with due dates to export.', 'Export Failed');
+                    return;
+                }
+
+                // iCal format
+                let ical = 'BEGIN:VCALENDAR\n';
+                ical += 'VERSION:2.0\n';
+                ical += 'PRODID:-//Platinum Calibration//Equipment Schedule//EN\n';
+                ical += 'CALSCALE:GREGORIAN\n';
+                ical += 'METHOD:PUBLISH\n';
+                ical += 'X-WR-CALNAME:Calibration Schedule\n';
+                ical += 'X-WR-TIMEZONE:UTC\n';
+                ical += 'X-WR-CALDESC:Equipment calibration due dates\n';
+
+                equipment.forEach(eq => {
+                    const dueDate = new Date(eq.nextDueDate);
+                    const formatDate = (date) => {
+                        const year = date.getUTCFullYear();
+                        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                        const day = String(date.getUTCDate()).padStart(2, '0');
+                        return `${year}${month}${day}`;
+                    };
+
+                    ical += 'BEGIN:VEVENT\n';
+                    ical += `UID:cal-${eq.serial}-${dueDate.getTime()}@platinum-calibration\n`;
+                    ical += `DTSTAMP:${formatDate(new Date())}T000000Z\n`;
+                    ical += `DTSTART;VALUE=DATE:${formatDate(dueDate)}\n`;
+                    ical += `SUMMARY:Calibration Due: ${eq.brand} ${eq.pipetteModel || ''} (${eq.serial})\n`;
+                    ical += `DESCRIPTION:Equipment calibration due date\\n\\nSerial: ${eq.serial}\\nBrand: ${eq.brand}\\nModel: ${eq.model || 'N/A'}\\nClient: ${eq.lastPI || 'N/A'}\\nCompany: ${eq.lastCompany || 'N/A'}\n`;
+                    if (eq.lastLocation) ical += `LOCATION:${eq.lastLocation}\n`;
+                    ical += 'STATUS:CONFIRMED\n';
+                    ical += 'BEGIN:VALARM\n';
+                    ical += 'TRIGGER:-P7D\n';
+                    ical += 'ACTION:DISPLAY\n';
+                    ical += `DESCRIPTION:Calibration due in 7 days: ${eq.brand} ${eq.serial}\n`;
+                    ical += 'END:VALARM\n';
+                    ical += 'END:VEVENT\n';
+                });
+
+                ical += 'END:VCALENDAR\n';
+
+                // Download
+                const blob = new Blob([ical], { type: 'text/calendar' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `calibration-schedule-${new Date().toISOString().split('T')[0]}.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showAlert(`Exported ${equipment.length} equipment to iCal format.\\nImport this file into Google Calendar, Outlook, or Apple Calendar.`, 'Export Successful');
+            } catch (error) {
+                console.error('Error exporting iCal:', error);
+                showAlert('Error exporting to iCal: ' + error.message, 'Export Failed');
+            }
+        }
+
         async function loadEquipmentHistory() {
             const container = document.getElementById('equipmentHistoryContainer');
             if (!container) return;
@@ -10592,6 +10928,7 @@
             <button class="nav-tab" id="labelsTab" onclick="showTab('labels', this)">🏷️ Labels</button>
             <button class="nav-tab" id="inventoryTab" onclick="showTab('inventory', this)">📦 Inventory</button>
             <button class="nav-tab" onclick="showTab('history', this)">📚 History</button>
+            <button class="nav-tab" onclick="showTab('scheduling', this)">📅 Scheduling</button>
         </div>
 
         <!-- Session Info Tab -->
@@ -11153,6 +11490,114 @@
                 </div>
                 <div id="equipmentHistoryContainer">
                     <!-- Equipment list will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheduling Tab -->
+        <div id="scheduling" class="tab-content">
+            <h2>📅 Calibration Scheduling</h2>
+            <p style="color: #666; margin-bottom: 25px;">Track equipment due dates and plan upcoming calibrations.</p>
+
+            <!-- Summary Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <!-- Overdue Card -->
+                <div style="background: linear-gradient(135deg, #f44336 0%, #e91e63 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(244,67,54,0.3);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <span style="font-size: 48px;">🔴</span>
+                        <div>
+                            <div style="font-size: 36px; font-weight: bold;" id="overdueCount">0</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Overdue</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; opacity: 0.8;">Past due date</div>
+                </div>
+
+                <!-- Due Soon Card -->
+                <div style="background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(255,152,0,0.3);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <span style="font-size: 48px;">🟡</span>
+                        <div>
+                            <div style="font-size: 36px; font-weight: bold;" id="dueSoonCount">0</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Due Soon</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; opacity: 0.8;">Within 30 days</div>
+                </div>
+
+                <!-- Upcoming Card -->
+                <div style="background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(76,175,80,0.3);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <span style="font-size: 48px;">🟢</span>
+                        <div>
+                            <div style="font-size: 36px; font-weight: bold;" id="upcomingCount">0</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Upcoming</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; opacity: 0.8;">31-90 days</div>
+                </div>
+
+                <!-- Total Tracked Card -->
+                <div style="background: linear-gradient(135deg, #2196f3 0%, #3f51b5 100%); padding: 25px; border-radius: 12px; color: white; box-shadow: 0 4px 12px rgba(33,150,243,0.3);">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                        <span style="font-size: 48px;">📋</span>
+                        <div>
+                            <div style="font-size: 36px; font-weight: bold;" id="totalTrackedCount">0</div>
+                            <div style="font-size: 14px; opacity: 0.9;">Total Tracked</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; opacity: 0.8;">With due dates</div>
+                </div>
+            </div>
+
+            <!-- Filters and Controls -->
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #dee2e6;">
+                <h3 style="margin-top: 0;">🔍 Filters & Controls</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px;">Status</label>
+                        <select id="scheduleStatusFilter" onchange="filterSchedule()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="all">All Equipment</option>
+                            <option value="overdue">🔴 Overdue Only</option>
+                            <option value="due_soon">🟡 Due Soon (30 days)</option>
+                            <option value="upcoming">🟢 Upcoming (31-90 days)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px;">Sort By</label>
+                        <select id="scheduleSortBy" onchange="filterSchedule()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="dueDate">Due Date (Soonest First)</option>
+                            <option value="serial">Serial Number</option>
+                            <option value="client">Client/PI</option>
+                            <option value="company">Company</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px;">Client/PI</label>
+                        <input type="text" id="scheduleClientFilter" list="scheduleClientList" placeholder="All clients..." onchange="filterSchedule()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <datalist id="scheduleClientList"></datalist>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px;">Company</label>
+                        <input type="text" id="scheduleCompanyFilter" list="scheduleCompanyList" placeholder="All companies..." onchange="filterSchedule()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <datalist id="scheduleCompanyList"></datalist>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" onclick="clearScheduleFilters()">🔄 Clear Filters</button>
+                    <button class="btn btn-success" onclick="exportScheduleCSV()">📊 Export to CSV</button>
+                    <button class="btn btn-primary" onclick="exportScheduleICal()">📅 Export to iCal</button>
+                </div>
+            </div>
+
+            <!-- Schedule List -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">📋 Equipment Schedule</h3>
+                    <button class="btn btn-secondary" onclick="loadSchedule()">🔄 Refresh</button>
+                </div>
+                <div id="scheduleContainer">
+                    <!-- Schedule items will be populated here -->
                 </div>
             </div>
         </div>
