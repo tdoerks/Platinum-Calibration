@@ -1892,7 +1892,12 @@
                 console.log('🔍 DEBUG: Pipette table has', rows.length, 'rows');
 
                 if (rows.length > 2) {
-                    const firstDataRow = rows[2].querySelectorAll('td');
+                    // Mammoth sometimes uses <th> instead of <td>, so check both
+                    let firstDataRow = rows[2].querySelectorAll('td');
+                    if (firstDataRow.length === 0) {
+                        firstDataRow = rows[2].querySelectorAll('th');
+                        console.log('🔍 DEBUG: Using <th> cells instead of <td>');
+                    }
                     const cell1 = firstDataRow[1]?.textContent.trim();
                     const cell2 = firstDataRow[2]?.textContent.trim();
 
@@ -1914,7 +1919,11 @@
 
                 // Skip BOTH header rows (row 0 = main headers, row 1 = sub-headers), process data rows starting at row 2
                 for (let i = 2; i < rows.length; i++) {
-                    const cells = rows[i].querySelectorAll('td');
+                    // Mammoth sometimes uses <th> instead of <td>, so check both
+                    let cells = rows[i].querySelectorAll('td');
+                    if (cells.length === 0) {
+                        cells = rows[i].querySelectorAll('th');
+                    }
                     if (cells.length < 10) continue; // Skip if not enough cells
 
                     const pipetteData = {};
