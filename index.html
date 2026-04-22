@@ -1692,16 +1692,22 @@
                 const term = searchTerm.toLowerCase();
                 const allEquipment = await equipmentDB.equipment.toArray();
 
-                return allEquipment.filter(eq =>
-                    (eq.serial && eq.serial.toLowerCase().includes(term)) ||
-                    (eq.brand && eq.brand.toLowerCase().includes(term)) ||
-                    (eq.pipetteModel && eq.pipetteModel.toLowerCase().includes(term)) ||
-                    (eq.model && eq.model.toLowerCase().includes(term)) ||
-                    (eq.lastPI && eq.lastPI.toLowerCase().includes(term)) ||
-                    (eq.lastCompany && eq.lastCompany.toLowerCase().includes(term)) ||
-                    (eq.lastLocation && eq.lastLocation.toLowerCase().includes(term)) ||
-                    (eq.lastPhone && eq.lastPhone.toLowerCase().includes(term))
-                );
+                return allEquipment.filter(eq => {
+                    // Format dates for searching (e.g., "12/31/2025" or "December 2025")
+                    const firstCalDate = eq.firstCalibrationDate ? new Date(eq.firstCalibrationDate).toLocaleDateString() : '';
+                    const lastCalDate = eq.lastCalibrationDate ? new Date(eq.lastCalibrationDate).toLocaleDateString() : '';
+
+                    return (eq.serial && eq.serial.toLowerCase().includes(term)) ||
+                        (eq.brand && eq.brand.toLowerCase().includes(term)) ||
+                        (eq.pipetteModel && eq.pipetteModel.toLowerCase().includes(term)) ||
+                        (eq.model && eq.model.toLowerCase().includes(term)) ||
+                        (eq.lastPI && eq.lastPI.toLowerCase().includes(term)) ||
+                        (eq.lastCompany && eq.lastCompany.toLowerCase().includes(term)) ||
+                        (eq.lastLocation && eq.lastLocation.toLowerCase().includes(term)) ||
+                        (eq.lastPhone && eq.lastPhone.toLowerCase().includes(term)) ||
+                        (firstCalDate && firstCalDate.toLowerCase().includes(term)) ||
+                        (lastCalDate && lastCalDate.toLowerCase().includes(term));
+                });
             } catch (error) {
                 console.error('Error searching equipment:', error);
                 return [];
