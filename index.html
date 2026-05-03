@@ -1265,6 +1265,10 @@
     <!-- External Libraries for Equipment History Database -->
     <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- Google Drive API -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div id="saveIndicator" class="save-indicator">Saved</div>
@@ -1343,6 +1347,190 @@
         let currentSessionId = null;
         let saveTimeout = null;
         let inventoryUsage = [];
+
+        // ========== GOOGLE DRIVE INTEGRATION ==========
+        const GOOGLE_CLIENT_ID = '1020635392092-fm0fhg2bn4cmfhdu147vc6jshj4lsfb9.apps.googleusercontent.com';
+        const GOOGLE_API_KEY = ''; // Not needed for OAuth 2.0 with Drive API
+        const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const DRIVE_FOLDER_NAME = 'Platinum Calibration Database';
+
+        let googleAuth = null;
+        let driveConnected = false;
+        let driveFolderId = null;
+
+        // Initialize Google API
+        function initGoogleDrive() {
+            gapi.load('client:auth2', async () => {
+                try {
+                    await gapi.client.init({
+                        clientId: GOOGLE_CLIENT_ID,
+                        scope: DRIVE_SCOPES,
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                    });
+
+                    googleAuth = gapi.auth2.getAuthInstance();
+
+                    // Check if already signed in
+                    if (googleAuth.isSignedIn.get()) {
+                        await onDriveSignIn();
+                    }
+
+                    // Listen for sign-in state changes
+                    googleAuth.isSignedIn.listen(updateDriveButton);
+                } catch (error) {
+                    console.error('Error initializing Google Drive:', error);
+                }
+            });
+        }
+
+        // Toggle Drive connection
+        async function toggleDriveConnection() {
+            if (!googleAuth) {
+                alert('Google Drive is still initializing. Please wait a moment and try again.');
+                return;
+            }
+
+            if (driveConnected) {
+                // Sign out
+                await googleAuth.signOut();
+                driveConnected = false;
+                driveFolderId = null;
+                updateDriveButton();
+                showSaveIndicator('Disconnected from Google Drive');
+            } else {
+                // Sign in
+                try {
+                    await googleAuth.signIn();
+                } catch (error) {
+                    console.error('Sign-in error:', error);
+                    alert('Failed to connect to Google Drive. Please try again.');
+                }
+            }
+        }
+
+        // Called when user signs in
+        async function onDriveSignIn() {
+            driveConnected = true;
+            updateDriveButton();
+            showSaveIndicator('Connected to Google Drive!');
+
+            // Create/find the main folder
+            await ensureDriveFolderStructure();
+        }
+
+        // Update button appearance
+        function updateDriveButton() {
+            const btn = document.getElementById('driveBtn');
+            if (btn) {
+                if (driveConnected) {
+                    btn.innerHTML = '✓ Drive Connected';
+                    btn.style.background = '#34a853';
+                    btn.title = 'Click to disconnect from Google Drive';
+                } else {
+                    btn.innerHTML = '📁 Connect Drive';
+                    btn.style.background = '#4285f4';
+                    btn.title = 'Connect to Google Drive for cloud backup';
+                }
+            }
+        }
+
+        // Ensure folder structure exists
+        async function ensureDriveFolderStructure() {
+            try {
+                // Search for existing folder
+                const response = await gapi.client.drive.files.list({
+                    q: `name='${DRIVE_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                    fields: 'files(id, name)',
+                    spaces: 'drive'
+                });
+
+                if (response.result.files && response.result.files.length > 0) {
+                    // Folder exists
+                    driveFolderId = response.result.files[0].id;
+                    console.log('Found existing Drive folder:', driveFolderId);
+                } else {
+                    // Create new folder
+                    const folderMetadata = {
+                        name: DRIVE_FOLDER_NAME,
+                        mimeType: 'application/vnd.google-apps.folder'
+                    };
+
+                    const folder = await gapi.client.drive.files.create({
+                        resource: folderMetadata,
+                        fields: 'id'
+                    });
+
+                    driveFolderId = folder.result.id;
+                    console.log('Created new Drive folder:', driveFolderId);
+
+                    // Create subfolders
+                    await createSubfolder('Clients', driveFolderId);
+                    await createSubfolder('Work Orders', driveFolderId);
+                    await createSubfolder('Equipment Data', driveFolderId);
+                    await createSubfolder('Schedules', driveFolderId);
+                    await createSubfolder('System', driveFolderId);
+                }
+            } catch (error) {
+                console.error('Error creating Drive folder structure:', error);
+            }
+        }
+
+        // Create subfolder
+        async function createSubfolder(name, parentId) {
+            const folderMetadata = {
+                name: name,
+                mimeType: 'application/vnd.google-apps.folder',
+                parents: [parentId]
+            };
+
+            const folder = await gapi.client.drive.files.create({
+                resource: folderMetadata,
+                fields: 'id'
+            });
+
+            return folder.result.id;
+        }
+
+        // Save to Drive (simplified version for now)
+        async function saveToDrive(filename, content, folderId = null) {
+            if (!driveConnected) {
+                console.log('Drive not connected, skipping save');
+                return null;
+            }
+
+            try {
+                const targetFolderId = folderId || driveFolderId;
+
+                const fileMetadata = {
+                    name: filename,
+                    parents: [targetFolderId]
+                };
+
+                const file = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(fileMetadata)], { type: 'application/json' }));
+                form.append('file', file);
+
+                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+                    body: form
+                });
+
+                const result = await response.json();
+                console.log('Saved to Drive:', filename, result.id);
+                showSaveIndicator('Backed up to Drive');
+                return result.id;
+            } catch (error) {
+                console.error('Error saving to Drive:', error);
+                return null;
+            }
+        }
+
+        // Initialize Drive on page load
+        window.addEventListener('load', initGoogleDrive);
+        // ========== END GOOGLE DRIVE INTEGRATION ==========
 
         // Default Brand & Model options for autocomplete
         const DEFAULT_BRANDS = [
@@ -10933,10 +11121,11 @@
                     <button id="globalVoiceBtn" onclick="toggleGlobalVoice()" title="Enable voice control for hands-free navigation" style="padding: 6px 12px; font-size: 13px;">🎙️ Voice Control</button>
                     <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle dark mode" style="padding: 6px 12px; background: #495057; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🌙</button>
                 </div>
-                <!-- Row 2: Undo, Redo, Logout -->
+                <!-- Row 2: Undo, Redo, Google Drive, Logout -->
                 <div style="display: flex; gap: 8px;">
                     <button id="undoBtn" onclick="undo()" disabled title="Nothing to undo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↶ Undo</button>
                     <button id="redoBtn" onclick="redo()" disabled title="Nothing to redo" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">↷ Redo</button>
+                    <button id="driveBtn" onclick="toggleDriveConnection()" title="Connect to Google Drive for cloud backup" style="padding: 6px 12px; background: #4285f4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">📁 Connect Drive</button>
                     <button onclick="logout()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px;">🔒 Logout</button>
                 </div>
             </div>
