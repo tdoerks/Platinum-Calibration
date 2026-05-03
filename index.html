@@ -1529,7 +1529,7 @@
 
         // Save to Drive (simplified version for now)
         async function saveToDrive(filename, content, folderId = null) {
-            if (!driveConnected) {
+            if (!driveConnected || !accessToken) {
                 console.log('Drive not connected, skipping save');
                 return null;
             }
@@ -1550,7 +1550,7 @@
 
                 const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                     method: 'POST',
-                    headers: new Headers({ 'Authorization': 'Bearer ' + gapi.auth.getToken().access_token }),
+                    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
                     body: form
                 });
 
@@ -1561,6 +1561,42 @@
             } catch (error) {
                 console.error('Error saving to Drive:', error);
                 return null;
+            }
+        }
+
+        // Backup all equipment data to Drive
+        async function backupEquipmentDataToDrive() {
+            if (!driveConnected) {
+                console.log('Drive not connected, skipping backup');
+                return;
+            }
+
+            try {
+                console.log('Starting Drive backup...');
+
+                // Get all equipment and calibrations from IndexedDB
+                const allEquipment = await equipmentDB.equipment.toArray();
+                const allCalibrations = await equipmentDB.calibrations.toArray();
+
+                // Create backup object with timestamp
+                const backup = {
+                    timestamp: new Date().toISOString(),
+                    version: '2.5.0',
+                    equipment: allEquipment,
+                    calibrations: allCalibrations,
+                    equipmentCount: allEquipment.length,
+                    calibrationCount: allCalibrations.length
+                };
+
+                // Save to "Equipment Data" subfolder
+                const filename = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+                await saveToDrive(filename, backup, driveFolderId);
+
+                console.log('✅ Drive backup complete:', filename);
+                showSaveIndicator('✓ Backed up to Drive');
+            } catch (error) {
+                console.error('Error backing up to Drive:', error);
+                showSaveIndicator('⚠ Drive backup failed');
             }
         }
 
@@ -2610,6 +2646,11 @@
                     `Import complete!\n${totalSaved} calibration(s) imported\n${totalSkipped} duplicates skipped`,
                     'Import Successful'
                 );
+
+                // Backup to Google Drive if connected
+                if (driveConnected) {
+                    await backupEquipmentDataToDrive();
+                }
 
                 // Clear preview
                 document.getElementById('wordImportPreview').innerHTML = '';
