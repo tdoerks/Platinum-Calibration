@@ -1,9 +1,74 @@
 # Session Notes - Next Steps
 
 **Date Created:** April 22, 2026
-**Last Updated:** April 22, 2026 (Overnight Session)
-**Last Session:** Scheduling & Due Date Tracking Feature
-**Status:** ✅ Version 2.5.0 Complete - Ready for multi-equipment support
+**Last Updated:** May 3, 2026 (Google Drive Integration Session)
+**Last Session:** Google Drive Cloud Backup Integration
+**Status:** ✅ Version 2.6.0 In Progress - Google Drive integration active
+
+---
+
+## 📋 Current Session Summary (May 3, 2026)
+
+**Work Completed:** Google Drive API integration
+**Features Delivered:** Cloud backup and authentication system
+**Version In Progress:** 2.6.0
+**Git Commits:** 3 commits (GIS migration, error logging, auto-backup)
+
+### What Was Built Today
+
+✅ **Google OAuth 2.0 Setup** - Created OAuth credentials in Google Cloud Console
+✅ **Migrated to Google Identity Services (GIS)** - Modern authentication replacing deprecated gapi.auth2
+✅ **Folder Structure Creation** - Auto-creates "Platinum Calibration Database" with 5 subfolders
+✅ **Auto-Backup on Import** - Equipment data backs up to Drive after Word doc imports
+✅ **Token-Based Authentication** - Secure, cookie-independent OAuth flow
+✅ **Error Logging** - Comprehensive debugging for initialization issues
+
+### Key Technical Achievements
+
+- **OAuth 2.0 Client ID:** 1020635392092-fm0fhg2bn4cmfhdu147vc6jshj4lsfb9.apps.googleusercontent.com
+- **Modern GIS library** - No longer uses deprecated gapi.auth2
+- **Token management** - Uses google.accounts.oauth2.initTokenClient()
+- **Drive folder structure** - Clients, Work Orders, Equipment Data, Schedules, System
+- **JSON backup format** - Timestamped files with equipment + calibration data
+- **Browser compatibility** - Works with tracking prevention enabled
+
+### Files Modified
+
+- **index.html** - Google Drive integration (lines 1351-1605)
+  - Added initGoogleDrive() with GIS
+  - Added backupEquipmentDataToDrive()
+  - Added saveToDrive() with OAuth token
+  - Auto-backup trigger in confirmWordImport()
+
+### Git Commits
+
+1. `be57d14` - Add comprehensive error logging for Google Drive initialization
+2. `374784f` - Migrate to Google Identity Services (GIS) for authentication
+3. `b893f42` - Add auto-backup to Google Drive on equipment import
+
+### Testing Completed
+
+- ✅ Google Sign-In popup works
+- ✅ OAuth authorization flow (test user tyler.tyler.d@gmail.com)
+- ✅ Folder creation in Google Drive
+- ✅ Access token received and stored
+- ✅ Drive button turns green when connected
+- ✅ Console logs confirm folder ID: 1mw3x9g7xoM49iUbsXD1euCVC5C5Jbn2j
+
+### What's Working Right Now
+
+1. **Connect Drive Button** - Click to authenticate with Google
+2. **Auto-Folder Creation** - Creates "Platinum Calibration Database" folder
+3. **Auto-Backup** - Import Word doc → saves to IndexedDB → backs up to Drive
+4. **Visual Feedback** - Green button when connected, "Backed up to Drive" indicator
+
+### Next Steps
+
+- [ ] Add manual "Backup Now" button to Equipment History tab
+- [ ] Add "Import from Drive" functionality to browse and load backups
+- [ ] Add sync status indicator showing last backup time
+- [ ] Test end-to-end: import → backup → restore from Drive
+- [ ] Add subfolder organization (save to Equipment Data subfolder)
 
 ---
 
