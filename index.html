@@ -1360,26 +1360,60 @@
 
         // Initialize Google API
         function initGoogleDrive() {
+            console.log('Starting Google Drive initialization...');
+
+            // Check if gapi is loaded
+            if (typeof gapi === 'undefined') {
+                console.error('Google API (gapi) not loaded. Check if scripts are blocked by browser.');
+                document.getElementById('driveBtn').disabled = true;
+                document.getElementById('driveBtn').title = 'Google Drive unavailable - scripts blocked';
+                return;
+            }
+
             gapi.load('client:auth2', async () => {
                 try {
+                    console.log('Loading Google API client...');
                     await gapi.client.init({
                         clientId: GOOGLE_CLIENT_ID,
                         scope: DRIVE_SCOPES,
                         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
                     });
 
+                    console.log('Google API client initialized successfully');
                     googleAuth = gapi.auth2.getAuthInstance();
 
                     // Check if already signed in
                     if (googleAuth.isSignedIn.get()) {
+                        console.log('User already signed in');
                         await onDriveSignIn();
+                    } else {
+                        console.log('User not signed in, ready to authenticate');
                     }
 
                     // Listen for sign-in state changes
                     googleAuth.isSignedIn.listen(updateDriveButton);
+                    updateDriveButton();
                 } catch (error) {
-                    console.error('Error initializing Google Drive:', error);
+                    console.error('Error initializing Google Drive:');
+                    console.error('Error type:', error.error);
+                    console.error('Error details:', error.details);
+                    console.error('Full error object:', JSON.stringify(error, null, 2));
+
+                    // Show user-friendly error
+                    if (error.error === 'idpiframe_initialization_failed' || error.details?.includes('Cookies')) {
+                        console.warn('Third-party cookies are blocked. Google Sign-In requires cookies to be enabled.');
+                        alert('Google Drive connection requires browser cookies.\n\nPlease:\n1. Enable cookies in browser settings\n2. Try a different browser (Chrome or Firefox recommended)\n3. Disable tracking prevention for this site');
+                    }
+
+                    // Disable Drive button
+                    document.getElementById('driveBtn').disabled = true;
+                    document.getElementById('driveBtn').style.opacity = '0.5';
+                    document.getElementById('driveBtn').title = 'Google Drive unavailable - check console for errors';
                 }
+            }, (error) => {
+                console.error('Failed to load Google API:', error);
+                document.getElementById('driveBtn').disabled = true;
+                document.getElementById('driveBtn').title = 'Google Drive unavailable';
             });
         }
 
