@@ -62,13 +62,39 @@
 3. **Auto-Backup** - Import Word doc → saves to IndexedDB → backs up to Drive
 4. **Visual Feedback** - Green button when connected, "Backed up to Drive" indicator
 
-### Next Steps
+### Next Steps - Google Drive Features
 
+**Immediate (Version 2.6.0):**
 - [ ] Add manual "Backup Now" button to Equipment History tab
 - [ ] Add "Import from Drive" functionality to browse and load backups
 - [ ] Add sync status indicator showing last backup time
-- [ ] Test end-to-end: import → backup → restore from Drive
 - [ ] Add subfolder organization (save to Equipment Data subfolder)
+- [ ] Test end-to-end: import → backup → restore from Drive
+
+**Drive Integration Enhancements:**
+- [ ] Store original Word docs in "Work Orders" folder for reference
+- [ ] Save client lists to "Clients" folder as JSON
+- [ ] Export scheduling calendar to "Schedules" folder as iCal
+- [ ] Add conflict resolution (local vs cloud data)
+- [ ] Show Drive quota usage warning when approaching limits
+- [ ] Add "Sync All" button to push entire database to Drive
+
+**Future Multi-Equipment Support (Version 2.7.0+):**
+- [ ] Refactor database schema for generic equipment (not just pipettes)
+- [ ] Create Word parser for balances (linearity tests)
+- [ ] Create Word parser for timers (interval tests)
+- [ ] Create Word parser for centrifuges (RPM tests)
+- [ ] Create Word parser for temperature devices (setpoint tests)
+- [ ] Add equipment type filter to history view
+- [ ] Update scheduling dashboard for all equipment types
+
+**Long-Term Ideas:**
+- [ ] Publish OAuth app (remove test user restriction)
+- [ ] Add team sharing (multiple users, same Drive folder)
+- [ ] Mobile-optimized PWA for field work
+- [ ] QR code generation for equipment labels
+- [ ] Automated email reminders for due calibrations
+- [ ] Client portal (read-only access to their equipment history)
 
 ---
 
