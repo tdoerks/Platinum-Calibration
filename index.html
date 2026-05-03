@@ -1350,91 +1350,93 @@
 
         // ========== GOOGLE DRIVE INTEGRATION ==========
         const GOOGLE_CLIENT_ID = '1020635392092-fm0fhg2bn4cmfhdu147vc6jshj4lsfb9.apps.googleusercontent.com';
-        const GOOGLE_API_KEY = ''; // Not needed for OAuth 2.0 with Drive API
         const DRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
         const DRIVE_FOLDER_NAME = 'Platinum Calibration Database';
 
-        let googleAuth = null;
+        let tokenClient = null;
+        let accessToken = null;
         let driveConnected = false;
         let driveFolderId = null;
 
-        // Initialize Google API
+        // Initialize Google API (New GIS approach)
         function initGoogleDrive() {
-            console.log('Starting Google Drive initialization...');
+            console.log('Starting Google Drive initialization (GIS)...');
 
-            // Check if gapi is loaded
-            if (typeof gapi === 'undefined') {
-                console.error('Google API (gapi) not loaded. Check if scripts are blocked by browser.');
+            // Check if google is loaded
+            if (typeof google === 'undefined') {
+                console.error('Google Identity Services not loaded. Check if scripts are blocked by browser.');
                 document.getElementById('driveBtn').disabled = true;
                 document.getElementById('driveBtn').title = 'Google Drive unavailable - scripts blocked';
                 return;
             }
 
-            gapi.load('client:auth2', async () => {
-                try {
-                    console.log('Loading Google API client...');
-                    await gapi.client.init({
-                        clientId: GOOGLE_CLIENT_ID,
-                        scope: DRIVE_SCOPES,
-                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-                    });
+            // Initialize gapi client for Drive API calls
+            if (typeof gapi !== 'undefined') {
+                gapi.load('client', async () => {
+                    try {
+                        console.log('Initializing Google Drive API client...');
+                        await gapi.client.init({
+                            apiKey: '', // Not needed for OAuth flow
+                            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                        });
+                        console.log('Google Drive API client ready');
+                    } catch (error) {
+                        console.error('Error initializing Drive client:', error);
+                    }
+                });
+            }
 
-                    console.log('Google API client initialized successfully');
-                    googleAuth = gapi.auth2.getAuthInstance();
-
-                    // Check if already signed in
-                    if (googleAuth.isSignedIn.get()) {
-                        console.log('User already signed in');
+            // Initialize the new Token Client (replaces gapi.auth2)
+            try {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: GOOGLE_CLIENT_ID,
+                    scope: DRIVE_SCOPES,
+                    callback: async (response) => {
+                        if (response.error) {
+                            console.error('Token error:', response);
+                            return;
+                        }
+                        console.log('Access token received');
+                        accessToken = response.access_token;
+                        gapi.client.setToken({ access_token: accessToken });
                         await onDriveSignIn();
-                    } else {
-                        console.log('User not signed in, ready to authenticate');
                     }
-
-                    // Listen for sign-in state changes
-                    googleAuth.isSignedIn.listen(updateDriveButton);
-                    updateDriveButton();
-                } catch (error) {
-                    console.error('Error initializing Google Drive:');
-                    console.error('Error type:', error.error);
-                    console.error('Error details:', error.details);
-                    console.error('Full error object:', JSON.stringify(error, null, 2));
-
-                    // Show user-friendly error
-                    if (error.error === 'idpiframe_initialization_failed' || error.details?.includes('Cookies')) {
-                        console.warn('Third-party cookies are blocked. Google Sign-In requires cookies to be enabled.');
-                        alert('Google Drive connection requires browser cookies.\n\nPlease:\n1. Enable cookies in browser settings\n2. Try a different browser (Chrome or Firefox recommended)\n3. Disable tracking prevention for this site');
-                    }
-
-                    // Disable Drive button
-                    document.getElementById('driveBtn').disabled = true;
-                    document.getElementById('driveBtn').style.opacity = '0.5';
-                    document.getElementById('driveBtn').title = 'Google Drive unavailable - check console for errors';
-                }
-            }, (error) => {
-                console.error('Failed to load Google API:', error);
+                });
+                console.log('Google Identity Services initialized successfully');
+                updateDriveButton();
+            } catch (error) {
+                console.error('Error initializing Google Identity Services:', error);
                 document.getElementById('driveBtn').disabled = true;
-                document.getElementById('driveBtn').title = 'Google Drive unavailable';
-            });
+                document.getElementById('driveBtn').style.opacity = '0.5';
+                document.getElementById('driveBtn').title = 'Google Drive unavailable - check console for errors';
+            }
         }
 
         // Toggle Drive connection
         async function toggleDriveConnection() {
-            if (!googleAuth) {
+            if (!tokenClient) {
                 alert('Google Drive is still initializing. Please wait a moment and try again.');
                 return;
             }
 
             if (driveConnected) {
-                // Sign out
-                await googleAuth.signOut();
+                // Sign out - revoke token
+                if (accessToken) {
+                    google.accounts.oauth2.revoke(accessToken, () => {
+                        console.log('Access token revoked');
+                    });
+                }
+                accessToken = null;
+                gapi.client.setToken(null);
                 driveConnected = false;
                 driveFolderId = null;
                 updateDriveButton();
                 showSaveIndicator('Disconnected from Google Drive');
             } else {
-                // Sign in
+                // Sign in - request new token
                 try {
-                    await googleAuth.signIn();
+                    console.log('Requesting access token...');
+                    tokenClient.requestAccessToken({ prompt: 'consent' });
                 } catch (error) {
                     console.error('Sign-in error:', error);
                     alert('Failed to connect to Google Drive. Please try again.');
