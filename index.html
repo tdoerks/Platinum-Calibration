@@ -1600,6 +1600,146 @@
             }
         }
 
+        // Manual backup function (called by button)
+        async function manualBackupToDrive() {
+            if (!driveConnected) {
+                alert('Please connect to Google Drive first using the "Connect Drive" button in the header.');
+                return;
+            }
+
+            const btn = document.getElementById('manualBackupBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Backing up...';
+            btn.disabled = true;
+
+            try {
+                await backupEquipmentDataToDrive();
+                btn.innerHTML = '✓ Backed up!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            } catch (error) {
+                console.error('Manual backup failed:', error);
+                btn.innerHTML = '✗ Backup failed';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+
+        // Show dialog to import from Drive
+        async function showDriveImportDialog() {
+            if (!driveConnected) {
+                alert('Please connect to Google Drive first using the "Connect Drive" button in the header.');
+                return;
+            }
+
+            try {
+                console.log('Fetching backup files from Drive...');
+
+                // List all backup files in the main folder
+                const response = await gapi.client.drive.files.list({
+                    q: `'${driveFolderId}' in parents and name contains 'backup_' and trashed=false`,
+                    fields: 'files(id, name, createdTime, size)',
+                    orderBy: 'createdTime desc',
+                    pageSize: 20
+                });
+
+                const files = response.result.files;
+
+                if (!files || files.length === 0) {
+                    alert('No backup files found in Google Drive.\n\nBackup files are created automatically when you import Word documents, or you can create one using the "Backup to Drive" button.');
+                    return;
+                }
+
+                // Build dialog HTML
+                let html = '<div style="padding: 20px;">';
+                html += '<h3>Select Backup to Restore</h3>';
+                html += '<p style="color: #666; margin-bottom: 20px;">⚠️ Warning: This will replace your current data with the selected backup.</p>';
+                html += '<div style="max-height: 400px; overflow-y: auto;">';
+
+                files.forEach(file => {
+                    const date = new Date(file.createdTime).toLocaleString();
+                    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+                    html += `
+                        <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.background='#f0f8ff'; this.style.borderColor='#007bff';"
+                             onmouseout="this.style.background='white'; this.style.borderColor='#ddd';"
+                             onclick="restoreFromDrive('${file.id}', '${file.name}')">
+                            <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;">📁 ${file.name}</div>
+                            <div style="font-size: 14px; color: #666;">
+                                <div>📅 Created: ${date}</div>
+                                <div>💾 Size: ${sizeMB} MB</div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+                html += '<div style="margin-top: 20px; text-align: right;">';
+                html += '<button class="btn btn-secondary" onclick="closeModal()">Cancel</button>';
+                html += '</div>';
+                html += '</div>';
+
+                document.getElementById('modalTitle').textContent = 'Restore from Google Drive';
+                document.getElementById('modalBody').innerHTML = html;
+                document.getElementById('modal').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error listing Drive files:', error);
+                alert('Failed to load backup files from Google Drive. Check console for details.');
+            }
+        }
+
+        // Restore data from a Drive backup file
+        async function restoreFromDrive(fileId, filename) {
+            if (!confirm(`Are you sure you want to restore from:\n\n${filename}\n\nThis will replace all current equipment and calibration data.`)) {
+                return;
+            }
+
+            try {
+                console.log('Downloading backup from Drive:', fileId);
+
+                // Download the file content
+                const response = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
+                });
+
+                const backup = JSON.parse(response.body);
+
+                console.log('Backup loaded:', backup);
+                console.log('Equipment count:', backup.equipmentCount);
+                console.log('Calibration count:', backup.calibrationCount);
+
+                // Clear existing data
+                await equipmentDB.equipment.clear();
+                await equipmentDB.calibrations.clear();
+
+                // Restore data
+                if (backup.equipment && backup.equipment.length > 0) {
+                    await equipmentDB.equipment.bulkAdd(backup.equipment);
+                }
+
+                if (backup.calibrations && backup.calibrations.length > 0) {
+                    await equipmentDB.calibrations.bulkAdd(backup.calibrations);
+                }
+
+                closeModal();
+                alert(`✓ Restore complete!\n\n${backup.equipmentCount} equipment records\n${backup.calibrationCount} calibration records\n\nRefreshing view...`);
+
+                // Refresh the equipment history view
+                await loadEquipmentHistory();
+
+            } catch (error) {
+                console.error('Error restoring from Drive:', error);
+                alert('Failed to restore from Google Drive. Check console for details.');
+            }
+        }
+
         // Initialize Drive on page load
         window.addEventListener('load', initGoogleDrive);
         // ========== END GOOGLE DRIVE INTEGRATION ==========
@@ -11776,7 +11916,15 @@
             <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #dee2e6;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3 style="margin: 0;">📋 All Equipment</h3>
-                    <button class="btn btn-secondary" onclick="loadEquipmentHistory()">🔄 Refresh</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="manualBackupToDrive()" id="manualBackupBtn" title="Backup all data to Google Drive now">
+                            ☁️ Backup to Drive
+                        </button>
+                        <button class="btn btn-info" onclick="showDriveImportDialog()" id="driveImportBtn" title="Import backup from Google Drive">
+                            📥 Restore from Drive
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadEquipmentHistory()">🔄 Refresh</button>
+                    </div>
                 </div>
                 <div id="equipmentHistoryContainer">
                     <!-- Equipment list will be populated here -->
