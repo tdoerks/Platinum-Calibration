@@ -49,6 +49,10 @@
   label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
   input,select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);font:inherit}
   input.bad{border-color:var(--fail)}
+  input.outlier{border-color:var(--warn) !important;background:var(--warn-bg)}
+  .cv-good{color:var(--pass);font-weight:600}.cv-warn{color:var(--warn);font-weight:600}.cv-bad{color:var(--fail);font-weight:600}
+  .dupwarn{color:var(--fail);font-size:11px;font-weight:600;margin-top:3px}
+  .reason{background:var(--fail-bg);border-left:3px solid var(--fail);padding:10px;border-radius:6px;margin-top:10px}
   .hint{font-size:11px;color:var(--muted);margin-top:3px}
   .warn-text{font-size:11px;color:var(--warn);margin-top:3px}
   .pipette{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:var(--card)}
@@ -224,6 +228,8 @@ const TEST_VOLUMES = {
 const MODELS = Object.keys(isoSpecs);
 const BRANDS = ['Eppendorf','Gilson','Rainin','Thermo Finnpipette','VWR','Sartorius','BRAND','Hamilton','Mettler Toledo','Labnet','Oxford','Socorex','Capp','Integra','Nichiryo'];
 const ADJ_TYPES = ['SE','COR','G','SH','FR','O','OTHER'];
+const OOS_REASONS = ['Low','High','Leaks','Sticky-Stiff','Broken','Other'];
+const BRAND_KEY = 'platinumBrandHistory';
 const ENV_RANGES = {temperature:{min:15,max:30,opt:[20,25],unit:'°C'},pressure:{min:95,max:105,opt:[98,102],unit:'kPa'},humidity:{min:30,max:80,opt:[40,60],unit:'%RH'}};
 const STORE_KEY='platinumPipetteCalibration_v2'; // <!-- REVIEW: legacy session-autosave key string not located; using a fresh v2 key. If you need old localStorage sessions to load, set this to the legacy key. -->
 
@@ -330,7 +336,7 @@ function blankMeasure(){ return {asFound:{low:['','','',''],mid:['','','',''],hi
 function addPipette(dup){
   const base={ id:state.nextId++, serviceLevel:state.serviceLevel, brandModel:'', model:'P-100', serial:'',
     channelType:'single', measurements:blankMeasure(),
-    basic:{maxVol:'', inSpec:true, adjustments:[], finalReadings:['','','',''], status:'pending', comments:''},
+    basic:{ readings100:['','','',''], reading20:'', manualResult:'', outOfSpecReason:'', reasonNote:'', adjustments:[], comments:'' },
     statusAsLeft:'pending' };
   if(dup && state.pipettes.length){ const p=state.pipettes[state.pipettes.length-1];
     base.brandModel=p.brandModel; base.model=p.model; base.channelType=p.channelType; base.serviceLevel=p.serviceLevel; }
@@ -340,24 +346,53 @@ function removePipette(id){ state.pipettes=state.pipettes.filter(p=>p.id!==id); 
 function dupPipette(id){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
   const c=JSON.parse(JSON.stringify(p)); c.id=state.nextId++; c.serial=''; state.pipettes.push(c); renderPipettes(); autoSave(); }
 function setField(id,k,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p[k]=v;
-  if(k==='channelType'||k==='model'){ renderPipettes(); } autoSave(); }
+  if(k==='brandModel') saveBrand(v);
+  if(k==='channelType'||k==='model'||k==='serial'){ renderPipettes(); } autoSave(); }
 function setReading(id,cond,pt,i,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
   p.measurements[cond][pt][i]=v; renderOneCalc(p); autoSave(); }
-function setBasic(id,k,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p.basic[k]=v; autoSave(); }
-function setBasicReading(id,i,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p.basic.finalReadings[i]=v; autoSave(); }
+function setBasic(id,k,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p.basic[k]=v; autoSave(); renderPipettes(); }
+function setBasicArr(id,arr,i,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
+  (p.basic[arr]=p.basic[arr]||['','','',''])[i]=v; autoSave(); renderPipettes(); }
 function toggleAdj(id,a){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
   const s=new Set(p.basic.adjustments); s.has(a)?s.delete(a):s.add(a); p.basic.adjustments=[...s]; autoSave(); }
 function bulkStatus(s){ state.pipettes.forEach(p=>p.statusAsLeft=s); renderPipettes(); autoSave(); }
 
-function pipetteOverall(p){ // As Left overall across the 3 points (Platinum); Basic uses its own status
-  if(p.serviceLevel==='basic') return p.basic.status;
-  const isMulti=p.channelType==='multi';
-  let any=false, allPass=true;
-  for(const pt of ['low','mid','high']){
-    const r=computePoint(p.model,pt,p.measurements.asLeft[pt],isMulti);
-    if(r.overall===null) continue; any=true; if(!r.overall) allPass=false;
+/* brand smart-history (localStorage) */
+function loadBrands(){ try{ return JSON.parse(localStorage.getItem(BRAND_KEY))||[]; }catch(e){ return []; } }
+function saveBrand(v){ v=(v||'').trim(); if(!v) return; if(BRANDS.concat(loadBrands()).includes(v)) return;
+  const h=loadBrands(); h.push(v); localStorage.setItem(BRAND_KEY,JSON.stringify(h)); rebuildBrandList(); }
+function rebuildBrandList(){ const dl=document.getElementById('brandlist'); if(!dl) return;
+  dl.innerHTML=BRANDS.concat(loadBrands()).map(b=>`<option value="${b}">`).join(''); }
+
+/* duplicate-serial detection */
+function serialCounts(){ const m={}; state.pipettes.forEach(p=>{ const s=(p.serial||'').trim(); if(s) m[s]=(m[s]||0)+1; }); return m; }
+function isDupSerial(p){ const s=(p.serial||'').trim(); return !!(s && serialCounts()[s]>1); }
+
+/* Basic-mode auto-grade: 100% (mean of 4) + 20% (1 reading) each within the ISO accuracy range */
+function computeBasic(p){
+  p.basic=p.basic||{}; p.basic.readings100=p.basic.readings100||['','','','']; p.basic.adjustments=p.basic.adjustments||[];
+  const model=p.model, hv=TEST_VOLUMES[model].high, lv=TEST_VOLUMES[model].low;
+  const s100=getSpec(model,hv,false), s20=getSpec(model,lv,false);
+  const m100=mean(p.basic.readings100); const r20=parseFloat(p.basic.reading20);
+  const has100=p.basic.readings100.some(x=>x!==''&&!isNaN(parseFloat(x))); const has20=!isNaN(r20);
+  const in100=(s100&&has100&&!isNaN(m100))?(m100>=s100.accuracy.from&&m100<=s100.accuracy.to):null;
+  const in20=(s20&&has20)?(r20>=s20.accuracy.from&&r20<=s20.accuracy.to):null;
+  let auto='pending'; if(in100!==null&&in20!==null) auto=(in100&&in20)?'pass':'fail';
+  return {hv,lv,s100,s20,m100,r20,in100,in20,auto,effective:(p.basic.manualResult||auto)};
+}
+
+/* CV% color tier + per-point outlier marking (Platinum) */
+function cvClass(cv){ if(isNaN(cv)) return ''; return cv<1?'cv-good':(cv<=2?'cv-warn':'cv-bad'); }
+function condOverall(p,cond){ const isMulti=p.channelType==='multi'; let any=false,all=true;
+  for(const pt of ['low','mid','high']){ const r=computePoint(p.model,pt,p.measurements[cond][pt],isMulti);
+    if(r.overall===null) continue; any=true; if(!r.overall) all=false; } return any?(all?'pass':'fail'):'pending'; }
+function markOutliers(p){
+  for(const cond of ['asFound','asLeft']) for(const pt of ['low','mid','high']){
+    const present=p.measurements[cond][pt].map(Number).filter(x=>!isNaN(x));
+    const m=mean(present), sd=sampleSD(present);
+    p.measurements[cond][pt].forEach((v,i)=>{ const el=document.getElementById(`rd-${cond}-${pt}-${i}-${p.id}`); if(!el) return;
+      const x=parseFloat(v); el.classList.toggle('outlier', !isNaN(x)&&!isNaN(sd)&&sd>0&&Math.abs(x-m)>2*sd); });
   }
-  return any ? (allPass?'pass':'fail') : 'pending';
 }
 
 function renderPipettes(){
@@ -381,7 +416,7 @@ function renderPlatinum(p){
     <div class="grid">
       <div><label>Brand / Model</label><input list="brandlist" value="${p.brandModel||''}" onchange="setField(${p.id},'brandModel',this.value)"></div>
       <div><label>ISO Model (volume class)</label><select onchange="setField(${p.id},'model',this.value)">${modelOptions(p.model)}</select></div>
-      <div><label>Serial #</label><input value="${p.serial||''}" onchange="setField(${p.id},'serial',this.value)"></div>
+      <div><label>Serial #</label><input value="${p.serial||''}" onchange="setField(${p.id},'serial',this.value)">${isDupSerial(p)?'<div class="dupwarn">⚠ Duplicate serial in this session</div>':''}</div>
       <div><label>Channel Type</label><select onchange="setField(${p.id},'channelType',this.value)">
         <option value="single" ${!isMulti?'selected':''}>Single</option>
         <option value="multi" ${isMulti?'selected':''}>Multi</option></select></div>
@@ -398,7 +433,7 @@ function condTable(p,cond,isMulti){
   for(const pt of ['low','mid','high']){
     const nom = TEST_VOLUMES[p.model][pt];
     const step = vprec(nom)===2?'0.01':'0.1';
-    const cells = [0,1,2,3].map(i=>`<td><input type="number" step="${step}" min="0" value="${p.measurements[cond][pt][i]||''}" onchange="setReading(${p.id},'${cond}','${pt}',${i},this.value)"></td>`).join('');
+    const cells = [0,1,2,3].map(i=>`<td><input id="rd-${cond}-${pt}-${i}-${p.id}" type="number" step="${step}" min="0" value="${p.measurements[cond][pt][i]||''}" onchange="setReading(${p.id},'${cond}','${pt}',${i},this.value)"></td>`).join('');
     rows+=`<tr><th>${pt.toUpperCase()} (${fmt(nom)} µL)</th>${cells}</tr>`;
   }
   return `<div style="margin-top:8px"><strong>${label}</strong>
@@ -407,56 +442,70 @@ function condTable(p,cond,isMulti){
 function badge(pass){ return pass===null?`<span class="status pending">PENDING</span>`
   : pass?`<span class="status pass">✓ PASS</span>`:`<span class="status fail">✗ FAIL</span>`; }
 
-function renderOneCalc(p){
-  if(p.serviceLevel==='basic') return;
-  const box=document.getElementById('calc-'+p.id); if(!box) return;
-  const isMulti=p.channelType==='multi';
-  let html='<strong>As Left — ISO 8655 evaluation</strong>';
+function condPanel(p,cond,isMulti){
+  let html=`<div style="margin-top:6px"><strong>${cond==='asFound'?'As Found':'As Left'} — ISO 8655 evaluation</strong>`;
   for(const pt of ['low','mid','high']){
-    const r=computePoint(p.model,pt,p.measurements.asLeft[pt],isMulti);
+    const r=computePoint(p.model,pt,p.measurements[cond][pt],isMulti);
     if(!r.spec){ html+=`<div class="pt muted">${pt.toUpperCase()} (${fmt(r.nominal)} µL): no ISO spec for this model/channel</div>`; continue; }
     html+=`<div class="pt"><strong>${pt.toUpperCase()} (${fmt(r.nominal)} µL):</strong>
-      Mean ${fmt(r.mean)} µL · SD ${fmt(r.sd,3)} µL · CV ${isNaN(r.cv)?'—':r.cv.toFixed(2)+'%'}
+      Mean ${fmt(r.mean)} µL · SD ${fmt(r.sd,3)} µL · CV <span class="${cvClass(r.cv)}">${isNaN(r.cv)?'—':r.cv.toFixed(2)+'%'}</span>
       ${r.correctionApplied?`· <span class="muted">Z=${r.z.toFixed(5)}</span>`:''}<br>
       Accuracy [${fmt(r.spec.accuracy.from)}–${fmt(r.spec.accuracy.to)} µL] ${badge(r.accuracyPass)}
       · Precision (SD ≤ ${fmt(r.spec.precision.ul,3)} µL) ${badge(r.precisionPass)}
       · Overall ${badge(r.overall)}</div>`;
   }
-  const ov=pipetteOverall(p);
-  const h=document.getElementById('ov-'+p.id); if(h) h.innerHTML=badge(ov==='pending'?null:ov==='pass');
-  box.innerHTML=html;
+  return html+'</div>';
+}
+function renderOneCalc(p){
+  if(p.serviceLevel==='basic') return;
+  const box=document.getElementById('calc-'+p.id); if(!box) return;
+  const isMulti=p.channelType==='multi';
+  box.innerHTML = condPanel(p,'asFound',isMulti) + condPanel(p,'asLeft',isMulti);
+  const af=condOverall(p,'asFound'), al=condOverall(p,'asLeft');
+  const h=document.getElementById('ov-'+p.id);
+  if(h) h.innerHTML=`<span class="muted" style="font-size:11px">AF</span> ${badge(af==='pending'?null:af==='pass')} `
+    +`<span class="muted" style="font-size:11px">AL</span> ${badge(al==='pending'?null:al==='pass')}`;
+  markOutliers(p);
 }
 
 function renderBasic(p){
+  const c=computeBasic(p); const oos=c.effective==='fail';
   const node=el(`<div class="pipette basic" id="pip-${p.id}">
     <div class="pipette-head">
       <span class="title">Pipette #${p.id} <span class="muted">(Basic)</span></span>
-      <span id="ov-${p.id}">${badge(p.basic.status==='pending'?null:p.basic.status==='pass')}</span>
+      <span id="ov-${p.id}">${badge(c.effective==='pending'?null:c.effective==='pass')}</span>
       <div class="spacer"></div>
       <button class="sm" onclick="dupPipette(${p.id})">Duplicate</button>
       <button class="sm danger" onclick="removePipette(${p.id})">Remove</button>
     </div>
     <div class="grid">
       <div><label>Make / Model</label><input list="brandlist" value="${p.brandModel||''}" onchange="setField(${p.id},'brandModel',this.value)"></div>
-      <div><label>Serial #</label><input value="${p.serial||''}" onchange="setField(${p.id},'serial',this.value)"></div>
-      <div><label>Max Volume (µL)</label><input type="number" value="${p.basic.maxVol||''}" onchange="setBasic(${p.id},'maxVol',this.value)"></div>
-      <div><label>Spec</label><select onchange="setBasic(${p.id},'inSpec',this.value==='in')">
-        <option value="in" ${p.basic.inSpec?'selected':''}>In Spec</option>
-        <option value="out" ${!p.basic.inSpec?'selected':''}>Out of Spec</option></select></div>
+      <div><label>ISO Model (volume class)</label><select onchange="setField(${p.id},'model',this.value)">${modelOptions(p.model)}</select></div>
+      <div><label>Serial #</label><input value="${p.serial||''}" onchange="setField(${p.id},'serial',this.value)">${isDupSerial(p)?'<div class="dupwarn">⚠ Duplicate serial</div>':''}</div>
     </div>
+    <div style="margin-top:8px"><strong>100% — ${fmt(c.hv)} µL (4 readings)</strong>
+      <table><tr>${[0,1,2,3].map(i=>`<td><input type="number" step="0.1" value="${p.basic.readings100[i]||''}" onchange="setBasicArr(${p.id},'readings100',${i},this.value)"></td>`).join('')}</tr></table>
+      <div class="hint">Mean ${fmt(c.m100)} µL · ISO range ${c.s100?fmt(c.s100.accuracy.from)+'–'+fmt(c.s100.accuracy.to)+' µL':'—'} ${c.in100==null?'':badge(c.in100)}</div></div>
+    <div style="margin-top:8px"><strong>20% — ${fmt(c.lv)} µL (1 reading)</strong>
+      <table><tr><td style="max-width:140px"><input type="number" step="0.1" value="${p.basic.reading20||''}" onchange="setBasic(${p.id},'reading20',this.value)"></td></tr></table>
+      <div class="hint">ISO range ${c.s20?fmt(c.s20.accuracy.from)+'–'+fmt(c.s20.accuracy.to)+' µL':'—'} ${c.in20==null?'':badge(c.in20)}</div></div>
     <div style="margin-top:8px"><label>Adjustments</label>
       ${ADJ_TYPES.map(a=>`<label style="display:inline-flex;gap:4px;margin-right:10px;font-size:13px;color:var(--ink)">
         <input type="checkbox" style="width:auto" ${p.basic.adjustments.includes(a)?'checked':''} onchange="toggleAdj(${p.id},'${a}')">${a}</label>`).join('')}
     </div>
-    <div style="margin-top:8px"><label>Final Volume Readings (µL)</label>
-      <table><tr>${[0,1,2,3].map(i=>`<td><input type="number" step="0.1" value="${p.basic.finalReadings[i]||''}" onchange="setBasicReading(${p.id},${i},this.value)"></td>`).join('')}</tr></table></div>
-    <div class="grid">
-      <div><label>Result</label><select onchange="setBasic(${p.id},'status',this.value);document.getElementById('ov-${p.id}').innerHTML='';renderPipettes()">
-        <option value="pending" ${p.basic.status==='pending'?'selected':''}>Pending</option>
-        <option value="pass" ${p.basic.status==='pass'?'selected':''}>Pass</option>
-        <option value="fail" ${p.basic.status==='fail'?'selected':''}>Fail</option></select></div>
+    <div class="grid" style="margin-top:8px">
+      <div><label>Result (auto — override if needed)</label>
+        <select onchange="setBasic(${p.id},'manualResult',this.value==='auto'?'':this.value)">
+          <option value="auto" ${!p.basic.manualResult?'selected':''}>Auto: ${c.auto.toUpperCase()}</option>
+          <option value="pass" ${p.basic.manualResult==='pass'?'selected':''}>Override → PASS</option>
+          <option value="fail" ${p.basic.manualResult==='fail'?'selected':''}>Override → FAIL</option></select></div>
       <div><label>Comments</label><input value="${p.basic.comments||''}" onchange="setBasic(${p.id},'comments',this.value)"></div>
     </div>
+    ${oos?`<div class="reason"><div class="grid">
+      <div><label>Out-of-spec reason (required)</label><select onchange="setBasic(${p.id},'outOfSpecReason',this.value)">
+        <option value="">— select —</option>${OOS_REASONS.map(r=>`<option ${p.basic.outOfSpecReason===r?'selected':''}>${r}</option>`).join('')}</select></div>
+      <div><label>Reason note</label><input value="${p.basic.reasonNote||''}" onchange="setBasic(${p.id},'reasonNote',this.value)"></div>
+    </div>${p.basic.outOfSpecReason?'':'<div class="dupwarn">⚠ A reason is required for an out-of-spec result.</div>'}</div>`:''}
   </div>`);
   return node;
 }
@@ -475,11 +524,13 @@ function buildCert(){
       ${p.serviceLevel==='platinum'&&envConditions().ok?`<br>Env: ${state.temperature}°C, ${state.pressure} kPa, ${state.humidity}%RH · Z=${envConditions().z.toFixed(5)}`:''}
       </div>`;
     if(p.serviceLevel==='basic'){
-      return head+`<table><tr><th>Max Vol</th><th>Spec</th><th>Adjustments</th><th>Final readings (µL)</th><th>Result</th></tr>
-        <tr><td>${p.basic.maxVol||'—'}</td><td>${p.basic.inSpec?'In Spec':'Out of Spec'}</td>
-        <td>${p.basic.adjustments.join(', ')||'—'}</td><td>${p.basic.finalReadings.filter(x=>x!=='').join(', ')||'—'}</td>
-        <td>${p.basic.status==='pending'?'PENDING':p.basic.status.toUpperCase()}</td></tr></table>
-        <div class="meta">${p.basic.comments||''}</div></div>`;
+      const c=computeBasic(p);
+      return head+`<table><tr><th>Point</th><th>Reading(s) µL</th><th>ISO range µL</th><th>In spec</th></tr>
+        <tr><td>100% (${fmt(c.hv)})</td><td>${p.basic.readings100.filter(x=>x!=='').join(', ')||'—'} (mean ${fmt(c.m100)})</td>
+        <td>${c.s100?fmt(c.s100.accuracy.from)+'–'+fmt(c.s100.accuracy.to):'—'}</td><td>${c.in100==null?'—':c.in100?'PASS':'FAIL'}</td></tr>
+        <tr><td>20% (${fmt(c.lv)})</td><td>${p.basic.reading20||'—'}</td>
+        <td>${c.s20?fmt(c.s20.accuracy.from)+'–'+fmt(c.s20.accuracy.to):'—'}</td><td>${c.in20==null?'—':c.in20?'PASS':'FAIL'}</td></tr></table>
+        <div class="meta">Adjustments: ${p.basic.adjustments.join(', ')||'—'} · <strong>Result: ${c.effective.toUpperCase()}</strong>${c.effective==='fail'?` · Reason: ${p.basic.outOfSpecReason||'(none)'} ${p.basic.reasonNote||''}`:''}${p.basic.comments?` · ${p.basic.comments}`:''}</div></div>`;
     }
     const isMulti=p.channelType==='multi';
     let rows='';
@@ -529,7 +580,9 @@ function exportCSV(){ syncSessionFromInputs();
   const cols=['workOrder','pipette','model','serial','service','point','nominal','mean','sd','cv','sd_limit','accuracy','precision','overall'];
   const rows=[cols.join(',')];
   state.pipettes.forEach(p=>{
-    if(p.serviceLevel==='basic'){ rows.push([state.workOrder,p.brandModel,'Basic',p.serial,'basic','-','-','-','-','-','-',p.basic.inSpec?'InSpec':'OutOfSpec','-',p.basic.status].map(esc).join(',')); return; }
+    if(p.serviceLevel==='basic'){ const c=computeBasic(p);
+      rows.push([state.workOrder,p.brandModel,p.model,p.serial,'basic','100%',c.hv,fmt(c.m100),'-','-',c.s100?`${fmt(c.s100.accuracy.from)}-${fmt(c.s100.accuracy.to)}`:'',c.in100==null?'':c.in100?'PASS':'FAIL','-',c.effective].map(esc).join(','));
+      rows.push([state.workOrder,p.brandModel,p.model,p.serial,'basic','20%',c.lv,p.basic.reading20||'','-','-',c.s20?`${fmt(c.s20.accuracy.from)}-${fmt(c.s20.accuracy.to)}`:'',c.in20==null?'':c.in20?'PASS':'FAIL','-',c.effective].map(esc).join(',')); return; }
     const isMulti=p.channelType==='multi';
     ['low','mid','high'].forEach(pt=>{ const r=computePoint(p.model,pt,p.measurements.asLeft[pt],isMulti);
       rows.push([state.workOrder,p.brandModel,p.model,p.serial,'platinum',pt,r.nominal,fmt(r.mean),fmt(r.sd,3),
@@ -564,7 +617,7 @@ document.addEventListener('keydown',e=>{
   if(localStorage.getItem('platinumDarkMode')==='1'){ document.body.classList.add('dark'); document.getElementById('darkBtn').textContent='☀ Light'; }
   // brand datalist
   const dl=document.createElement('datalist'); dl.id='brandlist';
-  dl.innerHTML=BRANDS.map(b=>`<option value="${b}">`).join(''); document.body.appendChild(dl);
+  dl.innerHTML=BRANDS.concat(loadBrands()).map(b=>`<option value="${b}">`).join(''); document.body.appendChild(dl);
   if(!state.serviceDate){ state.serviceDate=new Date().toISOString().slice(0,10); }
   hydrate(); autoNumbers();
 })();
