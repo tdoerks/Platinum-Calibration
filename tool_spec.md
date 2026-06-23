@@ -134,6 +134,19 @@ entered. No manual override. The As-Found In/Out call does not affect the result
 - **Print:** the certificate, one pipette per page; `@media print` hides the entry chrome/buttons and
   shows the certificate; brand logo in the header.
 
+## Cloud sync (Google Drive)
+**Hosted-only feature** — a deliberate, scoped exception to the offline/single-file rule (the tool still
+works fully offline; Drive just disables itself when its scripts aren't reachable).
+- **Auth:** Google Identity Services + `gapi` Drive client (Google CDN). OAuth scope `drive.file` (app
+  only sees files it creates). Reuses the existing client id `1020635392092-…apps.googleusercontent.com`.
+  **Requires** the page be served from an authorized JavaScript origin (the GitHub Pages origin) — will
+  not run from `file://` or githack.
+- **Folder:** `Platinum Calibration Database` (one JSON per session, named by work order).
+- **Save:** manual "Back up to Drive" button **and** debounced auto-backup (~2 s) on change when
+  connected; upserts by filename (no duplicate files).
+- **Restore:** History tab → "From Google Drive" lists session files → restore loads one into `state`.
+- **Degrade:** if `google`/`gapi` are undefined (offline/blocked), the Connect button disables; no throw.
+
 ## Styling & theme
 Calibrations International branding (logo.png header), light + **dark mode**. **Colorblind-safe pass/fail
 — symbols (✓/✗) plus color, never color alone** (carry over the existing accessibility). Responsive for
