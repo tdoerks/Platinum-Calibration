@@ -50,6 +50,12 @@ Derived (recomputed, not stored): per test-point `mean`, `SD`, `CV%`, `zFactor`,
 `accuracyPass`, `cvPass`, `sdPass`, `precisionPass`, and the per-condition overall status.
 The nominal volume for each LOW/MID/HIGH point comes from the selected model's spec table.
 
+**Basic-mode pipette fields** (`serviceLevel='basic'`): `model` (ISO class), `basic.asFoundSpec`
+(`''|in|out`, manual), `basic.outOfSpecReason` (enum, **required when `out`**), `basic.reasonNote`,
+`basic.adjustments` (object keyed by code → `{on, val, other}`; codes `SE/COR/G/SH/FR` with the value
+lists above), `basic.readings100` (4 values), `basic.reading20` (1 value). Overall result derived from
+the final readings only. **Top-level `comments`** (free-text) applies to **both** Platinum and Basic.
+
 ## Inputs & computations
 All formulas captured verbatim from the existing app (ISO 8655-6). `build-tool` makes one JS function per
 row.
@@ -72,9 +78,22 @@ row.
 {accuracy:{from,to}, precision:{percent, ul}}`, looked up via `getSpecifications(model, volume,
 isMultiChannel)`. Port these tables verbatim — they are the tolerance database.
 
-**Basic service level:** skips environmental correction and the full gravimetric stats; it's a quick
-In-Spec / Out-of-Spec entry with adjustment tracking (SE, COR, G, SH, FR, O, OTHER) and 4 final-volume
-readings → pass/fail. Same data model, fewer fields exercised (`serviceLevel` routes the rendering/calc).
+**Basic service level (quick check, bench-ordered):** no environmental correction, no precision/SD —
+accuracy only, graded against the same `isoSpecs` tables (Basic also picks an ISO model). The card
+follows the real bench workflow, in order:
+1. **As-Found — In Spec / Out of Spec:** a **manual toggle** the tech sets (the as-found reading volume
+   varies pipette-to-pipette, so no fixed as-found reading is stored). When **Out of Spec**, a **reason is
+   required**: `Low | High | Leaks | Sticky-Stiff | Broken | Other` + free-text note. This is
+   documentation and is **decoupled from** the pass/fail result.
+2. **Adjustments** — each a checkbox that reveals a detail control when ticked:
+   `SE` Seal → `Has but not replaced | Replaced | Silicone | Other`(+text); `COR` Corrosion → `1|2|3`;
+   `G` Grease → `K|D`; `SH` Shaft → `Replaced | Other`(+text); `FR` Friction ring → `Skinny|Regular|Fat`.
+3. **Final readings (after calibration):** 100% (`high` volume, 4 readings → mean) + 20% (`low` volume,
+   1 reading), each checked within its ISO accuracy range.
+4. **Comments / Other:** free-text (damage, observations).
+
+**Overall result = final readings ONLY:** PASS iff both final points are in range; pending until both are
+entered. No manual override. The As-Found In/Out call does not affect the result.
 
 ## Views & layout
 1. **Session card** — service-level selector (badge), technician/client/dates, auto work-order + invoice,
@@ -88,12 +107,21 @@ readings → pass/fail. Same data model, fewer fields exercised (`serviceLevel` 
 
 ## Interactions
 - Add / remove / **duplicate** pipette (copy previous config); single↔multi toggle.
-- Enter readings → live recompute of mean/SD/CV/Z + pass/fail (recompute on every change; also re-run all
-  when environmental inputs change).
+- Enter readings → live recompute + pass/fail on every change; re-run all when environmental inputs change.
+- **Auto-grade BOTH conditions** — As Found *and* As Left each get their own live evaluation panel + status
+  badge (legacy graded both; the first rebuild only did As Left — restore As Found).
+- **Basic flow** — manual As-Found In/Out toggle (reason required when Out) first; detailed adjustments
+  with per-code sub-fields (SE/COR/G/SH/FR); final 100%(4)+20%(1) readings auto-compute the pass/fail
+  result, **decoupled** from the As-Found call. Comments/Other free-text in both modes.
+- **Data-quality automation (restore from legacy):**
+  - **Outlier highlight** — flag any reading > 2 SD from its point mean.
+  - **CV% color coding** — green < 1% / yellow 1–2% / red > 2% (display cue only; not the pass rule).
+  - **Duplicate-serial warning** — warn if a serial is entered on more than one pipette in the session.
 - Service-level toggle (warns when switching with existing pipettes).
 - **Bulk select → mark all Pass/Fail.**
-- **Brand/model autocomplete** (100+ list + localStorage history of custom entries).
-- **Voice input** — speak the 4 readings, auto-advance; voice commands ("next pipette", "mark pass/fail").
+- **Brand/model autocomplete** — 100+ list **+ smart history**: custom brand/model entries saved to
+  localStorage and offered next time (restore from legacy).
+- **Voice input** — speak the readings, auto-advance; voice commands ("next pipette", "mark pass/fail").
 - **Keyboard shortcuts** — Ctrl+N new, Ctrl+D duplicate, Ctrl+S save.
 - Import JSON (round-trip a saved session); export CSV; print / save-PDF certificate; save & recall session.
 
