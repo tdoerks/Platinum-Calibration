@@ -104,6 +104,10 @@ entered. No manual override. The As-Found In/Out call does not affect the result
 3. **Summary table** — all pipettes, As Found vs As Left status at a glance.
 4. **Certificate / Report tab** — the printable ISO certificate (one pipette per page).
 5. **Session history** — list + recall past calibrations (secondary tracker view).
+6. **Batch (Basic) tab** — a spreadsheet grid for fast multi-pipette **Basic** entry (one row per
+   pipette): Pipet No · Manufacturer/Model · Model · Serial · As-Found (In/Out) · Reason · SE/COR/G/SH/FR
+   (compact value cells) · Sample 1–4 (100%) · 20% · P/F (computed). Edits the same Basic pipettes as the
+   cards; Platinum stays card-only. SE/SH "Other" free-text is entered in card view.
 
 ## Interactions
 - Add / remove / **duplicate** pipette (copy previous config); single↔multi toggle.
