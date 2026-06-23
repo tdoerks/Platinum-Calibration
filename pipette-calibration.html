@@ -169,6 +169,7 @@
     </div>
 
     <div class="toolbar no-print">
+      <button onclick="newSession()">🆕 New Session</button>
       <button onclick="saveSession()">💾 Save session to history</button>
       <button onclick="exportJSON()">⬇ Export JSON</button>
       <button onclick="document.getElementById('importFile').click()">⬆ Import JSON</button>
@@ -606,6 +607,13 @@ function buildCert(){
 }
 
 /* ====================== PERSISTENCE / EXPORT / IMPORT ====================== */
+function newSession(){
+  if(!confirm('Start a new blank session? The current one will be saved to History first.')) return;
+  syncSessionFromInputs();
+  if(state.pipettes && state.pipettes.length) saveSession();   // safety snapshot to History (+Drive if connected)
+  state=defaultState(); state.serviceDate=new Date().toISOString().slice(0,10);
+  autoSave(); hydrate(); showTab('cal'); driveStatus('');
+}
 function saveSession(){ syncSessionFromInputs();
   const snap=JSON.parse(JSON.stringify(state)); snap.savedAt=new Date().toLocaleString();
   snap.label=(state.workOrder||('Session '+(history.length+1)));
