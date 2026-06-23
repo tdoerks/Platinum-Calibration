@@ -80,6 +80,13 @@
   .muted{color:var(--muted)}
   .hist-row{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:7px;margin-bottom:6px}
   .hist-row .spacer{flex:1}
+  .batch-wrap{overflow-x:auto}
+  table.batch{font-size:12px;min-width:920px}
+  table.batch th,table.batch td{padding:3px 4px;white-space:nowrap;text-align:center}
+  table.batch input,table.batch select{padding:3px;font-size:12px}
+  table.batch input.num{width:62px;text-align:center}
+  table.batch input.txt{width:130px}
+  table.batch select.adj{width:78px}
   @media (max-width:640px){ .pipette-head{flex-direction:column;align-items:stretch} }
   @media print{
     header,.tabs,.toolbar,.no-print,button{display:none !important}
@@ -108,6 +115,7 @@
 <div class="wrap">
   <div class="tabs no-print">
     <button id="t-cal" class="active" onclick="showTab('cal')">Calibration</button>
+    <button id="t-batch" onclick="showTab('batch')">Batch (Basic)</button>
     <button id="t-cert" onclick="showTab('cert')">Certificate</button>
     <button id="t-hist" onclick="showTab('hist')">History</button>
   </div>
@@ -171,6 +179,9 @@
       <span id="driveStatus" class="muted" style="font-size:12px"></span>
     </div>
   </div>
+
+  <!-- ============ BATCH (BASIC) TAB ============ -->
+  <div id="tab-batch" style="display:none"></div>
 
   <!-- ============ CERTIFICATE TAB ============ -->
   <div id="tab-cert" style="display:none">
@@ -639,9 +650,9 @@ function exportCSV(){ syncSessionFromInputs();
 function dl(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href); }
 
 /* ====================== UI PLUMBING ====================== */
-function showTab(t){ ['cal','cert','hist'].forEach(x=>{ document.getElementById('tab-'+x).style.display = x===t?'':'none';
-  document.getElementById('t-'+x).classList.toggle('active', x===t); });
-  if(t==='cert') renderCert(); if(t==='hist'){ renderHistory(); listDriveSessions(); } }
+function showTab(t){ ['cal','batch','cert','hist'].forEach(x=>{ const el=document.getElementById('tab-'+x); if(el) el.style.display = x===t?'':'none';
+  const tb=document.getElementById('t-'+x); if(tb) tb.classList.toggle('active', x===t); });
+  if(t==='cert') renderCert(); if(t==='hist'){ renderHistory(); listDriveSessions(); } if(t==='batch') renderBatch(); }
 function toggleDark(){ document.body.classList.toggle('dark');
   localStorage.setItem('platinumDarkMode', document.body.classList.contains('dark')?'1':'0');
   document.getElementById('darkBtn').textContent = document.body.classList.contains('dark')?'☀ Light':'🌙 Dark'; }
@@ -656,6 +667,55 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='d'){ e.preventDefault(); addPipette(true); }
   else if(e.key==='s'){ e.preventDefault(); saveSession(); }
 });
+
+/* ===================== BATCH (Basic spreadsheet view) ===================== */
+function basicRows(){ return state.pipettes.filter(p=>p.serviceLevel==='basic'); }
+function gAddBasic(){ const sv=state.serviceLevel; state.serviceLevel='basic'; addPipette(); state.serviceLevel=sv; renderBatch(); }
+function adjCell(p,code){ const spec=ADJ_SPEC[code]; const a=((p.basic.adjustments||{})[code])||{on:false,val:''};
+  return `<select class="adj" title="${spec.label}${spec.other?' (Other free-text in card view)':''}" onchange="gAdj(${p.id},'${code}',this.value)"><option value="">—</option>`
+    +spec.opts.map(o=>`<option ${a.on&&a.val===o?'selected':''}>${o}</option>`).join('')+`</select>`; }
+function gridRow(p){ const c=computeBasic(p); const oos=p.basic.asFoundSpec==='out';
+  return `<tr>
+    <td>${p.id}</td>
+    <td><input class="txt" list="brandlist" value="${ae(p.brandModel)}" onchange="gField(${p.id},'brandModel',this.value)"></td>
+    <td><select onchange="gField(${p.id},'model',this.value)">${modelOptions(p.model)}</select></td>
+    <td><input class="txt" style="width:92px${isDupSerial(p)?';border-color:var(--fail)':''}" value="${ae(p.serial)}" onchange="gField(${p.id},'serial',this.value)" title="${isDupSerial(p)?'Duplicate serial in this session':''}"></td>
+    <td><select onchange="gBasic(${p.id},'asFoundSpec',this.value)"><option value="" ${!p.basic.asFoundSpec?'selected':''}>—</option><option value="in" ${p.basic.asFoundSpec==='in'?'selected':''}>In</option><option value="out" ${p.basic.asFoundSpec==='out'?'selected':''}>Out</option></select></td>
+    <td><select onchange="gBasic(${p.id},'outOfSpecReason',this.value)" ${oos?'':'disabled'}><option value="">—</option>${OOS_REASONS.map(r=>`<option ${p.basic.outOfSpecReason===r?'selected':''}>${r}</option>`).join('')}</select></td>
+    ${ADJ_CODES.map(code=>`<td>${adjCell(p,code)}</td>`).join('')}
+    ${[0,1,2,3].map(i=>`<td><input class="num" type="number" step="0.1" value="${ae(p.basic.readings100[i])}" onchange="gReading(${p.id},${i},this.value)"></td>`).join('')}
+    <td><input class="num" type="number" step="0.1" value="${ae(p.basic.reading20)}" onchange="gBasic(${p.id},'reading20',this.value)"></td>
+    <td id="pf-${p.id}">${badge(c.result==='pending'?null:c.result==='pass')}</td>
+    <td><button class="sm danger" title="Remove" onclick="removePipette(${p.id});renderBatch()">✕</button></td>
+  </tr>`; }
+function renderBatch(){ const host=document.getElementById('tab-batch'); if(!host) return;
+  const rows=basicRows();
+  host.innerHTML=`<div class="card">
+    <div class="toolbar"><button class="primary" onclick="gAddBasic()">+ Add pipette</button>
+      <span class="hint">Fast Basic entry — tab across cells. SE/SH “Other” free-text is edited in the Calibration card view.</span></div>
+    ${rows.length?`<div class="batch-wrap"><table class="batch">
+      <tr><th>#</th><th>Manufacturer/Model</th><th>Model</th><th>Serial</th><th>As&#8209;Found</th><th>Reason</th>
+      ${ADJ_CODES.map(c=>`<th>${c}</th>`).join('')}
+      <th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>20%</th><th>P/F</th><th></th></tr>
+      ${rows.map(gridRow).join('')}</table></div>`
+    :`<div class="muted">No Basic pipettes yet — click <strong>+ Add pipette</strong> (or add a Basic pipette on the Calibration tab).</div>`}
+  </div>`; }
+function updateRowPF(p){ const cell=document.getElementById('pf-'+p.id); if(!cell) return;
+  const c=computeBasic(p); cell.innerHTML=badge(c.result==='pending'?null:c.result==='pass'); }
+function gField(id,k,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p[k]=v;
+  if(k==='brandModel'){ saveBrand(v); autoSave(); return; }
+  if(k==='model'||k==='serial'){ autoSave(); renderBatch(); return; }   // model: test-vols change; serial: dup highlight
+  autoSave(); }
+function gBasic(id,k,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return; p.basic[k]=v;
+  if(k==='asFoundSpec'){ autoSave(); renderBatch(); return; }            // enable/disable the reason cell
+  autoSave(); updateRowPF(p); }
+function gReading(id,i,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
+  (p.basic.readings100=p.basic.readings100||['','','',''])[i]=v; autoSave(); updateRowPF(p); }
+function gAdj(id,code,v){ const p=state.pipettes.find(x=>x.id===id); if(!p) return;
+  if(!p.basic.adjustments||Array.isArray(p.basic.adjustments)) p.basic.adjustments={};
+  const prev=p.basic.adjustments[code]||{};
+  p.basic.adjustments[code]= v? {on:true,val:v,other:prev.other||''} : {on:false,val:'',other:''};
+  autoSave(); }
 
 /* ===================== GOOGLE DRIVE (hosted-only; degrades gracefully offline) ===================== */
 const GOOGLE_CLIENT_ID='1020635392092-fm0fhg2bn4cmfhdu147vc6jshj4lsfb9.apps.googleusercontent.com';
